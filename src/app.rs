@@ -5,7 +5,7 @@ use leptos_router::{
     path, StaticSegment,
 };
 
-use crate::routes;
+use crate::routes::{self, state::FrontendStore};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -18,7 +18,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <HydrationScripts options/>
                 <MetaTags/>
             </head>
-            <body>
+            <body class="bg-[#25333f]">
                 <App/>
             </body>
         </html>
@@ -30,6 +30,9 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    use reactive_stores::Store;
+    provide_context(Store::new(FrontendStore::default()));
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -38,24 +41,15 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="Strichliste-rs"/>
 
+        {routes::navbar::View()}
+
         // content for this welcome page
         <Router>
             <Routes fallback=|| view!{ <h1>"Page not found!"</h1>}>
                 <Route path=path!("/") view=routes::home::View/>
+                <Route path=path!("/create_user") view=routes::create_user::View/>
+                <Route path=path!("/user/:id") view=routes::user::ShowUser/>
             </Routes>
         </Router>
-    }
-}
-
-/// Renders the home page of your application.
-#[component]
-fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-
-    view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
     }
 }
