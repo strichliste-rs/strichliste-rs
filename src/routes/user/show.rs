@@ -1,7 +1,12 @@
-use leptos::prelude::*;
+use leptos::{leptos_dom::logging::console_log, logging::log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use reactive_stores::{Store, StoreField};
-use tracing::error;
+use tracing::{error, info};
+
+use leptos_use::{
+    use_web_notification_with_options, NotificationDirection, ShowOptions,
+    UseWebNotificationOptions, UseWebNotificationReturn,
+};
 
 use crate::{
     models::User,
@@ -29,6 +34,42 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
     let user = user.unwrap();
 
     Ok(user)
+}
+
+#[server]
+pub async fn modify_money(user_id: i64, money_diff: i64) -> Result<(), ServerFnError> {
+    use crate::backend::ServerState;
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+
+    let state: ServerState = expect_context();
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let user = get_user(user_id).await?;
+
+    if user.is_none() {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new(&format!(
+            "No use found with id {}",
+            user_id
+        )));
+    }
+
+    let mut user = user.unwrap();
+
+    user.money += money_diff;
+
+    let result = user.update_money(&*state.db.lock().await).await;
+
+    if result.is_err() {
+        let err = result.err().unwrap();
+        error!("{err}");
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new(err));
+    }
+
+    Ok(())
 }
 
 #[component]
@@ -86,19 +127,56 @@ pub fn ShowUser() -> impl IntoView {
 
                             let user = user.unwrap();
 
+                            let (read_money, write_money) = signal(user.money);
+
                             view!{
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
-                                        // left side
+                                        // left side (show user statistics)
                                         <p class="text-center text-white text-lg">{user.nickname.clone()}</p>
                                         <p class="text-center text-lg"
-                                            class=("text-red-500", move || user.money < 0)
-                                            class=("text-green-500", move ||user.money >= 0)
+                                            class=("text-red-500", move || read_money.get() < 0)
+                                            class=("text-green-500", move ||read_money.get() >= 0)
 
-                                        >{user.get_money()}"€"</p>
+                                        >{move || User::calc_money(read_money.get())}"€"</p>
                                     </div>
                                     <div>
-                                        // right side
+                                        // right side (put in money)
+                                        <div class="flex flex-col gap-3 bg-gray-500 p-3 rounded-[10px]">
+                                            <div class="grid grid-cols-3 gap-5 rounded-[10px]">
+                                                {change_money_button(50, user_id, write_money, read_money)}
+                                                {change_money_button(100, user_id, write_money, read_money)}
+                                                {change_money_button(200, user_id, write_money, read_money)}
+                                                {change_money_button(500, user_id, write_money, read_money)}
+                                                {change_money_button(1000, user_id, write_money, read_money)}
+                                                {change_money_button(2000, user_id, write_money, read_money)}
+                                                {change_money_button(5000, user_id, write_money, read_money)}
+
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-3">
+                                                <a href="#" class="bg-red-400 text-white rounded-full p-5">
+                                                    <div class="pad-5 text-center">
+                                                        "-"
+                                                    </div>
+                                                </a>
+                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben"/>
+                                                <a href="#" class="bg-emerald-400 text-white rounded-full p-5">
+                                                    <div class="pad-5 text-center">
+                                                        "+"
+                                                    </div>
+                                                </a>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-5 rounded-[10px]">
+                                                {change_money_button(-50, user_id, write_money, read_money)}
+                                                {change_money_button(-100, user_id, write_money, read_money)}
+                                                {change_money_button(-200, user_id, write_money, read_money)}
+                                                {change_money_button(-500, user_id, write_money, read_money)}
+                                                {change_money_button(-1000, user_id, write_money, read_money)}
+                                                {change_money_button(-2000, user_id, write_money, read_money)}
+                                                {change_money_button(-5000, user_id, write_money, read_money)}
+
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             }.into_any()
@@ -111,4 +189,44 @@ pub fn ShowUser() -> impl IntoView {
         }
     }
     .into_any();
+}
+
+pub fn change_money_button(
+    money: i64,
+    user_id: i64,
+    write_money: WriteSignal<i64>,
+    read_money: ReadSignal<i64>,
+) -> impl IntoView {
+    // let (read_error, write_error) = signal(String::new());
+    view! {
+        <a
+            on:click=move |_| spawn_local(async move {
+                    let resp = modify_money(user_id, money).await;
+
+                    if resp.is_ok() {
+                        write_money.set(read_money.get_untracked() + money);
+                    } else {
+                        let error = resp.err().unwrap().to_string();
+
+                        console_log(&format!("Failed to send transaction to server: {}", error));
+
+                        let UseWebNotificationReturn {
+                            show,
+                            close,
+                            ..
+                        } = use_web_notification_with_options(
+                            UseWebNotificationOptions::default()
+                                .direction(NotificationDirection::Auto)
+                                .language("en")
+                        );
+                        show(ShowOptions::default().title("Failed to send transaction to server!"));
+
+                    }
+                })
+            href="#"
+            class="p-5 text-white rounded-[10px] text-center"
+            class=("bg-emerald-400", move || money > 0)
+            class=("bg-red-400", move || money < 0)
+        >{User::calc_money(money)}"€"</a>
+    }
 }

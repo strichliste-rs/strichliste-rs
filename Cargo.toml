@@ -21,6 +21,7 @@ clap = { version = "4.5.38", features = ["derive"], optional = true }
 tracing-subscriber = { version = "0.3.19", optional = true }
 serde = { version = "1.0.219", features = ["derive"] }
 reactive_stores = "0.2.2"
+leptos-use = { version = "0.15.7", features = ["use_web_notification"] }
 
 [features]
 hydrate = [

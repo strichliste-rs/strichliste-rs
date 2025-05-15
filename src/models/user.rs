@@ -29,13 +29,18 @@ impl User {
     }
 
     pub fn get_money(&self) -> String {
-        let result = (self.money as f64) / 100.0;
+        User::calc_money(self.money)
+    }
+
+    pub fn calc_money(money: i64) -> String {
+        let result = (money as f64) / 100.0;
 
         let mut string = format!("{result}");
 
-        if self.money < 0 {
-            string = String::from_str("-").unwrap() + &string;
-        } else if self.money > 0 {
+        if money < 0 {
+            // the - also gets put into the string
+            string = string;
+        } else if money > 0 {
             string = String::from_str("+").unwrap() + &string;
         }
 
@@ -107,5 +112,26 @@ impl User {
         .map_err(|e| DBError::new(e.to_string()))?;
 
         Ok(result)
+    }
+
+    pub async fn update_money(&self, db: &DB) -> Result<(), DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let id = self.id.unwrap();
+
+        _ = query!(
+            "
+                update Users
+                set money = ?
+                where id = ?
+            ",
+            self.money,
+            id,
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(())
     }
 }
