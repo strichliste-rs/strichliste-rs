@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
@@ -24,6 +26,20 @@ impl User {
             card_number: String::new(),
             money: 0,
         }
+    }
+
+    pub fn get_money(&self) -> String {
+        let result = (self.money as f64) / 100.0;
+
+        let mut string = format!("{result}");
+
+        if self.money < 0 {
+            string = String::from_str("-").unwrap() + &string;
+        } else if self.money > 0 {
+            string = String::from_str("+").unwrap() + &string;
+        }
+
+        string
     }
 }
 
@@ -73,5 +89,23 @@ impl User {
         .map_err(|e| DBError::new(e.to_string()))?;
 
         return Ok(result);
+    }
+
+    pub async fn get_by_id(db: &DB, id: i64) -> Result<Option<User>, DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let result = sqlx::query_as::<_, User>(
+            "
+                select *
+                from Users
+                where id = ?
+            ",
+        )
+        .bind(id)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(result)
     }
 }

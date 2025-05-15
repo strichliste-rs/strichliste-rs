@@ -121,17 +121,21 @@ pub fn UserPreview(user: User) -> impl IntoView {
             <p class="text-center text-white">{user.nickname}</p>
             <p class="text-center"
                 class=("text-red-500", move || {user.money < 0})
-                class=("text-green-500", move ||{user.money > 0})
+                class=("text-green-500", move ||{user.money >= 0})
             >{
                 let euro = user.money / 100;
                 if user.money < 0 {
                     view!{
                         "-"{euro}
-                    }
-                } else {
+                    }.into_any()
+                } else if user.money > 0 {
                     view!{
                         "+"{euro}
-                    }
+                    }.into_any()
+                } else {
+                    view!{
+                        {euro}
+                    }.into_any()
                 }
             }"€"</p>
         </div>

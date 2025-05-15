@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use reactive_stores::{Store, StoreField};
+use tracing::error;
 
 use crate::{
     models::User,
@@ -16,7 +17,18 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    Ok(None)
+    let user = User::get_by_id(&*state.db.lock().await, id).await;
+
+    if user.is_err() {
+        let err = user.err().unwrap();
+        error!("Failed to fetch user: {}", err);
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new(err));
+    }
+
+    let user = user.unwrap();
+
+    Ok(user)
 }
 
 #[component]
@@ -35,33 +47,65 @@ pub fn ShowUser() -> impl IntoView {
 
     let user_id = user_id.unwrap();
 
-    let store = expect_context::<Store<FrontendStore>>();
+    let user_resource = OnceResource::new(get_user(user_id));
 
     return view! {
         { move || {
-            let cached_users = store.cached_users();
-            let reader = cached_users.reader().unwrap();
-            let mut found_user: Option<&User> = None;
-            for user in reader.iter() {
-                if user.id.unwrap() == user_id {
-                    found_user = Some(user);
-                }
-            }
-
-            if found_user.is_none() {
-                return view!{
-                    <p class="text-red-500">"Failed to find user with id "{user_id}"!"</p>
-                }.into_any();
-            }
-
-            let user: &User = found_user.unwrap();
-
 
             view!{
+                <Suspense
+                    fallback=move || view!{<p class="text-white text-center pt-5">"Loading user..."</p>}
+                >
                 <div>
-                    <p class="text-center">{user.nickname.clone()}</p>
-                    <p class="text-center">{user.money / 100}"€"</p>
+                    {
+                        move || {
+                            let user = user_resource.get();
+
+                            if user.is_none() {
+                                return view!{
+                                    <p class="text-red-500">"Failed to fetch user"</p>
+                                }.into_any();
+                            }
+
+                            let user = user.unwrap();
+
+                            if user.is_err(){
+                                let err = user.err().unwrap().to_string();
+                                return view!{
+                                    <p class="text-red-500">"Failed to fetch user because: "{err}</p>
+                                }.into_any();
+                            }
+
+                            let user = user.unwrap();
+
+                            if user.is_none(){
+                                return view! {
+                                    <p class="text-red-500">"No user with the id "{user_id}" has been found!"</p>
+                                }.into_any();
+                            }
+
+                            let user = user.unwrap();
+
+                            view!{
+                                <div class="grid grid-cols-2">
+                                    <div class="pt-5">
+                                        // left side
+                                        <p class="text-center text-white text-lg">{user.nickname.clone()}</p>
+                                        <p class="text-center text-lg"
+                                            class=("text-red-500", move || user.money < 0)
+                                            class=("text-green-500", move ||user.money >= 0)
+
+                                        >{user.get_money()}"€"</p>
+                                    </div>
+                                    <div>
+                                        // right side
+                                    </div>
+                                </div>
+                            }.into_any()
+                        }
+                    }
                 </div>
+                </Suspense>
             }
         }.into_any()
         }
