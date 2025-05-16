@@ -1,17 +1,20 @@
-use leptos::{leptos_dom::logging::console_log, logging::log, prelude::*, task::spawn_local};
+use std::rc::Rc;
+
+use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
-use reactive_stores::{Store, StoreField};
-use tracing::{error, info};
+use tracing::error;
 
-use leptos_use::{
-    use_web_notification_with_options, NotificationDirection, ShowOptions,
-    UseWebNotificationOptions, UseWebNotificationReturn,
-};
 
-use crate::{
-    models::User,
-    routes::state::{FrontendStore, FrontendStoreStoreFields},
-};
+use crate::
+    models::User
+;
+
+pub struct MoneyArgs {
+    user_id: i64,
+    money_read: ReadSignal<i64>,
+    money_write: WriteSignal<i64>,
+    error_write: WriteSignal<String>,
+}
 
 #[server]
 pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
@@ -90,7 +93,26 @@ pub fn ShowUser() -> impl IntoView {
 
     let user_resource = OnceResource::new(get_user(user_id));
 
+    let (error_read, error_write) = signal(String::new());
+
     return view! {
+        {
+            move || {
+                let error = error_read.get();
+
+                if error.len() != 0 {
+                    view! {
+                        
+                        <div>
+                            <p class="text-white bg-red-400 p-5 text-center">"An error has occurred: "{error}</p>
+                        </div>
+                    }.into_any()
+                } else {
+                    view! {}.into_any()
+                }
+
+            }
+        }
         { move || {
 
             view!{
@@ -129,6 +151,13 @@ pub fn ShowUser() -> impl IntoView {
 
                             let (read_money, write_money) = signal(user.money);
 
+                            let args = Rc::new(MoneyArgs {
+                                user_id: user_id,
+                                money_read: read_money,
+                                money_write: write_money,
+                                error_write: error_write,
+                            });
+
                             view!{
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
@@ -144,13 +173,13 @@ pub fn ShowUser() -> impl IntoView {
                                         // right side (put in money)
                                         <div class="flex flex-col gap-3 bg-gray-500 p-3 rounded-[10px]">
                                             <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                {change_money_button(50, user_id, write_money, read_money)}
-                                                {change_money_button(100, user_id, write_money, read_money)}
-                                                {change_money_button(200, user_id, write_money, read_money)}
-                                                {change_money_button(500, user_id, write_money, read_money)}
-                                                {change_money_button(1000, user_id, write_money, read_money)}
-                                                {change_money_button(2000, user_id, write_money, read_money)}
-                                                {change_money_button(5000, user_id, write_money, read_money)}
+                                                {change_money_button(50, args.clone())}
+                                                {change_money_button(100, args.clone())}
+                                                {change_money_button(200, args.clone())}
+                                                {change_money_button(500, args.clone())}
+                                                {change_money_button(1000, args.clone())}
+                                                {change_money_button(2000, args.clone())}
+                                                {change_money_button(5000, args.clone())}
 
                                             </div>
                                             <div class="grid grid-cols-3 gap-3">
@@ -167,13 +196,13 @@ pub fn ShowUser() -> impl IntoView {
                                                 </a>
                                             </div>
                                             <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                {change_money_button(-50, user_id, write_money, read_money)}
-                                                {change_money_button(-100, user_id, write_money, read_money)}
-                                                {change_money_button(-200, user_id, write_money, read_money)}
-                                                {change_money_button(-500, user_id, write_money, read_money)}
-                                                {change_money_button(-1000, user_id, write_money, read_money)}
-                                                {change_money_button(-2000, user_id, write_money, read_money)}
-                                                {change_money_button(-5000, user_id, write_money, read_money)}
+                                                {change_money_button(-50, args.clone())}
+                                                {change_money_button(-100, args.clone())}
+                                                {change_money_button(-200, args.clone())}
+                                                {change_money_button(-500, args.clone())}
+                                                {change_money_button(-1000, args.clone())}
+                                                {change_money_button(-2000, args.clone())}
+                                                {change_money_button(-5000, args.clone())}
 
                                             </div>
                                         </div>
@@ -191,42 +220,37 @@ pub fn ShowUser() -> impl IntoView {
     .into_any();
 }
 
-pub fn change_money_button(
+fn change_money_button(
     money: i64,
-    user_id: i64,
-    write_money: WriteSignal<i64>,
-    read_money: ReadSignal<i64>,
+    args: Rc<MoneyArgs>
 ) -> impl IntoView {
-    // let (read_error, write_error) = signal(String::new());
     view! {
         <a
-            on:click=move |_| spawn_local(async move {
-                    let resp = modify_money(user_id, money).await;
-
-                    if resp.is_ok() {
-                        write_money.set(read_money.get_untracked() + money);
-                    } else {
-                        let error = resp.err().unwrap().to_string();
-
-                        console_log(&format!("Failed to send transaction to server: {}", error));
-
-                        let UseWebNotificationReturn {
-                            show,
-                            close,
-                            ..
-                        } = use_web_notification_with_options(
-                            UseWebNotificationOptions::default()
-                                .direction(NotificationDirection::Auto)
-                                .language("en")
-                        );
-                        show(ShowOptions::default().title("Failed to send transaction to server!"));
-
-                    }
-                })
+            on:click=move |_| change_money_logic(money, args.clone())
             href="#"
             class="p-5 text-white rounded-[10px] text-center"
             class=("bg-emerald-400", move || money > 0)
             class=("bg-red-400", move || money < 0)
         >{User::calc_money(money)}"€"</a>
     }
+}
+
+fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
+    let user_id = args.user_id.clone();
+    let money_write = args.money_write;
+    let money_read = args.money_read;
+    let error_write = args.error_write;
+    spawn_local(async move {
+        let resp = modify_money(user_id, money).await;
+
+        if resp.is_ok() {
+            money_write.set(money_read.get_untracked() + money);
+            error_write.set(String::new())
+        } else {
+            let error = resp.err().unwrap().to_string();
+
+            error_write.set(error);
+
+        }
+    })
 }
