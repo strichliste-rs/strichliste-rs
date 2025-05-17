@@ -288,10 +288,24 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     } else {
         let split = split.unwrap();
         (euros, cents) = (split.0.to_string(), split.1.to_string());
+    }
 
-        if cents.len() > 2 {
-            cents.truncate(2);
-        }
+    if euros.len() == 0 {
+        error_write.set("Failed to parse euros".to_string());
+        return;
+    }
+
+    if cents.len() == 0 {
+        error_write.set("Failed to parse cents".to_string());
+        return;
+    }
+
+    if cents.len() > 2 {
+        cents.truncate(2);
+    }
+
+    if cents.len() < 2 {
+        cents.push_str("0");
     }
 
     let real_euros = euros.parse::<i64>();
@@ -319,4 +333,6 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     }
 
     change_money_logic_raw(final_cents, args.user_id, args.money_write, args.money_read, args.error_write);
+
+    value.set(String::new());    
 }
