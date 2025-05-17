@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
-use leptos::{prelude::*, task::spawn_local};
+use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
-
 
 use crate::
     models::User
 ;
 
+#[derive(Debug, Clone)]
 pub struct MoneyArgs {
     user_id: i64,
     money_read: ReadSignal<i64>,
@@ -151,12 +151,19 @@ pub fn ShowUser() -> impl IntoView {
 
                             let (read_money, write_money) = signal(user.money);
 
-                            let args = Rc::new(MoneyArgs {
+                            let m_args = MoneyArgs {
                                 user_id: user_id,
                                 money_read: read_money,
                                 money_write: write_money,
                                 error_write: error_write,
-                            });
+                            };
+
+                            let args1 = m_args.clone();
+                            let args2 = m_args.clone();
+                            
+                            let args = Rc::new(m_args);
+
+                            let custom_money_change = RwSignal::new(String::new());
 
                             view!{
                                 <div class="grid grid-cols-2">
@@ -183,13 +190,13 @@ pub fn ShowUser() -> impl IntoView {
 
                                             </div>
                                             <div class="grid grid-cols-3 gap-3">
-                                                <a href="#" class="bg-red-400 text-white rounded-full p-5">
+                                                <a href="#" class="bg-red-400 text-white rounded-full p-5" on:click=move |_| on_custom_money_button_click(false, custom_money_change, &args1)>
                                                     <div class="pad-5 text-center">
                                                         "-"
                                                     </div>
                                                 </a>
-                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben"/>
-                                                <a href="#" class="bg-emerald-400 text-white rounded-full p-5">
+                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben" bind:value=custom_money_change/>
+                                                <a href="#" class="bg-emerald-600 text-white rounded-full p-5" on:click=move |_| on_custom_money_button_click(true, custom_money_change, &args2)>
                                                     <div class="pad-5 text-center">
                                                         "+"
                                                     </div>
@@ -229,7 +236,7 @@ fn change_money_button(
             on:click=move |_| change_money_logic(money, args.clone())
             href="#"
             class="p-5 text-white rounded-[10px] text-center"
-            class=("bg-emerald-400", move || money > 0)
+            class=("bg-emerald-600", move || money > 0)
             class=("bg-red-400", move || money < 0)
         >{User::calc_money(money)}"€"</a>
     }
@@ -240,6 +247,11 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
     let money_write = args.money_write;
     let money_read = args.money_read;
     let error_write = args.error_write;
+
+    change_money_logic_raw(money, user_id, money_write, money_read, error_write);
+}
+
+fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64>, money_read: ReadSignal<i64>, error_write: WriteSignal<String>){
     spawn_local(async move {
         let resp = modify_money(user_id, money).await;
 
@@ -253,4 +265,58 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
 
         }
     })
+}
+
+fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs){
+    let string = value.get_untracked();
+
+    let error_write = args.error_write;
+    error_write.set(String::new());
+
+    if string.len() == 0 {
+        return;
+    }
+
+    let (mut euros, mut cents): (String, String) = (0.to_string(), 0.to_string());
+
+    let string = string.replace(",", ".");
+
+    let split = string.rsplit_once(".");
+
+    if split.is_none() {
+        euros = string;
+    } else {
+        let split = split.unwrap();
+        (euros, cents) = (split.0.to_string(), split.1.to_string());
+
+        if cents.len() > 2 {
+            cents.truncate(2);
+        }
+    }
+
+    let real_euros = euros.parse::<i64>();
+    if real_euros.is_err() {
+        error_write.set(format!("Failed to parse euros: {}", euros));
+        return;
+    }
+
+    let real_cents = cents.parse::<i64>();
+
+    if real_cents.is_err() {
+        error_write.set(format!("Failed to parse cents: {}", cents));
+        return;
+    }
+
+    let real_euros = real_euros.unwrap();
+    let real_cents = real_cents.unwrap();
+
+    // console_log(&format!("Need to modify {}€ and {} cents", real_euros, real_cents));
+
+    let mut final_cents = real_euros * 100 + real_cents;
+
+    if !add {
+        final_cents = -final_cents;
+    }
+
+    change_money_logic_raw(final_cents, args.user_id, args.money_write, args.money_read, args.error_write);
 }
