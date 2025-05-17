@@ -1,9 +1,8 @@
-{ rustPlatform, lib, pkgs, ... }:
+{ rustPlatform, lib, pkgs, name, version, ... }:
 
 rustPlatform.buildRustPackage rec {
-  name = "ladon";
+  inherit name version;
   pname = name;
-  version = "1.0";
 
   src = ./.;
 
@@ -14,9 +13,11 @@ rustPlatform.buildRustPackage rec {
     dart-sass
     sqlx-cli
     makeWrapper
+    tailwindcss
   ];
 
-  cargoHash = "sha256-AMuSaJljSt4pKE8jTNigJWoFILHL03JxSZCfkoNBv14=";
+  # cargoHash = "sha256-AMuSaJljSt4pKE8jTNigJWoFILHL03JxSZCfkoNBv14=";
+  cargoHash = "sha256-bkCj3flNKI+BYfjAXtM5u7RjPnHYbNjiSDoVy9BubSI=";
   useFetchCargoVendor = true;
 
   buildPhase = ''
