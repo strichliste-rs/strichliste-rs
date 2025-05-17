@@ -9,6 +9,7 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
     let state: ServerState = expect_context();
 
     use axum::http::StatusCode;
+    use leptos_axum::redirect;
     use leptos_axum::ResponseOptions;
 
     let response_opts: ResponseOptions = expect_context();
@@ -19,7 +20,7 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
         return Err(ServerFnError::new("Name cannot be empty!"));
     }
     let mut user = User::new();
-    user.nickname = username;
+    user.nickname = username.trim().to_string();
 
     let result = user.add_to_db(&*state.db.lock().await).await;
 
@@ -29,6 +30,8 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
         error!("Failed to add user: {}", error);
         return Err(ServerFnError::new(error));
     }
+
+    redirect(&format!("/user/{}", user.id.unwrap()));
 
     Ok(())
 }

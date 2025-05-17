@@ -18,7 +18,7 @@
             # openssl
             # pkg-config
             rust-analyzer
-            cargo-leptos
+            cargo-leptos # does work. Make sure '/home/ole/.cargo/bin/cargo-leptos' does not exist
             lld
             dart-sass
             sqlite.dev

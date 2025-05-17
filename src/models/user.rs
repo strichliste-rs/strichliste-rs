@@ -55,6 +55,22 @@ impl User {
 
         let result = query!(
             "
+                select *
+                from Users
+                where nickname = ?
+            ",
+            self.nickname
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e.to_string()))?;
+
+        if result.is_some() {
+            return Err(DBError::new("Nickname must be unique".to_string()));
+        }
+
+        let result = query!(
+            "
                 insert into Users
                     (nickname, card_number, money)
                 values
