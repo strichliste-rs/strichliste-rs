@@ -5,7 +5,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::
-    models::User
+    models::{Transaction, TransactionType, User}
 ;
 
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 }
 
 #[server]
-pub async fn modify_money(user_id: i64, money_diff: i64) -> Result<(), ServerFnError> {
+pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionType) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -49,14 +49,34 @@ pub async fn modify_money(user_id: i64, money_diff: i64) -> Result<(), ServerFnE
 
     let response_opts: ResponseOptions = expect_context();
 
+    if transaction_type == TransactionType::UNKNOWN {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new("Bad transaction type given!"));
+    }
+
     let user = get_user(user_id).await?;
 
     if user.is_none() {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new(&format!(
-            "No use found with id {}",
+            "No user found with id {}",
             user_id
         )));
+    }
+
+    let mut transaction = Transaction::new();
+
+    transaction.t_type = transaction_type;
+    transaction.money = money_diff;
+    transaction.user_id = user_id;
+
+    let result = transaction.add_to_db(&*state.db.lock().await).await;
+
+    if result.is_err() {
+        let err = result.err().unwrap();
+        error!("{err}");
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new(err));
     }
 
     let mut user = user.unwrap();
@@ -253,7 +273,9 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
 
 fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64>, money_read: ReadSignal<i64>, error_write: WriteSignal<String>){
     spawn_local(async move {
-        let resp = modify_money(user_id, money).await;
+        let mut t_type = if money > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
+        
+        let resp = create_transaction(user_id, money, t_type).await;
 
         if resp.is_ok() {
             money_write.set(money_read.get_untracked() + money);

@@ -6,4 +6,23 @@ create table Users (
     money integer not null,
 
     primary key (id)
-)
+);
+
+create table Transactions (
+    id integer not null,
+    user_id not null,
+    t_type text not null,
+    origin_user integer,
+    destination_user integer,
+    money integer not null,
+    description varchar(255),
+    timestamp date not null,
+
+    primary key (id),
+        foreign key (user_id)
+            references Users(id),
+        foreign key (origin_user)
+            references Users(id),
+        foreign key (destination_user)
+            references Users(id)
+);

@@ -22,6 +22,7 @@ tracing-subscriber = { version = "0.3.19", optional = true }
 serde = { version = "1.0.219", features = ["derive"] }
 reactive_stores = "0.2.2"
 leptos-use = { version = "0.15.7", features = ["use_web_notification"] }
+chrono = { version = "0.4.41", features = ["serde"] }
 
 [features]
 hydrate = [
