@@ -1,5 +1,9 @@
-use leptos::prelude::*;
-use reactive_stores::StoreField;
+use leptos::{
+    ev::{self, KeyboardEvent, SubmitEvent},
+    html,
+    leptos_dom::logging::{console_error, console_log},
+    prelude::*,
+};
 use tracing::error;
 
 use crate::{
@@ -43,11 +47,67 @@ pub fn View() -> impl IntoView {
                     </div>
                 </a>
             </div>
+            {InvisibleScanInput()}
             <div class="col-span-9 pr-7">
                 {ShowUsers()}
             </div>
         </div>
     }
+}
+
+#[component]
+pub fn InvisibleScanInput() -> impl IntoView {
+    let scan_input: NodeRef<html::Input> = NodeRef::new();
+
+    // let on_submit = move |ev: SubmitEvent| {
+    //     ev.prevent_default();
+
+    //     let input = scan_input.get().expect("Scan input should be mounted!");
+
+    //     let input = input.value();
+
+    //     console_log(&format!("Found scan input: {}", input));
+    // };
+
+    // let barcode_elem = use_document()
+    //     .as_ref()
+    //     .unwrap()
+    //     .get_element_by_id("invisible_barcode_input")
+    //     .unwrap();
+
+    // let b1 = barcode_elem.clone();
+
+    // let result = barcode_elem.add_event_listener_with_callback("blur", a.as_ref().unchecked_ref());
+
+    // if result.is_err() {
+    //     console_error(&format!(
+    //         "Failed to add event listener to input: {:#?}",
+    //         result.err().unwrap()
+    //     ));
+    // }
+
+    // console_log(&format!(
+    //     "barcode input is focused: {}",
+    //     barcode_elem.get_attribute("focus").unwrap()
+    // ));
+
+    let handle = window_event_listener(ev::keypress, move |ev| {
+        if ev.code() == "Enter" {
+            console_log(&scan_input.get().unwrap().value());
+            scan_input.on_load(|elem| {
+                _ = elem.focus();
+                elem.set_value("");
+                // somehow add event listener to always focus the element
+            });
+        }
+    });
+
+    return view! {
+        <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
+        node_ref=scan_input
+        // on:submit=on_submit
+        />
+    };
 }
 
 #[component]
