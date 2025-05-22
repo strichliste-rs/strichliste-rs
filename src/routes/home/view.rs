@@ -59,48 +59,15 @@ pub fn View() -> impl IntoView {
 pub fn InvisibleScanInput() -> impl IntoView {
     let scan_input: NodeRef<html::Input> = NodeRef::new();
 
-    // let on_submit = move |ev: SubmitEvent| {
-    //     ev.prevent_default();
-
-    //     let input = scan_input.get().expect("Scan input should be mounted!");
-
-    //     let input = input.value();
-
-    //     console_log(&format!("Found scan input: {}", input));
-    // };
-
-    // let barcode_elem = use_document()
-    //     .as_ref()
-    //     .unwrap()
-    //     .get_element_by_id("invisible_barcode_input")
-    //     .unwrap();
-
-    // let b1 = barcode_elem.clone();
-
-    // let result = barcode_elem.add_event_listener_with_callback("blur", a.as_ref().unchecked_ref());
-
-    // if result.is_err() {
-    //     console_error(&format!(
-    //         "Failed to add event listener to input: {:#?}",
-    //         result.err().unwrap()
-    //     ));
-    // }
-
-    // console_log(&format!(
-    //     "barcode input is focused: {}",
-    //     barcode_elem.get_attribute("focus").unwrap()
-    // ));
-
     let handle = window_event_listener(ev::keypress, move |ev| {
+        _ = scan_input.get_untracked().unwrap().focus();
         if ev.code() == "Enter" {
             console_log(&scan_input.get().unwrap().value());
-            scan_input.on_load(|elem| {
-                _ = elem.focus();
-                elem.set_value("");
-                // somehow add event listener to always focus the element
-            });
+            scan_input.write_untracked().as_ref().unwrap().set_value("");
         }
     });
+
+    on_cleanup(move || handle.remove());
 
     return view! {
         <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
