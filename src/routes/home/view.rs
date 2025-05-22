@@ -33,6 +33,20 @@ pub async fn get_users() -> Result<Vec<User>, ServerFnError> {
     Ok(users)
 }
 
+#[server]
+pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>, ServerFnError> {
+    use crate::backend::ServerState;
+    let state: ServerState = expect_context();
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let user = User::get_by_card_number(&*state.db.lock().await, barcode_string).await;
+
+    Ok(None)
+}
+
 #[component]
 pub fn View() -> impl IntoView {
     view! {
