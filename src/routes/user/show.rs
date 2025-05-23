@@ -189,8 +189,8 @@ pub fn ShowUser() -> impl IntoView {
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
                                         // left side (show user statistics)
-                                        <p class="text-center text-white text-lg">{user.nickname.clone()}</p>
-                                        <p class="text-center text-lg"
+                                        <p class="text-center text-white text-[2em]">{user.nickname.clone()}</p>
+                                        <p class="text-center text-[2em]"
                                             class=("text-red-500", move || read_money.get() < 0)
                                             class=("text-green-500", move ||read_money.get() >= 0)
 
@@ -255,7 +255,7 @@ fn change_money_button(
         <a
             on:click=move |_| change_money_logic(money, args.clone())
             href="#"
-            class="p-5 text-white rounded-[10px] text-center"
+            class="p-5 text-white rounded-[10px] text-center text-[1.25em]"
             class=("bg-emerald-600", move || money > 0)
             class=("bg-red-400", move || money < 0)
         >{User::calc_money(money)}"€"</a>

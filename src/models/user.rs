@@ -4,6 +4,7 @@ use std::str::FromStr;
 use {
     crate::backend::db::{DBError, DB},
     sqlx::query,
+    sqlx::query_as,
 };
 
 use serde::{Deserialize, Serialize};
@@ -90,10 +91,22 @@ impl User {
         Ok(())
     }
 
-    pub async fn get_by_card_number(db: &DB, card_number: String) -> Result<User, DBError> {
+    pub async fn get_by_card_number(db: &DB, card_number: String) -> Result<Option<User>, DBError> {
         let mut conn = db.get_conn().await?;
 
-        Ok(User::new())
+        let result = query_as::<_, User>(
+            "
+                select *
+                from Users
+                where card_number = ?
+            ",
+        )
+        .bind(card_number)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|err| DBError::new(err.to_string()))?;
+
+        Ok(result)
     }
 
     pub async fn get_all(db: &DB) -> Result<Vec<Self>, DBError> {

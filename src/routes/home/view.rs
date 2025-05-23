@@ -3,8 +3,10 @@ use leptos::{
     html,
     leptos_dom::logging::{console_error, console_log},
     prelude::*,
+    task::spawn_local,
 };
-use tracing::error;
+use leptos_router::hooks::use_navigate;
+use tracing::{error, instrument::WithSubscriber};
 
 use crate::{
     models::User,
@@ -44,7 +46,16 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
 
     let user = User::get_by_card_number(&*state.db.lock().await, barcode_string).await;
 
-    Ok(None)
+    if user.is_err() {
+        let err = user.err().unwrap();
+        error!("Could not fetch user: {}", err);
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to fetch user"));
+    }
+
+    let user = user.unwrap();
+
+    Ok(user)
 }
 
 #[component]
@@ -71,13 +82,38 @@ pub fn View() -> impl IntoView {
 
 #[component]
 pub fn InvisibleScanInput() -> impl IntoView {
-    let scan_input: NodeRef<html::Input> = NodeRef::new();
+    let scan_input_field: NodeRef<html::Input> = NodeRef::new();
 
     let handle = window_event_listener(ev::keypress, move |ev| {
-        _ = scan_input.get_untracked().unwrap().focus();
+        _ = scan_input_field.get_untracked().unwrap().focus();
         if ev.code() == "Enter" {
-            console_log(&scan_input.get().unwrap().value());
-            scan_input.write_untracked().as_ref().unwrap().set_value("");
+            let scan_input = scan_input_field.get().unwrap().value();
+            scan_input_field
+                .write_untracked()
+                .as_ref()
+                .unwrap()
+                .set_value("");
+
+            spawn_local(async move {
+                let user = get_user_by_barcode(scan_input.clone()).await;
+                if user.is_err() {
+                    console_log(&format!(
+                        "Failed to fetch user by barcode: {}",
+                        user.err().unwrap()
+                    ));
+                    return;
+                }
+
+                let user = user.unwrap();
+                if user.is_none() {
+                    console_log(&format!("There is no user with barcode \"{}\"", scan_input));
+                    return;
+                }
+
+                let user = user.unwrap();
+                let navigate = use_navigate();
+                navigate(&format!("/user/{}", user.id.unwrap()), Default::default());
+            });
         }
     });
 
@@ -85,7 +121,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
 
     return view! {
         <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
-        node_ref=scan_input
+        node_ref=scan_input_field
         // on:submit=on_submit
         />
     };
