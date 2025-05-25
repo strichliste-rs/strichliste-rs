@@ -1,4 +1,3 @@
 pub use show::*;
 
-pub mod settings;
 mod show;

@@ -2,7 +2,7 @@
 create table Users (
     id integer not null,
     nickname varchar(255) not null unique,
-    card_number varchar(255),
+    card_number varchar(255) unique,
     money integer not null,
 
     primary key (id)

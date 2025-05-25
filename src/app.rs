@@ -5,7 +5,7 @@ use leptos_router::{
     path, StaticSegment,
 };
 
-use crate::routes::{self, state::FrontendStore};
+use crate::routes::{self, state::FrontendStore, user};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -49,6 +49,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/") view=routes::home::View/>
                 <Route path=path!("/create_user") view=routes::create_user::View/>
                 <Route path=path!("/user/:id") view=routes::user::ShowUser/>
+                <Route path=path!("/user/:id/settings") view=routes::user::settings::Show/>
             </Routes>
         </Router>
     }

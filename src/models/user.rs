@@ -91,7 +91,10 @@ impl User {
         Ok(())
     }
 
-    pub async fn get_by_card_number(db: &DB, card_number: String) -> Result<Option<User>, DBError> {
+    pub async fn get_by_card_number(
+        db: &DB,
+        card_number: &String,
+    ) -> Result<Option<User>, DBError> {
         let mut conn = db.get_conn().await?;
 
         let result = query_as::<_, User>(
@@ -160,6 +163,30 @@ impl User {
         .execute(&mut *conn)
         .await
         .map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn update_db(&self, db: &DB) -> Result<(), DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let id = self.id.unwrap();
+
+        _ = query!(
+            "
+                update Users
+                set
+                    nickname = ?,
+                    card_number = ?
+                where id = ?
+            ",
+            self.nickname,
+            self.card_number,
+            id
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(|err| DBError::new(err.to_string()))?;
 
         Ok(())
     }

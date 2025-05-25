@@ -1,12 +1,17 @@
+use std::{iter::Scan, str::FromStr};
+
 use leptos::{
-    ev::{self, KeyboardEvent, SubmitEvent},
+    ev::{self, blur, KeyboardEvent, SubmitEvent},
     html,
     leptos_dom::logging::{console_error, console_log},
     prelude::*,
+    reactive::signal,
+    tachys::{dom::event_target, html::property::IntoProperty},
     task::spawn_local,
 };
 use leptos_router::hooks::use_navigate;
-use tracing::{error, instrument::WithSubscriber};
+use leptos_use::{core::IntoElementMaybeSignal, use_event_listener};
+use tracing::{debug, error, instrument::WithSubscriber};
 
 use crate::{
     models::User,
@@ -44,7 +49,13 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
 
     let response_opts: ResponseOptions = expect_context();
 
-    let user = User::get_by_card_number(&*state.db.lock().await, barcode_string).await;
+    debug!("Attempting to fetch a user by barcode '{}'", barcode_string);
+
+    if barcode_string.len() == 0 {
+        return Ok(None);
+    }
+
+    let user = User::get_by_card_number(&*state.db.lock().await, &barcode_string).await;
 
     if user.is_err() {
         let err = user.err().unwrap();
@@ -82,17 +93,16 @@ pub fn View() -> impl IntoView {
 
 #[component]
 pub fn InvisibleScanInput() -> impl IntoView {
-    let scan_input_field: NodeRef<html::Input> = NodeRef::new();
+    let input_signal = RwSignal::new(String::new());
 
-    let handle = window_event_listener(ev::keypress, move |ev| {
-        _ = scan_input_field.get_untracked().unwrap().focus();
-        if ev.code() == "Enter" {
-            let scan_input = scan_input_field.get().unwrap().value();
-            scan_input_field
-                .write_untracked()
-                .as_ref()
-                .unwrap()
-                .set_value("");
+    let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
+        "Enter" => {
+            let scan_input = input_signal.read_untracked().clone();
+            input_signal.write_only().set(String::new());
+
+            if scan_input.len() == 0 {
+                return;
+            }
 
             spawn_local(async move {
                 let user = get_user_by_barcode(scan_input.clone()).await;
@@ -115,15 +125,34 @@ pub fn InvisibleScanInput() -> impl IntoView {
                 navigate(&format!("/user/{}", user.id.unwrap()), Default::default());
             });
         }
+
+        _ => {
+            let mut prev = input_signal.read_untracked().clone();
+            prev.push_str(&ev.key());
+            input_signal.write_only().set(prev);
+        }
     });
 
-    on_cleanup(move || handle.remove());
+    on_cleanup(move || {
+        handle.remove();
+    });
+
+    // scan_input_field.on_load(|elem| {
+    //     _ = elem.focus();
+    // });
 
     return view! {
-        <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
-        node_ref=scan_input_field
-        // on:submit=on_submit
-        />
+        // <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
+        // node_ref=scan_input_field
+        // // on:submit=on_submit
+        // on:blur=move |_| {
+        //     console_log("input is out of focus");
+        //     if let Some(input) = scan_input_field.get() {
+        //         _ = input.focus();
+        //         console_log("input element should be in focus");
+        //     }
+        // }
+        // />
     };
 }
 
