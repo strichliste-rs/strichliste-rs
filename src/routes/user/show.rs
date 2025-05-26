@@ -8,6 +8,8 @@ use crate::
     models::{Transaction, TransactionType, User}
 ;
 
+use super::transaction_view::{ShowTransactions};
+
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
     user_id: i64,
@@ -252,6 +254,9 @@ pub fn ShowUser() -> impl IntoView {
             }
         }.into_any()
         }
+    <div class="pt-5">
+        <ShowTransactions/>
+    </div>
     }
     .into_any();
 }

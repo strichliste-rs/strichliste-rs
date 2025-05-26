@@ -80,4 +80,28 @@ impl Transaction {
 
         Ok(())
     }
+
+    pub async fn get_user_transactions(
+        db: &DB,
+        user_id: i64,
+        limit: i64,
+    ) -> Result<Vec<Transaction>, DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let result = sqlx::query_as::<_, Transaction>(
+            "
+                select *
+                from Transactions
+                where user_id = ?
+                limit ?
+            ",
+        )
+        .bind(user_id)
+        .bind(limit)
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(result)
+    }
 }

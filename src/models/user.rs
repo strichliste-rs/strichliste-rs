@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use super::Transaction;
+
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
@@ -189,5 +191,9 @@ impl User {
         .map_err(|err| DBError::new(err.to_string()))?;
 
         Ok(())
+    }
+
+    pub async fn get_transactions(&self, db: &DB, limit: i64) -> Result<Vec<Transaction>, DBError> {
+        Transaction::get_user_transactions(db, self.id.unwrap(), limit).await
     }
 }
