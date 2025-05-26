@@ -1,33 +1,17 @@
-use leptos::prelude::*;
+use leptos::{prelude::*, server_fn::codec::IntoRes};
 use leptos_router::hooks::use_params_map;
 use tracing::{error, warn};
 
 use crate::{models::User, routes::user::get_user};
 
-#[server]
-pub async fn update_user(id: i64, nickname: String, card_number: String,) -> Result<(), ServerFnError> {
+#[server] pub async fn update_user(id: i64, nickname: String, card_number: String,) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
+    use leptos_axum::redirect;
 
     let response_opts: ResponseOptions = expect_context();
-
-    let card_number_exists = User::get_by_card_number(&*state.db.lock().await, &card_number).await;
-
-    if card_number_exists.is_err() {
-        error!("Failed to check for existence of the card number: {}", card_number_exists.err().unwrap());
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to check if the card number is already used!"));
-    }
-
-    let card_number_exists = card_number_exists.unwrap();
-
-    if card_number_exists.is_some() {
-        warn!("The card number '{}' is already used!", card_number);
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new("The card number is already used!"));
-    }
 
     let user = get_user(id).await;
 
@@ -47,6 +31,25 @@ pub async fn update_user(id: i64, nickname: String, card_number: String,) -> Res
 
     let mut user = user.unwrap();
 
+    let card_number_exists = User::get_by_card_number(&*state.db.lock().await, &card_number).await;
+
+    if card_number_exists.is_err() {
+        error!("Failed to check for existence of the card number: {}", card_number_exists.err().unwrap());
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to check if the card number is already used!"));
+    }
+
+    let card_number_exists = card_number_exists.unwrap();
+
+    if card_number_exists.is_some() {
+        let user = card_number_exists.unwrap();
+        if user.id.unwrap() != id {
+            warn!("The card number '{}' is already used!", card_number);
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new("The card number is already used!"));   
+        }
+    }
+
     user.nickname = nickname;
     user.card_number = card_number;
 
@@ -57,6 +60,8 @@ pub async fn update_user(id: i64, nickname: String, card_number: String,) -> Res
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new("Failed to update user!"));
     }
+
+    redirect(&format!("/user/{}", id));
     
     Ok(())
 }
@@ -113,7 +118,24 @@ pub fn Show() -> impl IntoView {
 
                 let user = user.unwrap();
 
-                return view!{    
+                return view!{
+                    {
+                        move || match update_action.value().get() {
+                             Some(Err(e)) => {
+                                let msg = match e {
+                                    ServerFnError::ServerError(msg) => msg,
+                                    _ => e.to_string(),
+                                };
+
+                                
+                                return view! {<p class="p-3 bg-red-400 text-white text-center">"Failed to update user: "{msg}</p>}.into_any();
+                            },
+
+                             _ => {
+                                 view!{}.into_any()
+                             },
+                        }
+                    }
                     <ActionForm action=update_action>
                         <div class="flex flex-col items-center gap-5">
                             <div class="flex flex-col items-center">
@@ -125,7 +147,7 @@ pub fn Show() -> impl IntoView {
                                 <input class="text-[1.25em]" type="text" value={user.card_number} name="card_number"/>
                             </div>
                             <input type="hidden" value={user.id.unwrap()} name="id"/>
-                            <input class="text-white bg-emerald-700 rounded-full text-[1.25em] p-2" type="submit" value="Update user"/>
+                            <input class="text-white hover:bg-pink-700 bg-emerald-700 rounded-full text-[1.25em] p-2" type="submit" value="Update user"/>
                         </div>
                         </ActionForm>
                 }.into_any();
