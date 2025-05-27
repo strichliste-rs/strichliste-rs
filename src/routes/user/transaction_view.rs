@@ -1,8 +1,12 @@
+use std::rc::Rc;
+
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::models::{Transaction, User};
+
+use super::MoneyArgs;
 
 #[server]
 pub async fn get_user_transactions(
@@ -34,7 +38,7 @@ pub async fn get_user_transactions(
 }
 
 #[component]
-pub fn ShowTransactions() -> impl IntoView {
+pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     let params = use_params_map();
     let user_id_string = params.read_untracked().get("id").unwrap_or_default();
 
@@ -50,6 +54,8 @@ pub fn ShowTransactions() -> impl IntoView {
     let user_id = user_id.unwrap();
 
     let transaction_data = OnceResource::new(get_user_transactions(user_id, 10));
+
+    let transaction_signal = arguments.transactions;
 
     return view! {
         <Suspense
@@ -79,10 +85,11 @@ pub fn ShowTransactions() -> impl IntoView {
                 }
 
                 let transactions = transactions.unwrap();
+                transaction_signal.write_only().set(transactions);
                 return view! {
                     <div class="pl-4 text-[1.25em]">
                         {
-                             transactions.iter().map(|transaction| {
+                             transaction_signal.get().iter().map(|transaction| {
                                 format_transaction(transaction)
                             }).collect_view()           
                         }
@@ -98,8 +105,9 @@ pub fn ShowTransactions() -> impl IntoView {
 }
 
 pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
+    // <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
     return view! {
-        <div class="grid grid-cols-3 items-center border-t-8 border-gray-300">
+        <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2">
         {
             match transaction.t_type {
                 crate::models::TransactionType::DEPOSIT => view!{
@@ -107,7 +115,8 @@ pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
                         class=("text-green-500", transaction.money >= 0)
                         class=("text-red-400", transaction.money < 0)
                     >{User::calc_money(transaction.money)}</p>
-                    <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
+                    <p></p>
+                    <p class="text-white">{transaction.timestamp.to_rfc3339()}</p>
 
                 }.into_any(),
 

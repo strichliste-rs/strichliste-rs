@@ -12,10 +12,11 @@ use super::transaction_view::{ShowTransactions};
 
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
-    user_id: i64,
-    money_read: ReadSignal<i64>,
-    money_write: WriteSignal<i64>,
-    error_write: WriteSignal<String>,
+    pub user_id: i64,
+    pub money_read: ReadSignal<i64>,
+    pub money_write: WriteSignal<i64>,
+    pub error_write: WriteSignal<String>,
+    pub transactions: RwSignal<Vec<Transaction>>,
 }
 
 #[server]
@@ -42,7 +43,7 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 }
 
 #[server]
-pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionType) -> Result<(), ServerFnError> {
+pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -94,7 +95,7 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
         return Err(ServerFnError::new(err));
     }
 
-    Ok(())
+    Ok(transaction)
 }
 
 #[component]
@@ -173,11 +174,14 @@ pub fn ShowUser() -> impl IntoView {
 
                             let (read_money, write_money) = signal(user.money);
 
+                            let transactions = RwSignal::new(Vec::new());
+
                             let m_args = MoneyArgs {
                                 user_id: user_id,
                                 money_read: read_money,
                                 money_write: write_money,
                                 error_write: error_write,
+                                transactions: transactions,
                             };
 
                             let args1 = m_args.clone();
@@ -246,6 +250,9 @@ pub fn ShowUser() -> impl IntoView {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="pt-5">
+                                    <ShowTransactions arguments=args.clone()/>
+                                </div>
                             }.into_any()
                         }
                     }
@@ -254,9 +261,6 @@ pub fn ShowUser() -> impl IntoView {
             }
         }.into_any()
         }
-    <div class="pt-5">
-        <ShowTransactions/>
-    </div>
     }
     .into_any();
 }
@@ -288,19 +292,22 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
     let money_write = args.money_write;
     let money_read = args.money_read;
     let error_write = args.error_write;
+    let transactions = args.transactions;
 
-    change_money_logic_raw(money, user_id, money_write, money_read, error_write);
+    change_money_logic_raw(money, user_id, money_write, money_read, error_write, transactions);
 }
 
-fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64>, money_read: ReadSignal<i64>, error_write: WriteSignal<String>){
+fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64>, money_read: ReadSignal<i64>, error_write: WriteSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
-        let mut t_type = if money > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
+        let t_type = if money > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
         
         let resp = create_transaction(user_id, money, t_type).await;
 
         if resp.is_ok() {
             money_write.set(money_read.get_untracked() + money);
-            error_write.set(String::new())
+            error_write.set(String::new());
+            let new_transaction = resp.unwrap();
+            transaction_signal.write().push(new_transaction);
         } else {
             let error = resp.err().unwrap().to_string();
 
@@ -375,7 +382,7 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
         final_cents = -final_cents;
     }
 
-    change_money_logic_raw(final_cents, args.user_id, args.money_write, args.money_read, args.error_write);
+    change_money_logic_raw(final_cents, args.user_id, args.money_write, args.money_read, args.error_write, args.transactions);
 
     value.set(String::new());    
 }
