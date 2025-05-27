@@ -307,7 +307,7 @@ fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64
             money_write.set(money_read.get_untracked() + money);
             error_write.set(String::new());
             let new_transaction = resp.unwrap();
-            transaction_signal.write().push(new_transaction);
+            transaction_signal.write().insert(0, new_transaction);
         } else {
             let error = resp.err().unwrap().to_string();
 

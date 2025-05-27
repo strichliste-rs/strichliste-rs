@@ -84,8 +84,8 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     }.into_any();
                 }
 
-                let transactions = transactions.unwrap();
-                transaction_signal.write_only().set(transactions);
+                let mut transactions = transactions.unwrap();
+                transaction_signal.write_untracked().append(&mut transactions);
                 return view! {
                     <div class="pl-4 text-[1.25em]">
                         {
