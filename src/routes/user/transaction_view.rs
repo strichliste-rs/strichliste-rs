@@ -1,10 +1,11 @@
 use std::rc::Rc;
 
+use chrono::{DateTime, Local};
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
-use crate::models::{Transaction, User};
+use crate::models::{Transaction, TransactionType, User};
 
 use super::MoneyArgs;
 
@@ -85,6 +86,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 }
 
                 let mut transactions = transactions.unwrap();
+                transactions.reverse(); // place new transaction at the top
                 transaction_signal.write_untracked().append(&mut transactions);
                 return view! {
                     <div class="pl-4 text-[1.25em]">
@@ -110,13 +112,13 @@ pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
         <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2">
         {
             match transaction.t_type {
-                crate::models::TransactionType::DEPOSIT => view!{
+                TransactionType::DEPOSIT | TransactionType::WITHDRAW => view!{
                     <p class=""
                         class=("text-green-500", transaction.money >= 0)
                         class=("text-red-400", transaction.money < 0)
-                    >{User::calc_money(transaction.money)}</p>
+                    >{User::calc_money(transaction.money)}"€"</p>
                     <p></p>
-                    <p class="text-white">{transaction.timestamp.to_rfc3339()}</p>
+                    <p class="text-white">{format!("{}", transaction.timestamp.with_timezone(&Local).format("%d.%m.%Y %H:%M:%S"))}</p>
 
                 }.into_any(),
 
