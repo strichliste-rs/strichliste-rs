@@ -80,7 +80,7 @@ pub fn ShowTransactions() -> impl IntoView {
 
                 let transactions = transactions.unwrap();
                 return view! {
-                    <div class="bg-gray-500">
+                    <div class="pl-4 text-[1.25em]">
                         {
                              transactions.iter().map(|transaction| {
                                 format_transaction(transaction)
@@ -99,13 +99,16 @@ pub fn ShowTransactions() -> impl IntoView {
 
 pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
     return view! {
-        <div class="grid grid-cols-3 items-center">
+        <div class="grid grid-cols-3 items-center border-t-8 border-gray-300">
         {
             match transaction.t_type {
                 crate::models::TransactionType::DEPOSIT => view!{
-                    <p class="pl-2">"Einzahlung"</p>
-                    <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#1C274C" style="--darkreader-inline-fill: var(--darkreader-background-1c274c, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-1c274c, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
-                    <p class="text-emerald-700">{User::calc_money(transaction.money)}</p>
+                    <p class=""
+                        class=("text-green-500", transaction.money >= 0)
+                        class=("text-red-400", transaction.money < 0)
+                    >{User::calc_money(transaction.money)}</p>
+                    <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
+
                 }.into_any(),
 
                 _ => view!{}.into_any(),
