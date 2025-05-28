@@ -84,7 +84,6 @@ pub fn Show() -> impl IntoView {
     let user_resource = OnceResource::new(get_user(user_id));
 
     let update_action = ServerAction::<UpdateUser>::new();
-    let result = update_action.value();
     return view! {
         <Suspense
             fallback=move ||view!{<p class="text-white text-center pt-5">"Loading User..."</p>}

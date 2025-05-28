@@ -11,6 +11,7 @@ create table Users (
 create table Transactions (
     id integer not null,
     user_id not null,
+    is_undone boolean not null default false,
     t_type text not null,
     origin_user integer,
     destination_user integer,

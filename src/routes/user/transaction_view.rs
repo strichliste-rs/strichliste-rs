@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Timelike, Utc};
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::models::{Transaction, TransactionType, User};
 
@@ -36,6 +36,15 @@ pub async fn get_user_transactions(
     let transactions = transactions.unwrap();
 
     Ok(transactions)
+}
+
+#[server]
+pub async fn undo_transaction(
+    user_id: i64,
+    transaction_id: i64,
+) -> Result<(), ServerFnError> {
+    debug!("Need to undo transaction {} for user {}", transaction_id, user_id);
+    Ok(())
 }
 
 #[component]
@@ -92,7 +101,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     <div class="pl-4 text-[1.25em]">
                         {
                              transaction_signal.get().iter().map(|transaction| {
-                                format_transaction(transaction)
+                                format_transaction(transaction, user_id)
                             }).collect_view()           
                         }
                     </div>
@@ -106,8 +115,13 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     .into_any();
 }
 
-pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
+pub fn format_transaction(transaction: &Transaction, user_id: i64) -> impl IntoView {
     // <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
+    let now: DateTime<Utc> = Utc::now();
+    let diff = now - transaction.timestamp;
+
+    let undo_action = ServerAction::<UndoTransaction>::new();
+    let transaction_id = transaction.id.unwrap();
     return view! {
         <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2">
         {
@@ -118,11 +132,26 @@ pub fn format_transaction(transaction: &Transaction) -> impl IntoView {
                         class=("text-red-400", transaction.money < 0)
                     >{User::calc_money(transaction.money)}"€"</p>
                     <p></p>
-                    <p class="text-white">{format!("{}", transaction.timestamp.with_timezone(&Local).format("%d.%m.%Y %H:%M:%S"))}</p>
 
                 }.into_any(),
 
                 _ => view!{}.into_any(),
+            }
+        }
+        {
+            // grace period for undoing transactions
+            if diff.num_minutes() > 2 {
+                view!{
+                    <p class="text-white">{format!("{}", transaction.timestamp.with_timezone(&Local).format("%d.%m.%Y %H:%M:%S"))}</p>
+                }.into_any()
+            } else {
+                view! {
+                    <ActionForm action=undo_action>
+                        <input type="hidden" name="user_id" value={user_id}/>
+                        <input type="hidden" name="transaction_id" value={transaction_id}/>
+                        <input type="submit" class="text-white" value="Undo"/>
+                    </ActionForm>
+                }.into_any()
             }
         }
         </div>

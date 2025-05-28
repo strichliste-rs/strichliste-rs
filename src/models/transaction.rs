@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 pub struct Transaction {
     pub id: Option<i64>,
     pub user_id: i64,
+    pub is_undone: bool,
     pub t_type: TransactionType,
     pub origin_user: Option<i64>,
     pub destination_user: Option<i64>,
@@ -41,6 +42,7 @@ impl Transaction {
         Self {
             id: None,
             user_id: 0,
+            is_undone: false,
             t_type: TransactionType::UNKNOWN,
             origin_user: None,
             destination_user: None,
@@ -59,13 +61,14 @@ impl Transaction {
         let result = query!(
             "
                 insert into Transactions
-                    (user_id, t_type, origin_user, destination_user, money, description, timestamp)
+                    (user_id, t_type, is_undone, origin_user, destination_user, money, description, timestamp)
                 values
-                    (?, ?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?, ?)
                 returning id
             ",
             self.user_id,
             self.t_type,
+            self.is_undone,
             self.origin_user,
             self.destination_user,
             self.money,

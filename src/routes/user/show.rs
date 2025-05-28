@@ -230,7 +230,7 @@ pub fn ShowUser() -> impl IntoView {
                                                         "-"
                                                     </div>
                                                 </a>
-                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben" bind:value=custom_money_change/>
+                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben" bind:value=custom_money_change value="00.00"/>
                                                 <a href="#" class="bg-emerald-600 text-white rounded-full p-5" on:click=move |_| on_custom_money_button_click(true, custom_money_change, &args2)>
                                                     <div class="pad-5 text-center">
                                                         "+"
