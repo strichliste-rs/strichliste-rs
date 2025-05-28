@@ -107,4 +107,45 @@ impl Transaction {
 
         Ok(result)
     }
+
+    pub async fn get_by_id(db: &DB, id: i64) -> Result<Option<Transaction>, DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let result = sqlx::query_as::<_, Transaction>(
+            "
+                select *
+                from Transactions
+                where id = ?
+            ",
+        )
+        .bind(id)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(result)
+    }
+
+    /// Will update every field in the db except 'id' and 'user_id'
+    pub async fn update(&self, db: &DB) -> Result<(), DBError> {
+        let mut conn = db.get_conn().await?;
+        let id = self.id.unwrap();
+        let result = query!(
+            "
+                update Transactions
+                set is_undone = ?, t_type = ?, origin_user = ?, destination_user = ?, money = ?, description = ?, timestamp = ?
+                where id = ?
+            ",
+            self.is_undone,
+            self.t_type,
+            self.origin_user,
+            self.destination_user,
+            self.money,
+            self.description,
+            self.timestamp,
+            id
+        ).execute(&mut *conn).await.map_err(|e| DBError::new(e.to_string()))?;
+
+        Ok(())
+    }
 }
