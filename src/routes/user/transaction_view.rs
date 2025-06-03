@@ -5,7 +5,10 @@ use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, info, warn};
 
-use crate::{models::{Transaction, TransactionType, User}, routes::user::get_user};
+use crate::{
+    models::{Transaction, TransactionType, User},
+    routes::user::get_user,
+};
 
 use super::MoneyArgs;
 
@@ -39,10 +42,7 @@ pub async fn get_user_transactions(
 }
 
 #[server]
-pub async fn undo_transaction(
-    user_id: i64,
-    transaction_id: i64,
-) -> Result<(), ServerFnError> {
+pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -50,7 +50,10 @@ pub async fn undo_transaction(
 
     let response_opts: ResponseOptions = expect_context();
 
-    debug!("Need to undo transaction {} for user {}", transaction_id, user_id);
+    debug!(
+        "Need to undo transaction {} for user {}",
+        transaction_id, user_id
+    );
     let user = get_user(user_id).await?;
     if user.is_none() {
         warn!("A user with id '{}' does not exist!", user_id);
@@ -62,7 +65,10 @@ pub async fn undo_transaction(
     let transaction = Transaction::get_by_id(&*state.db.lock().await, transaction_id).await;
 
     if transaction.is_err() {
-        error!("Failed to fetch transaction: {}", transaction.err().unwrap());
+        error!(
+            "Failed to fetch transaction: {}",
+            transaction.err().unwrap()
+        );
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new("Failed to fetch transaction!"));
     }
@@ -88,7 +94,10 @@ pub async fn undo_transaction(
 
     let result = user.update_money(&*state.db.lock().await).await;
     if result.is_err() {
-        error!("Failed to update money from user: {}", result.err().unwrap());
+        error!(
+            "Failed to update money from user: {}",
+            result.err().unwrap()
+        );
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new("Failed to update user!"));
     }
@@ -104,12 +113,14 @@ pub async fn undo_transaction(
             error!("Failed to revert user change: {}", result.err().unwrap());
             error!("Transactions most likely out of sync with user!");
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to update transaction and failed to revert user change!"))
+            return Err(ServerFnError::new(
+                "Failed to update transaction and failed to revert user change!",
+            ));
         }
 
         info!("Reverted user change!");
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to update transaction!"))
+        return Err(ServerFnError::new("Failed to update transaction!"));
     }
 
     Ok(())
@@ -135,7 +146,8 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
     let transaction_signal = arguments.transactions;
 
-    let error_write = arguments.error_write;
+    let error_signal = arguments.error;
+    let money_signal = arguments.money;
 
     return view! {
         <Suspense
@@ -165,15 +177,31 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 }
 
                 let mut transactions = transactions.unwrap();
-                transactions.reverse(); // place new transaction at the top
+                transactions.sort_by(|a, b| {
+                    b.timestamp.cmp(&a.timestamp)
+                });
+                for mut transaction in transactions.iter_mut() {
+                    transaction.populate_signal();
+                    if transaction.is_undone_signal.is_none() {
+                        console_log("Failed to populate signal!");
+                    }
+                }
                 transaction_signal.write_untracked().append(&mut transactions);
                 return view! {
                     <div class="pl-4 text-[1.25em]">
-                        {
-                             transaction_signal.get().iter().map(|transaction| {
-                                format_transaction(transaction, user_id, error_write)
-                            }).collect_view()           
-                        }
+                        <For
+                            each=move || transaction_signal.get()
+                            key=|transaction| (transaction.id.unwrap(), transaction.is_undone_signal.unwrap().get())
+                            let(child)
+                        >
+                            {format_transaction(&child, user_id, error_signal, money_signal)}
+                        </For>
+
+                        // {
+                        //      transaction_signal.get().iter().map(|transaction| {
+                        //         format_transaction(transaction, user_id, error_write)
+                        //     }).collect_view()           
+                        // }
                     </div>
                 }
                 .into_any();
@@ -185,20 +213,34 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     .into_any();
 }
 
-pub fn format_transaction(transaction: &Transaction, user_id: i64, error_write: WriteSignal<String>) -> impl IntoView {
+pub fn format_transaction(
+    transaction: &Transaction,
+    user_id: i64,
+    error_write: RwSignal<String>,
+    money_signal: RwSignal<i64>,
+) -> impl IntoView {
     // <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
     let now: DateTime<Utc> = Utc::now();
     let diff = now - transaction.timestamp;
 
     let undo_action = ServerAction::<UndoTransaction>::new();
     let transaction_id = transaction.id.unwrap();
-    let (is_undone, set_undone) = signal(transaction.is_undone);
 
-    let date_string = format!("{}", transaction.timestamp.with_timezone(&Local).format("%d.%m.%Y %H:%M:%S"));
-    
+    let date_string = format!(
+        "{}",
+        transaction
+            .timestamp
+            .with_timezone(&Local)
+            .format("%d.%m.%Y %H:%M:%S")
+    );
+
+    let undo_signal = transaction.is_undone_signal.unwrap();
+
+    let money = transaction.money;
+
     return view! {
         <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2 text-white"
-            class=("line-through", is_undone.get())
+            class=("line-through", undo_signal.get())
         >
         {
             match transaction.t_type {
@@ -215,7 +257,7 @@ pub fn format_transaction(transaction: &Transaction, user_id: i64, error_write: 
             }
         }
         {
-            move || match is_undone.get() {
+            move || match undo_signal.get() {
                 true => {
                     console_log("Re-rendering date");
                     view!{
@@ -223,7 +265,7 @@ pub fn format_transaction(transaction: &Transaction, user_id: i64, error_write: 
                     }.into_any()
                 },
                 false => {
-                    
+
                     // grace period for undoing transactions
                     // if transaction is already undone, only show the date regardless of grace period
                     if diff.num_minutes() > 2 {
@@ -243,13 +285,14 @@ pub fn format_transaction(transaction: &Transaction, user_id: i64, error_write: 
             }
         }
         {
-            
+
             move || match undo_action.value().get() {
                     None => {},
                     Some(response) => {
                         match response {
                             Ok(_) => {
-                                set_undone.set(true);
+                                undo_signal.set(true);
+                                money_signal.update(|value| *value = *value - money);
                                 console_log("Set signal to true");
                                 error_write.set(String::new());
                             },

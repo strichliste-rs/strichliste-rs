@@ -13,9 +13,8 @@ use super::transaction_view::{ShowTransactions};
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
     pub user_id: i64,
-    pub money_read: ReadSignal<i64>,
-    pub money_write: WriteSignal<i64>,
-    pub error_write: WriteSignal<String>,
+    pub money: RwSignal<i64>,
+    pub error: RwSignal<String>,
     pub transactions: RwSignal<Vec<Transaction>>,
 }
 
@@ -116,12 +115,12 @@ pub fn ShowUser() -> impl IntoView {
 
     let user_resource = OnceResource::new(get_user(user_id));
 
-    let (error_read, error_write) = signal(String::new());
+    let error_signal = RwSignal::new(String::new());
 
     return view! {
         {
             move || {
-                let error = error_read.get();
+                let error = error_signal.get();
 
                 if error.len() != 0 {
                     view! {
@@ -172,15 +171,14 @@ pub fn ShowUser() -> impl IntoView {
 
                             let user = user.unwrap();
 
-                            let (read_money, write_money) = signal(user.money);
+                            let money_signal = RwSignal::new(user.money);
 
                             let transactions = RwSignal::new(Vec::new());
 
                             let m_args = MoneyArgs {
                                 user_id: user_id,
-                                money_read: read_money,
-                                money_write: write_money,
-                                error_write: error_write,
+                                money: money_signal,
+                                error: error_signal,
                                 transactions: transactions,
                             };
 
@@ -199,10 +197,10 @@ pub fn ShowUser() -> impl IntoView {
                                             <div class="col-span-3">
                                                 <p class="text-center text-white text-[2em]">{user.nickname.clone()}</p>
                                                 <p class="text-center text-[2em]"
-                                                    class=("text-red-500", move || read_money.get() < 0)
-                                                    class=("text-green-500", move ||read_money.get() >= 0)
+                                                    class=("text-red-500", move || money_signal.get() < 0)
+                                                    class=("text-green-500", move ||money_signal.get() >= 0)
 
-                                                >{move || User::calc_money(read_money.get())}"€"</p>
+                                                >{move || User::calc_money(money_signal.get())}"€"</p>
                                                 <div class="flex place-content-evenly">
                                                 </div>
                                             </div>
@@ -289,29 +287,29 @@ fn change_money_button(
 
 fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
     let user_id = args.user_id.clone();
-    let money_write = args.money_write;
-    let money_read = args.money_read;
-    let error_write = args.error_write;
+    let money_signal = args.money;
+    let error = args.error;
     let transactions = args.transactions;
 
-    change_money_logic_raw(money, user_id, money_write, money_read, error_write, transactions);
+    change_money_logic_raw(money, user_id, money_signal, error, transactions);
 }
 
-fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64>, money_read: ReadSignal<i64>, error_write: WriteSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<i64>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
         let t_type = if money > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
         
         let resp = create_transaction(user_id, money, t_type).await;
 
         if resp.is_ok() {
-            money_write.set(money_read.get_untracked() + money);
-            error_write.set(String::new());
-            let new_transaction = resp.unwrap();
+            money_signal.set(money_signal.get_untracked() + money);
+            error_signal.set(String::new());
+            let mut new_transaction = resp.unwrap();
+            new_transaction.populate_signal();
             transaction_signal.write().insert(0, new_transaction);
         } else {
             let error = resp.err().unwrap().to_string();
 
-            error_write.set(error);
+            error_signal.set(error);
 
         }
     })
@@ -320,8 +318,8 @@ fn change_money_logic_raw(money: i64, user_id: i64, money_write: WriteSignal<i64
 fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs){
     let string = value.get_untracked();
 
-    let error_write = args.error_write;
-    error_write.set(String::new());
+    let error_signal = args.error;
+    error_signal.set(String::new());
 
     if string.len() == 0 {
         return;
@@ -341,12 +339,12 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     }
 
     if euros.len() == 0 {
-        error_write.set("Failed to parse euros".to_string());
+        error_signal.set("Failed to parse euros".to_string());
         return;
     }
 
     if cents.len() == 0 {
-        error_write.set("Failed to parse cents".to_string());
+        error_signal.set("Failed to parse cents".to_string());
         return;
     }
 
@@ -360,14 +358,14 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
 
     let real_euros = euros.parse::<i64>();
     if real_euros.is_err() {
-        error_write.set(format!("Failed to parse euros: {}", euros));
+        error_signal.set(format!("Failed to parse euros: {}", euros));
         return;
     }
 
     let real_cents = cents.parse::<i64>();
 
     if real_cents.is_err() {
-        error_write.set(format!("Failed to parse cents: {}", cents));
+        error_signal.set(format!("Failed to parse cents: {}", cents));
         return;
     }
 
@@ -382,7 +380,7 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
         final_cents = -final_cents;
     }
 
-    change_money_logic_raw(final_cents, args.user_id, args.money_write, args.money_read, args.error_write, args.transactions);
+    change_money_logic_raw(final_cents, args.user_id, args.money, args.error, args.transactions);
 
     value.set(String::new());    
 }

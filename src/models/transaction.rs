@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use chrono::{DateTime, Local, Utc};
+use leptos::prelude::RwSignal;
 
 #[cfg(feature = "ssr")]
 use {
@@ -35,6 +36,8 @@ pub struct Transaction {
     pub money: i64,
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
+    #[cfg_attr(feature = "ssr", sqlx(skip))]
+    pub is_undone_signal: Option<RwSignal<bool>>,
 }
 
 impl Transaction {
@@ -49,7 +52,12 @@ impl Transaction {
             money: 0,
             description: None,
             timestamp: Local::now().to_utc(),
+            is_undone_signal: None,
         }
+    }
+
+    pub fn populate_signal(&mut self) {
+        self.is_undone_signal = Some(RwSignal::new(self.is_undone))
     }
 }
 
@@ -96,6 +104,7 @@ impl Transaction {
                 select *
                 from Transactions
                 where user_id = ?
+                order by timestamp desc
                 limit ?
             ",
         )
