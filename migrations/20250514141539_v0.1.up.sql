@@ -40,11 +40,10 @@ create Table Articles (
 );
 
 create Table ArticleBarcodes (
-    id integer not null,
     article_id integer not null,
-    barcode text not null unique,
+    barcode_content text not null unique,
 
-    primary key (id),
+    primary key (barcode_content),
     foreign key (article_id)
         references Articles(id)
 );

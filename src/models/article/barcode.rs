@@ -1,0 +1,16 @@
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Barcode(String);
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
+pub struct BarcodeDB {
+    article_id: i64,
+    barcode_content: String,
+}
+
+impl From<BarcodeDB> for Barcode {
+    fn from(value: BarcodeDB) -> Self {
+        Self(value.barcode_content)
+    }
+}

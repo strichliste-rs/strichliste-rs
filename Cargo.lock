@@ -2867,6 +2867,8 @@ dependencies = [
  "chrono",
  "clap",
  "console_error_panic_hook",
+ "futures",
+ "itertools",
  "leptos",
  "leptos-use",
  "leptos_axum",
