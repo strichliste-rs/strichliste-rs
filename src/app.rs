@@ -1,4 +1,4 @@
-use leptos::prelude::*;
+use leptos::{html::article, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
@@ -50,6 +50,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/create_user") view=routes::create_user::View/>
                 <Route path=path!("/user/:id") view=routes::user::ShowUser/>
                 <Route path=path!("/user/:id/settings") view=routes::user::settings::Show/>
+                <Route path=path!("/articles") view=routes::articles::View/>
             </Routes>
         </Router>
     }

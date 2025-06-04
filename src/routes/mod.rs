@@ -1,3 +1,4 @@
+pub mod articles;
 pub mod create_user;
 pub mod home;
 pub mod navbar;

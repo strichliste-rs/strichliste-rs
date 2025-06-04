@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
+use chrono::Utc;
 use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::
-    models::{Transaction, TransactionType, User}
+    models::{Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}
 ;
 
 use super::transaction_view::{ShowTransactions};
@@ -42,7 +43,7 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 }
 
 #[server]
-pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
+pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionTypeDB) -> Result<TransactionDB, ServerFnError> {
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -50,11 +51,6 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
     let state: ServerState = expect_context();
 
     let response_opts: ResponseOptions = expect_context();
-
-    if transaction_type == TransactionType::UNKNOWN {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new("Bad transaction type given!"));
-    }
 
     let user = get_user(user_id).await?;
 
@@ -66,11 +62,16 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
         )));
     }
 
-    let mut transaction = Transaction::new();
-
-    transaction.t_type = transaction_type;
-    transaction.money = money_diff;
-    transaction.user_id = user_id;
+    let mut transaction = TransactionDB {
+        id: None,
+        is_undone: false,
+        t_type: transaction_type,
+        t_type_data: None,
+        description: None,
+        timestamp: Utc::now(),
+        money: money_diff,
+        user_id,
+    };
 
     let result = transaction.add_to_db(&*state.db.lock().await).await;
 
@@ -173,7 +174,7 @@ pub fn ShowUser() -> impl IntoView {
 
                             let money_signal = RwSignal::new(user.money);
 
-                            let transactions = RwSignal::new(Vec::new());
+                            let transactions = RwSignal::new(Vec::<Transaction>::new());
 
                             let m_args = MoneyArgs {
                                 user_id: user_id,
@@ -296,7 +297,7 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
 
 fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<i64>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
-        let t_type = if money > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
+        let t_type = if money > 0 { TransactionTypeDB::DEPOSIT } else { TransactionTypeDB::WITHDRAW };
         
         let resp = create_transaction(user_id, money, t_type).await;
 
@@ -304,8 +305,7 @@ fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<i64>,
             money_signal.set(money_signal.get_untracked() + money);
             error_signal.set(String::new());
             let mut new_transaction = resp.unwrap();
-            new_transaction.populate_signal();
-            transaction_signal.write().insert(0, new_transaction);
+            transaction_signal.write().insert(0, new_transaction.into());
         } else {
             let error = resp.err().unwrap().to_string();
 

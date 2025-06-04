@@ -1,6 +1,6 @@
 use leptos::{prelude::*, server_fn::codec::IntoRes};
 use leptos_router::hooks::use_params_map;
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 
 use crate::{models::User, routes::user::get_user};
 
@@ -51,7 +51,12 @@ use crate::{models::User, routes::user::get_user};
     }
 
     user.nickname = nickname;
-    user.card_number = card_number;
+    user.card_number = match card_number.len() {
+        0 => None,
+        _ => Some(card_number)
+    };
+
+    debug!("Changing card number for user '{}' to '{:?}'", user.id.unwrap(), user.card_number);
 
     let result = user.update_db(&*state.db.lock().await).await;
 

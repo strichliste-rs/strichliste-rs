@@ -3,9 +3,8 @@ use std::str::FromStr;
 
 use sqlx::{
     pool::PoolConnection,
-    query, query_as,
     sqlite::{SqliteConnectOptions, SqlitePool},
-    Sqlite,
+    Sqlite, Transaction,
 };
 use tracing::info;
 
@@ -22,8 +21,10 @@ fn convert_to_string<T: ToString>(some_option: Option<T>) -> String {
 pub struct DBError(String);
 
 impl DBError {
-    pub fn new(error: String) -> Self {
-        DBError { 0: error }
+    pub fn new(error: impl ToString) -> Self {
+        DBError {
+            0: error.to_string(),
+        }
     }
 }
 
@@ -65,6 +66,10 @@ impl DB {
             .acquire()
             .await
             .map_err(|e| DBError::new(e.to_string()))
+    }
+
+    pub async fn get_conn_transaction(&self) -> Result<Transaction<Sqlite>, DBError> {
+        self.pool.begin().await.map_err(|e| DBError::new(e))
     }
 
     async fn setup(&self) -> Option<DBError> {

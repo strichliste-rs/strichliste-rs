@@ -14,12 +14,12 @@ use leptos_use::{core::IntoElementMaybeSignal, use_event_listener};
 use tracing::{debug, error, instrument::WithSubscriber};
 
 use crate::{
-    models::User,
+    models::{User, UserDB},
     routes::state::{FrontendStore, FrontendStoreStoreFields},
 };
 
 #[server]
-pub async fn get_users() -> Result<Vec<User>, ServerFnError> {
+pub async fn get_users() -> Result<Vec<UserDB>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -204,7 +204,7 @@ pub fn ShowUsers() -> impl IntoView {
                                 let id = user.id.clone();
 
                                 view!{
-                                    <a href=format!("/user/{}", id.unwrap())>
+                                    <a href=format!("/user/{}", id)>
                                         <UserPreview user/>
                                     </a>
                                 }
@@ -221,14 +221,14 @@ pub fn ShowUsers() -> impl IntoView {
 }
 
 #[component]
-pub fn UserPreview(user: User) -> impl IntoView {
+pub fn UserPreview(user: UserDB) -> impl IntoView {
     view! {
         <div class="flex flex-col bg-[#2e3d4d] gap-2 rounded-[10px] py-2">
             <p class="text-center text-white">{user.nickname.clone()}</p>
             <p class="text-center"
                 class=("text-red-500", move || {user.money < 0})
                 class=("text-green-500", move ||{user.money >= 0})
-            >{user.get_money()}"€"</p>
+            >{User::calc_money(user.money)}"€"</p>
         </div>
     }
 }

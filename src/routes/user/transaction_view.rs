@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    models::{Transaction, TransactionType, User},
+    models::{Transaction, TransactionDB, TransactionType, User},
     routes::user::get_user,
 };
 
@@ -16,7 +16,7 @@ use super::MoneyArgs;
 pub async fn get_user_transactions(
     user_id: i64,
     limit: i64,
-) -> Result<Vec<Transaction>, ServerFnError> {
+) -> Result<Vec<TransactionDB>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -25,7 +25,7 @@ pub async fn get_user_transactions(
     let response_opts: ResponseOptions = expect_context();
 
     let transactions =
-        Transaction::get_user_transactions(&*state.db.lock().await, user_id, limit).await;
+        TransactionDB::get_user_transactions(&*state.db.lock().await, user_id, limit).await;
 
     if transactions.is_err() {
         error!(
@@ -62,7 +62,7 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
     }
     let mut user = user.unwrap();
 
-    let transaction = Transaction::get_by_id(&*state.db.lock().await, transaction_id).await;
+    let transaction = TransactionDB::get_by_id(&*state.db.lock().await, transaction_id).await;
 
     if transaction.is_err() {
         error!(
@@ -144,7 +144,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
     let transaction_data = OnceResource::new(get_user_transactions(user_id, 10));
 
-    let transaction_signal = arguments.transactions;
+    let transaction_signal: RwSignal<Vec<Transaction>> = arguments.transactions;
 
     let error_signal = arguments.error;
     let money_signal = arguments.money;
@@ -180,18 +180,12 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 transactions.sort_by(|a, b| {
                     b.timestamp.cmp(&a.timestamp)
                 });
-                for mut transaction in transactions.iter_mut() {
-                    transaction.populate_signal();
-                    if transaction.is_undone_signal.is_none() {
-                        console_log("Failed to populate signal!");
-                    }
-                }
-                transaction_signal.write_untracked().append(&mut transactions);
+                transaction_signal.write_untracked().append(&mut transactions.into_iter().map(|e| -> Transaction { e.into()}).collect::<Vec<Transaction>>());
                 return view! {
                     <div class="pl-4 text-[1.25em]">
                         <For
                             each=move || transaction_signal.get()
-                            key=|transaction| (transaction.id.unwrap(), transaction.is_undone_signal.unwrap().get())
+                            key=|transaction| (transaction.id.unwrap(), transaction.is_undone_signal.get())
                             let(child)
                         >
                             {format_transaction(&child, user_id, error_signal, money_signal)}
@@ -234,7 +228,7 @@ pub fn format_transaction(
             .format("%d.%m.%Y %H:%M:%S")
     );
 
-    let undo_signal = transaction.is_undone_signal.unwrap();
+    let undo_signal = transaction.is_undone_signal;
 
     let money = transaction.money;
 
