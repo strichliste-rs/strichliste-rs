@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Barcode(String);
+pub struct Barcode(pub String);
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]

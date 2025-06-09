@@ -1,5 +1,7 @@
 use std::path::{self, PathBuf};
 
+use super::{ArticleSound, Barcode};
+
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
@@ -16,16 +18,6 @@ pub struct ArticleDB {
     pub name: String,
     pub cost: i64,
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
-pub struct ArticleSound {
-    pub id: i64,
-    pub name: String,
-    pub path: String,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Barcode(String);
 
 #[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
