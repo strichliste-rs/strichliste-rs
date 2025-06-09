@@ -14,7 +14,7 @@ use leptos_use::{core::IntoElementMaybeSignal, use_event_listener};
 use tracing::{debug, error, instrument::WithSubscriber};
 
 use crate::{
-    models::{User, UserDB},
+    models::{Money, User, UserDB},
     routes::state::{FrontendStore, FrontendStoreStoreFields},
 };
 
@@ -228,7 +228,7 @@ pub fn UserPreview(user: UserDB) -> impl IntoView {
             <p class="text-center"
                 class=("text-red-500", move || {user.money < 0})
                 class=("text-green-500", move ||{user.money >= 0})
-            >{User::calc_money(user.money)}"€"</p>
+            >{Money::format_eur_diff_value(user.money)}</p>
         </div>
     }
 }

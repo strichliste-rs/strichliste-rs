@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    models::{Transaction, TransactionDB, TransactionType, User},
+    models::{Money, Transaction, TransactionDB, TransactionType, User},
     routes::user::get_user,
 };
 
@@ -90,7 +90,7 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
 
     // TODO: Fix with transaction
     transaction.is_undone = true;
-    user.money -= transaction.money;
+    user.money.value -= transaction.money;
 
     let result = user.update_money(&*state.db.lock().await).await;
     if result.is_err() {
@@ -107,7 +107,7 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
     if result.is_err() {
         error!("Failed to update transaction: {}", result.err().unwrap());
         info!("Attempting to revert user change");
-        user.money += transaction.money;
+        user.money.value += transaction.money;
         let result = user.update_money(&*state.db.lock().await).await;
         if result.is_err() {
             error!("Failed to revert user change: {}", result.err().unwrap());
@@ -211,7 +211,7 @@ pub fn format_transaction(
     transaction: &Transaction,
     user_id: i64,
     error_write: RwSignal<String>,
-    money_signal: RwSignal<i64>,
+    money_signal: RwSignal<Money>,
 ) -> impl IntoView {
     // <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
     let now: DateTime<Utc> = Utc::now();
@@ -230,7 +230,7 @@ pub fn format_transaction(
 
     let undo_signal = transaction.is_undone_signal;
 
-    let money = transaction.money;
+    let money = transaction.money.value;
 
     return view! {
         <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2 text-white"
@@ -240,9 +240,9 @@ pub fn format_transaction(
             match transaction.t_type {
                 TransactionType::DEPOSIT | TransactionType::WITHDRAW => view!{
                     <p class=""
-                        class=("text-green-500", transaction.money >= 0)
-                        class=("text-red-400", transaction.money < 0)
-                    >{User::calc_money(transaction.money)}"€"</p>
+                        class=("text-green-500", transaction.money.value >= 0)
+                        class=("text-red-400", transaction.money.value < 0)
+                    >{transaction.money.format_eur_diff()}</p>
                     <p></p>
 
                 }.into_any(),
@@ -286,7 +286,7 @@ pub fn format_transaction(
                         match response {
                             Ok(_) => {
                                 undo_signal.set(true);
-                                money_signal.update(|value| *value = *value - money);
+                                money_signal.update(|value| (*value).value = value.value - money);
                                 console_log("Set signal to true");
                                 error_write.set(String::new());
                             },

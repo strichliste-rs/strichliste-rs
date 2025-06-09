@@ -3,6 +3,8 @@ use std::str::FromStr;
 use chrono::{DateTime, Local, Utc};
 use leptos::prelude::RwSignal;
 
+use super::Money;
+
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
@@ -115,7 +117,7 @@ impl From<&Transaction> for TransactionDB {
                 _ => None,
             },
             t_type: t_type.into(),
-            money: *money,
+            money: (*money).value,
             description: description.clone(),
             timestamp: *timestamp,
         }
@@ -129,7 +131,7 @@ impl Into<Transaction> for TransactionDB {
             user_id: self.user_id,
             is_undone: self.is_undone,
             t_type: (self.t_type, self.t_type_data).into(),
-            money: self.money,
+            money: self.money.into(),
             description: self.description,
             timestamp: self.timestamp,
             is_undone_signal: RwSignal::new(self.is_undone), // might fail on server
@@ -239,7 +241,7 @@ pub struct Transaction {
     pub user_id: i64,
     pub is_undone: bool,
     pub t_type: TransactionType,
-    pub money: i64,
+    pub money: Money,
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
     pub is_undone_signal: RwSignal<bool>,

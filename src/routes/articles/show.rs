@@ -53,7 +53,7 @@ fn ShowArticles() -> impl IntoView {
                                     view!{
                                         <tr>
                                           <td>{article.name}</td>
-                                          <td>{format!("{:.2}€",article.cost as f64 / 100.0)}</td>
+                                          <td>{article.cost.format_eur()}</td>
                                         </tr>
                                     }
                                 }).collect_view()

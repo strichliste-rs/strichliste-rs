@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::
-    models::{Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}
+    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}
 ;
 
 use super::transaction_view::{ShowTransactions};
@@ -14,7 +14,7 @@ use super::transaction_view::{ShowTransactions};
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
     pub user_id: i64,
-    pub money: RwSignal<i64>,
+    pub money: RwSignal<Money>,
     pub error: RwSignal<String>,
     pub transactions: RwSignal<Vec<Transaction>>,
 }
@@ -84,7 +84,7 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
 
     let mut user = user.unwrap();
 
-    user.money += money_diff;
+    user.money.value += money_diff;
 
     let result = user.update_money(&*state.db.lock().await).await;
 
@@ -198,10 +198,10 @@ pub fn ShowUser() -> impl IntoView {
                                             <div class="col-span-3">
                                                 <p class="text-center text-white text-[2em]">{user.nickname.clone()}</p>
                                                 <p class="text-center text-[2em]"
-                                                    class=("text-red-500", move || money_signal.get() < 0)
-                                                    class=("text-green-500", move ||money_signal.get() >= 0)
+                                                    class=("text-red-500", move || (money_signal.get()).value < 0)
+                                                    class=("text-green-500", move || (money_signal.get()).value >= 0)
 
-                                                >{move || User::calc_money(money_signal.get())}"€"</p>
+                                                >{move || (money_signal.get()).format_eur_diff()}</p>
                                                 <div class="flex place-content-evenly">
                                                 </div>
                                             </div>
@@ -282,7 +282,7 @@ fn change_money_button(
             class="p-5 text-white rounded-[10px] text-center text-[1.25em]"
             class=("bg-emerald-600", move || money > 0)
             class=("bg-red-400", move || money < 0)
-        >{User::calc_money(money)}"€"</a>
+        >{Money::format_eur_diff_value(money)}</a>
     }
 }
 
@@ -295,16 +295,16 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
     change_money_logic_raw(money, user_id, money_signal, error, transactions);
 }
 
-fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<i64>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
         let t_type = if money > 0 { TransactionTypeDB::DEPOSIT } else { TransactionTypeDB::WITHDRAW };
         
         let resp = create_transaction(user_id, money, t_type).await;
 
         if resp.is_ok() {
-            money_signal.set(money_signal.get_untracked() + money);
+            money_signal.update(|money_struct| (*money_struct).value = money_struct.value + money);
             error_signal.set(String::new());
-            let mut new_transaction = resp.unwrap();
+            let new_transaction = resp.unwrap();
             transaction_signal.write().insert(0, new_transaction.into());
         } else {
             let error = resp.err().unwrap().to_string();

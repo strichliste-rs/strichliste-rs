@@ -1,6 +1,8 @@
 use std::path::{self, PathBuf};
 
-use super::{ArticleSound, Barcode};
+use crate::models::Money;
+
+use super::{ArticleSound, Barcode, BarcodeDB};
 
 #[cfg(feature = "ssr")]
 use {
@@ -11,34 +13,19 @@ use {
 
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct ArticleDB {
-    pub id: i64,
-    pub name: String,
-    pub cost: i64,
-}
-
-#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct BarcodeDB {
-    article_id: i64,
-    barcode_content: String,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Article {
-    pub id: i64,
+    pub id: Option<i64>,
     pub name: String,
-    pub cost: i64,
+    pub cost: Money,
     pub sounds: Vec<ArticleSound>,
     pub barcodes: Vec<Barcode>,
 }
 
 impl Article {
-    pub fn new(id: i64, name: String, cost: i64) -> Self {
+    pub fn new(name: String, cost: Money) -> Self {
         Self {
-            id,
+            id: None,
             name,
             cost,
             barcodes: Vec::new(),
@@ -51,18 +38,12 @@ impl From<(ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)> for Article {
     fn from(value: (ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)) -> Self {
         let ArticleDB { id, name, cost } = value.0.clone();
         Self {
-            id,
+            id: Some(id),
             name,
-            cost,
+            cost: cost.into(),
             sounds: value.1,
             barcodes: value.2.into_iter().map(|e| e.into()).collect(),
         }
-    }
-}
-
-impl From<BarcodeDB> for Barcode {
-    fn from(value: BarcodeDB) -> Self {
-        Self(value.barcode_content)
     }
 }
 
@@ -109,10 +90,20 @@ impl Article {
         }
     }
 }
+
+#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct ArticleDB {
+    pub id: i64,
+    pub name: String,
+    pub cost: i64,
+}
+
 #[cfg(feature = "ssr")]
 impl ArticleDB {
     pub async fn get_sounds(&self, db: &DB) -> Result<Vec<ArticleSound>, DBError> {
         let mut conn = db.get_conn().await?;
+
         let sound_ids = sqlx::query!(
             "
             select sound_id from ArticleSoundMap

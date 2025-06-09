@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use super::{Transaction, TransactionDB};
+use super::{Money, Transaction, TransactionDB};
 
 #[cfg(feature = "ssr")]
 use {
@@ -25,7 +25,7 @@ pub struct User {
     pub id: Option<i64>,
     pub nickname: String,
     pub card_number: Option<String>,
-    pub money: i64,
+    pub money: Money,
 }
 
 impl User {
@@ -34,27 +34,8 @@ impl User {
             id: None,
             nickname: String::new(),
             card_number: None,
-            money: 0,
+            money: Money::new(),
         }
-    }
-
-    pub fn get_money(&self) -> String {
-        User::calc_money(self.money)
-    }
-
-    pub fn calc_money(money: i64) -> String {
-        let result = (money as f64) / 100.0;
-
-        let mut string = format!("{result}");
-
-        if money < 0 {
-            // the - also gets put into the string
-            string = string;
-        } else if money > 0 {
-            string = String::from_str("+").unwrap() + &string;
-        }
-
-        string
     }
 }
 
@@ -88,7 +69,7 @@ impl User {
                 returning id
             ",
             self.nickname,
-            self.money,
+            self.money.value,
         )
         .fetch_one(&mut *transaction)
         .await
@@ -165,7 +146,7 @@ impl User {
                 id: Some(id),
                 nickname,
                 card_number: Some(card_number.clone()),
-                money,
+                money: money.into(),
             }
         });
 
@@ -228,7 +209,7 @@ impl User {
                     id: Some(id),
                     nickname,
                     card_number: result_row.map(|number| number.card_number),
-                    money,
+                    money: money.into(),
                 })
             }
         };
@@ -247,7 +228,7 @@ impl User {
                 set money = ?
                 where id = ?
             ",
-            self.money,
+            self.money.value,
             id,
         )
         .execute(&mut *conn)

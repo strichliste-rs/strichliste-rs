@@ -5,8 +5,8 @@ pub struct Barcode(pub String);
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
 pub struct BarcodeDB {
-    article_id: i64,
-    barcode_content: String,
+    pub article_id: i64,
+    pub barcode_content: String,
 }
 
 impl From<BarcodeDB> for Barcode {
