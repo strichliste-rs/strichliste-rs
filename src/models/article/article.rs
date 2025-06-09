@@ -34,11 +34,39 @@ impl Article {
     }
 }
 
+impl From<&Article> for ArticleDB {
+    fn from(value: &Article) -> Self {
+        Self {
+            id: value.id.clone(),
+            name: value.name.clone(),
+            cost: value.cost.value,
+        }
+    }
+}
+
+impl From<Article> for ArticleDB {
+    fn from(value: Article) -> Self {
+        let Article {
+            id,
+            name,
+            cost,
+            sounds: _,
+            barcodes: _,
+        } = value;
+
+        Self {
+            id,
+            name,
+            cost: cost.value,
+        }
+    }
+}
+
 impl From<(ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)> for Article {
     fn from(value: (ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)) -> Self {
         let ArticleDB { id, name, cost } = value.0.clone();
         Self {
-            id: Some(id),
+            id,
             name,
             cost: cost.into(),
             sounds: value.1,
@@ -94,13 +122,34 @@ impl Article {
 #[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ArticleDB {
-    pub id: i64,
+    pub id: Option<i64>,
     pub name: String,
     pub cost: i64,
 }
 
 #[cfg(feature = "ssr")]
 impl ArticleDB {
+    pub async fn add_to_db(&mut self, db: &DB) -> Result<(), DBError> {
+        let mut conn = db.get_conn().await?;
+        let result = query!(
+            "
+                insert into Articles
+                    (name, cost)
+                values
+                    (?, ?)
+                returning id
+            ",
+            self.name,
+            self.cost,
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(|e| DBError::new(e))?;
+
+        self.id = Some(result.id);
+
+        Ok(())
+    }
     pub async fn get_sounds(&self, db: &DB) -> Result<Vec<ArticleSound>, DBError> {
         let mut conn = db.get_conn().await?;
 

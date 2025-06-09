@@ -52,6 +52,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/user/:id/settings") view=routes::user::settings::Show/>
                 <Route path=path!("/articles") view=routes::articles::View/>
                 <Route path=path!("/articles/create") view=routes::articles::Create/>
+                <Route path=path!("/articles/:article_id") view=routes::articles::single_view::Show/>
             </Routes>
         </Router>
     }

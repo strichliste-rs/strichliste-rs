@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 use tracing::debug;
 
+use crate::models::{Article, ArticleDB, Money};
+
 #[server]
 pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
@@ -23,7 +25,27 @@ pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnEr
         return Err(ServerFnError::new("Cost cannot be empty!"));
     }
 
-    // let article = Article::new(name, )
+    let money: Money = match cost.try_into() {
+        Ok(value) => value,
+        Err(err) => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new(err));
+        }
+    };
+
+    let article = Article::new(name, money);
+
+    let mut article_db: ArticleDB = article.into();
+
+    match article_db.add_to_db(&*state.db.lock().await).await {
+        Ok(()) => {}
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new(e));
+        }
+    }
+
+    redirect(&format!("/articles/{}", article_db.id.unwrap()));
 
     Ok(())
 }
