@@ -6,10 +6,10 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::articles::{get_article, get_article_by_barcode}}
+    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::{articles::{get_article, get_article_by_barcode}, user::components::scan_input::invisible_scan_input}}
 ;
 
-use super::transaction_view::{ShowTransactions};
+use super::components::transaction_view::{ShowTransactions};
 
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
@@ -43,7 +43,7 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 }
 
 #[server]
-pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type: TransactionTypeDB) -> Result<TransactionDB, ServerFnError> {
+pub async fn create_transaction(user_id: i64, money: Money, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -62,18 +62,21 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
         )));
     }
 
-    let mut transaction = TransactionDB {
+    let transaction = Transaction {
         id: None,
-        is_undone: false,
+        user_id,
         t_type: transaction_type,
-        t_type_data: None,
+        is_undone: false,
         description: None,
         timestamp: Utc::now(),
-        money: money_diff,
-        user_id,
+        money,
+        is_undone_signal: RwSignal::new(false),
+        
     };
 
-    let result = transaction.add_to_db(&*state.db.lock().await).await;
+    let mut transaction_db: TransactionDB = (&transaction).into();
+
+    let result = transaction_db.add_to_db(&*state.db.lock().await).await;
 
     if result.is_err() {
         let err = result.err().unwrap();
@@ -84,7 +87,7 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
 
     let mut user = user.unwrap();
 
-    user.money.value += money_diff;
+    user.money.value += transaction.money.value;
 
     let result = user.update_money(&*state.db.lock().await).await;
 
@@ -94,6 +97,8 @@ pub async fn create_transaction(user_id: i64, money_diff: i64, transaction_type:
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new(err));
     }
+
+    let transaction: Transaction = transaction_db.into();
 
     Ok(transaction)
 }
@@ -193,7 +198,7 @@ pub fn ShowUser() -> impl IntoView {
                             let custom_money_is_focused = RwSignal::new(false);
 
                             view!{
-                                {invisible_scan_input(custom_money_is_focused, error_signal)}
+                                {invisible_scan_input(custom_money_is_focused, error_signal, args.clone(), user_id)}
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
                                         // left side (show user statistics)
@@ -283,7 +288,7 @@ fn change_money_button(
 ) -> impl IntoView {
     view! {
         <a
-            on:click=move |_| change_money_logic(money, args.clone())
+            on:click=move |_| change_money_logic(money.into(), args.clone())
             href="#"
             class="p-5 text-white rounded-[10px] text-center text-[1.25em]"
             class=("bg-emerald-600", move || money > 0)
@@ -292,7 +297,7 @@ fn change_money_button(
     }
 }
 
-fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
+fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
     let user_id = args.user_id.clone();
     let money_signal = args.money;
     let error = args.error;
@@ -301,14 +306,14 @@ fn change_money_logic(money: i64, args: Rc<MoneyArgs>){
     change_money_logic_raw(money, user_id, money_signal, error, transactions);
 }
 
-fn change_money_logic_raw(money: i64, user_id: i64, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+fn change_money_logic_raw(money: Money, user_id: i64, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
-        let t_type = if money > 0 { TransactionTypeDB::DEPOSIT } else { TransactionTypeDB::WITHDRAW };
+        let t_type = if money.value > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
         
-        let resp = create_transaction(user_id, money, t_type).await;
+        let resp = create_transaction(user_id, money.clone(), t_type).await;
 
         if resp.is_ok() {
-            money_signal.update(|money_struct| (*money_struct).value = money_struct.value + money);
+            money_signal.update(|money_struct| (*money_struct).value = money_struct.value + money.value);
             error_signal.set(String::new());
             let new_transaction = resp.unwrap();
             transaction_signal.write().insert(0, new_transaction.into());
@@ -331,139 +336,19 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
         return;
     }
 
-    let (mut euros, mut cents): (String, String) = (0.to_string(), 0.to_string());
-
-    let string = string.replace(",", ".");
-
-    let split = string.rsplit_once(".");
-
-    if split.is_none() {
-        euros = string;
-    } else {
-        let split = split.unwrap();
-        (euros, cents) = (split.0.to_string(), split.1.to_string());
-    }
-
-    if euros.len() == 0 {
-        error_signal.set("Failed to parse euros".to_string());
-        return;
-    }
-
-    if cents.len() == 0 {
-        error_signal.set("Failed to parse cents".to_string());
-        return;
-    }
-
-    if cents.len() > 2 {
-        cents.truncate(2);
-    }
-
-    if cents.len() < 2 {
-        cents.push_str("0");
-    }
-
-    let real_euros = euros.parse::<i64>();
-    if real_euros.is_err() {
-        error_signal.set(format!("Failed to parse euros: {}", euros));
-        return;
-    }
-
-    let real_cents = cents.parse::<i64>();
-
-    if real_cents.is_err() {
-        error_signal.set(format!("Failed to parse cents: {}", cents));
-        return;
-    }
-
-    let real_euros = real_euros.unwrap();
-    let real_cents = real_cents.unwrap();
-
-    // console_log(&format!("Need to modify {}€ and {} cents", real_euros, real_cents));
-
-    let mut final_cents = real_euros * 100 + real_cents;
+    let mut money: Money = match string.try_into() {
+        Ok(value) => value,
+        Err(e) => {
+            error_signal.set(format!("Failed to parse money: {}", e.to_string()));
+            return;
+        }
+    };
 
     if !add {
-        final_cents = -final_cents;
+        money.value = -money.value;
     }
 
-    change_money_logic_raw(final_cents, args.user_id, args.money, args.error, args.transactions);
+    change_money_logic_raw(money, args.user_id, args.money, args.error, args.transactions);
 
     value.set(String::new());    
-}
-
-fn invisible_scan_input(is_focused_signal: RwSignal<bool>, error_signal: RwSignal<String>) -> impl IntoView {
-    let input_signal = RwSignal::new(String::new());
-    let last_input = RwSignal::new(Utc::now());
-
-    let timediff = move || ((Utc::now() - last_input.get()).num_seconds() > 30);
-
-    let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
-        "Enter" => {
-            if is_focused_signal.get() {
-                return;
-            }
-            if timediff() {
-                input_signal.write_only().set(String::new())
-            }
-            let scan_input = input_signal.read_untracked().clone();
-            input_signal.write_only().set(String::new());
-
-            if scan_input.len() == 0 {
-                return;
-            }
-
-            spawn_local(async move {
-                console_log(&format!("Input {}", scan_input));
-                let article = get_article_by_barcode(scan_input.clone()).await;
-
-                let article = match article {
-                    Ok(value) => value,
-                    Err(e) => {
-                        error_signal.set(format!("Failed to fetch article from server: {}", e));
-                        return;
-                    }
-                };
-
-                match article {
-                    None => {
-                        console_log(&format!("No article could be found with barcode '{}'", scan_input));
-                    },
-
-                    Some(value) => {
-                        console_log(&format!("Need to buy article: {}", value.name));
-                    }
-                }
-            });
-        }
-
-        _ => {
-            if is_focused_signal.get() {
-                return;
-            }
-
-            // console_log(&format!("Seconds till last input: {} | Has passed 30s: {}", (Utc::now() - last_input.get()).num_seconds(), timediff()));
-
-            // Clear input if nothing was typed for 30 seconds
-            if timediff() {
-                input_signal.write_only().set(String::new());
-            }
-
-            input_signal.update_untracked(|string| string.push_str(&ev.key()));
-            
-            last_input.write_only().set(Utc::now());
-        }
-    });
-
-    on_cleanup(move || {
-        handle.remove();
-    });
-
-    return view! {
-        // {
-        //     move || match is_focused_signal.get() {
-        //         true => console_log("input is focused"),
-        //         false => console_log("input is out of focus")
-        //     }
-        // }
-    };
 }

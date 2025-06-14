@@ -10,7 +10,7 @@ use crate::{
     routes::user::get_user,
 };
 
-use super::MoneyArgs;
+use crate::routes::user::MoneyArgs;
 
 #[server]
 pub async fn get_user_transactions(
