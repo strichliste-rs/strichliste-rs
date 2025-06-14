@@ -116,7 +116,7 @@ impl TryFrom<String> for Money {
         let real_euros = real_euros.unwrap();
         let real_cents = real_cents.unwrap();
 
-        let mut final_cents = real_euros * 100 + real_cents;
+        let final_cents = real_euros * 100 + real_cents;
 
         Ok(Money { value: final_cents })
     }

@@ -137,23 +137,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
         handle.remove();
     });
 
-    // scan_input_field.on_load(|elem| {
-    //     _ = elem.focus();
-    // });
-
-    return view! {
-        // <input id="invisible_barcode_input" type="text" autofocus style="position: absolute; left: -9999px;"
-        // node_ref=scan_input_field
-        // // on:submit=on_submit
-        // on:blur=move |_| {
-        //     console_log("input is out of focus");
-        //     if let Some(input) = scan_input_field.get() {
-        //         _ = input.focus();
-        //         console_log("input element should be in focus");
-        //     }
-        // }
-        // />
-    };
+    return view! {};
 }
 
 #[component]

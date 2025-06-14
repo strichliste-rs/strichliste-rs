@@ -8,15 +8,6 @@ use sqlx::{
 };
 use tracing::info;
 
-// use crate::models::{Jobset, JobsetID, JobsetState, Project};
-
-fn convert_to_string<T: ToString>(some_option: Option<T>) -> String {
-    if some_option.is_some() {
-        return some_option.unwrap().to_string();
-    } else {
-        return "null".to_string();
-    }
-}
 #[derive(Debug)]
 pub struct DBError(String);
 
