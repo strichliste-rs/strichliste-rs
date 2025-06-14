@@ -253,7 +253,7 @@ pub fn format_transaction(
         {
             move || match undo_signal.get() {
                 true => {
-                    console_log("Re-rendering date");
+                    // console_log("Re-rendering date");
                     view!{
                         <p class="text-white">{date_string.clone()}</p>
                     }.into_any()
