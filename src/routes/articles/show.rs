@@ -1,7 +1,31 @@
 use leptos::prelude::*;
 use tracing::error;
 
-use crate::models::{Article, User};
+use crate::models::{Article, ArticleDB, User};
+
+#[server]
+pub async fn get_article_by_barcode(barcode: String) -> Result<Option<Article>, ServerFnError> {
+    use crate::backend::ServerState;
+    let state: ServerState = expect_context();
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let db = state.db.lock().await;
+
+    match Article::get_by_barcode(&*db, barcode).await {
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new(format!(
+                "Failed to get article from db: {}",
+                e
+            )));
+        }
+
+        Ok(value) => Ok(value),
+    }
+}
 
 #[server]
 pub async fn get_all_articles() -> Result<Vec<Article>, ServerFnError> {

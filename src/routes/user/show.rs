@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use chrono::Utc;
-use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
+use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
-use crate::
-    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}
+use crate::{
+    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::articles::{get_article, get_article_by_barcode}}
 ;
 
 use super::transaction_view::{ShowTransactions};
@@ -190,7 +190,10 @@ pub fn ShowUser() -> impl IntoView {
 
                             let custom_money_change = RwSignal::new(String::new());
 
+                            let custom_money_is_focused = RwSignal::new(false);
+
                             view!{
+                                {invisible_scan_input(custom_money_is_focused, error_signal)}
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
                                         // left side (show user statistics)
@@ -229,7 +232,10 @@ pub fn ShowUser() -> impl IntoView {
                                                         "-"
                                                     </div>
                                                 </a>
-                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben" bind:value=custom_money_change value="00.00"/>
+                                                <input class="text-center rounded-[10px]" placeholder="Euro eingeben" bind:value=custom_money_change value="00.00"
+                                                    on:focus=move |_| {custom_money_is_focused.set(true)}
+                                                    on:blur=move |_| {custom_money_is_focused.set(false)}
+                                                />
                                                 <a href="#" class="bg-emerald-600 text-white rounded-full p-5" on:click=move |_| on_custom_money_button_click(true, custom_money_change, &args2)>
                                                     <div class="pad-5 text-center">
                                                         "+"
@@ -383,4 +389,81 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     change_money_logic_raw(final_cents, args.user_id, args.money, args.error, args.transactions);
 
     value.set(String::new());    
+}
+
+fn invisible_scan_input(is_focused_signal: RwSignal<bool>, error_signal: RwSignal<String>) -> impl IntoView {
+    let input_signal = RwSignal::new(String::new());
+    let last_input = RwSignal::new(Utc::now());
+
+    let timediff = move || ((Utc::now() - last_input.get()).num_seconds() > 30);
+
+    let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
+        "Enter" => {
+            if is_focused_signal.get() {
+                return;
+            }
+            if timediff() {
+                input_signal.write_only().set(String::new())
+            }
+            let scan_input = input_signal.read_untracked().clone();
+            input_signal.write_only().set(String::new());
+
+            if scan_input.len() == 0 {
+                return;
+            }
+
+            spawn_local(async move {
+                console_log(&format!("Input {}", scan_input));
+                let article = get_article_by_barcode(scan_input.clone()).await;
+
+                let article = match article {
+                    Ok(value) => value,
+                    Err(e) => {
+                        error_signal.set(format!("Failed to fetch article from server: {}", e));
+                        return;
+                    }
+                };
+
+                match article {
+                    None => {
+                        console_log(&format!("No article could be found with barcode '{}'", scan_input));
+                    },
+
+                    Some(value) => {
+                        console_log(&format!("Need to buy article: {}", value.name));
+                    }
+                }
+            });
+        }
+
+        _ => {
+            if is_focused_signal.get() {
+                return;
+            }
+
+            // console_log(&format!("Seconds till last input: {} | Has passed 30s: {}", (Utc::now() - last_input.get()).num_seconds(), timediff()));
+
+            // Clear input if nothing was typed for 30 seconds
+            if timediff() {
+                input_signal.write_only().set(String::new());
+            }
+
+            input_signal.update_untracked(|string| string.push_str(&ev.key()));
+            
+            last_input.write_only().set(Utc::now());
+        }
+    });
+
+    on_cleanup(move || {
+        handle.remove();
+    });
+
+    return view! {
+        // {
+        //     move || match is_focused_signal.get() {
+        //         true => console_log("input is focused"),
+        //         false => console_log("input is out of focus")
+        //     }
+        // }
+    };
 }

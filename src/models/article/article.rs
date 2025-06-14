@@ -1,6 +1,6 @@
 use std::path::{self, PathBuf};
 
-use crate::models::Money;
+use crate::{models::Money, routes::articles::get_article};
 
 use super::{ArticleSound, Barcode, BarcodeDB};
 
@@ -116,6 +116,28 @@ impl Article {
                 Ok(Some((article, article_sounds, article_barcodes).into()))
             }
             None => Ok(None),
+        }
+    }
+
+    pub async fn get_by_barcode(db: &DB, barcode: String) -> Result<Option<Article>, DBError> {
+        let mut conn = db.get_conn().await?;
+        let result = query!(
+            "
+                select article_id from ArticleBarcodes
+                where barcode_content = ?
+            ",
+            barcode
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        match result {
+            None => Ok(None),
+            Some(value) => {
+                let article = Article::get_from_db(db, value.article_id).await?;
+                Ok(article)
+            }
         }
     }
 }
