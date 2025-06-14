@@ -24,6 +24,15 @@ impl Money {
     pub fn new() -> Self {
         Self { value: 0 }
     }
+
+    pub fn format_value(value: i64) -> String {
+        format!("{:.2}", value as f64 / 100.0)
+    }
+
+    pub fn format(&self) -> String {
+        Money::format_value(self.value)
+    }
+
     pub fn format_eur_value(value: i64) -> String {
         format!("{:.2}€", value as f64 / 100.0)
     }

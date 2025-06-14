@@ -33,7 +33,7 @@ create table Transactions (
 
 create Table Articles (
     id integer not null,
-    name text not null,
+    name text not null unique,
     cost integer not null,
 
     primary key (id)

@@ -96,6 +96,7 @@ impl Article {
         }
         Ok(article_no_db)
     }
+
     pub async fn get_from_db(db: &DB, id: i64) -> Result<Option<Self>, DBError> {
         let mut conn = db.get_conn().await?;
         let article_result = sqlx::query_as::<_, ArticleDB>(
@@ -150,6 +151,7 @@ impl ArticleDB {
 
         Ok(())
     }
+
     pub async fn get_sounds(&self, db: &DB) -> Result<Vec<ArticleSound>, DBError> {
         let mut conn = db.get_conn().await?;
 
@@ -181,6 +183,7 @@ impl ArticleDB {
         }
         Ok(sounds)
     }
+
     pub async fn get_barcodes(&self, db: &DB) -> Result<Vec<BarcodeDB>, DBError> {
         let mut conn = db.get_conn().await?;
 
@@ -194,5 +197,67 @@ impl ArticleDB {
         .fetch_all(&mut *conn)
         .await
         .map_err(DBError::new)
+    }
+
+    pub async fn set_barcodes(&self, db: &DB, barcodes: Vec<Barcode>) -> Result<(), DBError> {
+        let mut transaction = db.get_conn_transaction().await?;
+
+        let id = self.id.unwrap();
+
+        _ = query!(
+            "
+            delete from ArticleBarcodes
+            where article_id = ?
+            ",
+            id
+        )
+        .execute(&mut *transaction)
+        .await
+        .map_err(DBError::new)?;
+
+        let mut builder: sqlx::QueryBuilder<'_, sqlx::Sqlite> = sqlx::QueryBuilder::new(
+            "
+                insert into ArticleBarcodes
+                    (article_id, barcode_content)
+            ",
+        );
+
+        builder.push_values(barcodes.into_iter(), |mut b, element| {
+            b.push_bind(id);
+            b.push_bind(element.0);
+        });
+
+        let query = builder.build();
+
+        _ = query
+            .execute(&mut *transaction)
+            .await
+            .map_err(DBError::new)?;
+
+        _ = transaction.commit().await.map_err(DBError::new)?;
+
+        Ok(())
+    }
+
+    pub async fn update(&self, db: &DB) -> Result<(), DBError> {
+        let mut conn = db.get_conn().await?;
+
+        let id = self.id.unwrap();
+
+        _ = query!(
+            "
+                update Articles
+                set name = ?, cost = ?
+                where id = ?
+            ",
+            self.name,
+            self.cost,
+            id
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(())
     }
 }

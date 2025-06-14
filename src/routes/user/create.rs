@@ -37,7 +37,7 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn View() -> impl IntoView {
+pub fn Create() -> impl IntoView {
     let create_user_action = ServerAction::<CreateUser>::new();
     view! {
         <div class="flex h-screen bg-gray-900">

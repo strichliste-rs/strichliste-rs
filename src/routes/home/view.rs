@@ -74,7 +74,7 @@ pub fn View() -> impl IntoView {
     view! {
         <div class="grid grid-cols-10 gap-10 py-10">
             <div class="col-span-1 pl-5">
-                <a href="/create_user">
+                <a href="/user/create">
                     <div class="flex justify-center">
                         // joinked from: https://gist.github.com/ibelick/0c92c1aba54c2f7e8b3a7381426ed029
                         <button class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-black drop-shadow-sm transition-colors duration-150 hover:bg-gray-200">
@@ -175,7 +175,7 @@ pub fn ShowUsers() -> impl IntoView {
 
                 if users.is_none() {
                     return view!{
-                        <p class="text-red-900">"Failed to fetch users"</p>
+                        <p class="bg-red-400 text-white text-center">"Failed to fetch users"</p>
                     }.into_any();
                 }
 

@@ -233,7 +233,7 @@ pub fn format_transaction(
     let money = transaction.money.value;
 
     return view! {
-        <div class="grid grid-cols-3 items-center border-t-8 border-gray-300 p-2 text-white"
+        <div class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
             class=("line-through", undo_signal.get())
         >
         {
