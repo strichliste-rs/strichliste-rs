@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::{articles::{get_article, get_article_by_barcode}, user::components::scan_input::invisible_scan_input}}
+    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::{articles::{get_article, get_article_by_barcode}, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
 ;
 
 use super::components::transaction_view::{ShowTransactions};
@@ -217,6 +217,7 @@ pub fn ShowUser() -> impl IntoView {
                                                 <a href=format!("/user/{}/settings", user_id) class="text-white pt-3">{SettingsIcon()}</a>
                                             </div>
                                         </div>
+                                        <BuyArticle args=args.clone()/>
                                     </div>
                                     <div>
                                         // right side (put in money)

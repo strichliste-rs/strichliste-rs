@@ -5,7 +5,7 @@ use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local
 
 use crate::routes::{articles::get_article_by_barcode, user::MoneyArgs};
 
-use super::transaction::buy_item;
+use super::buy_article::buy_article;
 
 pub fn invisible_scan_input(
     is_focused_signal: RwSignal<bool>,
@@ -57,7 +57,13 @@ pub fn invisible_scan_input(
 
                     Some(value) => {
                         console_log(&format!("Need to buy article: {}", value.name));
-                        buy_item(user_id, &value, money_args_clone);
+                        buy_article(
+                            user_id,
+                            value.id.unwrap(),
+                            money_args_clone.money,
+                            money_args_clone.error,
+                            money_args_clone.transactions,
+                        );
                     }
                 }
             });
