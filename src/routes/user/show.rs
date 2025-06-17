@@ -345,6 +345,10 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
         }
     };
 
+    if money.value == 0 {
+        return;
+    }
+
     if !add {
         money.value = -money.value;
     }

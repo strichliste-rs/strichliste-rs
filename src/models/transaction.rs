@@ -111,15 +111,46 @@ impl From<&Transaction> for TransactionDB {
             user_id: *user_id,
             is_undone: *is_undone,
             t_type_data: match value.t_type {
-                TransactionType::SENT(id)
-                | TransactionType::BOUGTH(id)
-                | TransactionType::RECEIVED(id) => Some(id),
+                TransactionType::SENT(var)
+                | TransactionType::BOUGTH(var)
+                | TransactionType::RECEIVED(var) => Some(var),
                 _ => None,
             },
             t_type: t_type.into(),
             money: (*money).value,
             description: description.clone(),
             timestamp: *timestamp,
+        }
+    }
+}
+
+impl From<Transaction> for TransactionDB {
+    fn from(value: Transaction) -> Self {
+        let Transaction {
+            id,
+            user_id,
+            is_undone,
+            t_type,
+            money,
+            description,
+            timestamp,
+            is_undone_signal,
+        } = value;
+
+        Self {
+            id,
+            user_id,
+            is_undone,
+            t_type_data: match t_type {
+                TransactionType::SENT(var)
+                | TransactionType::BOUGTH(var)
+                | TransactionType::RECEIVED(var) => Some(var),
+                _ => None,
+            },
+            t_type: t_type.into(),
+            money: money.value,
+            description,
+            timestamp,
         }
     }
 }

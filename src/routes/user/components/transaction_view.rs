@@ -1,16 +1,43 @@
 use std::rc::Rc;
 
-use chrono::{DateTime, Local, Timelike, Utc};
+use chrono::{DateTime, Local, Utc};
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, info, warn};
 
 use crate::{
     models::{Money, Transaction, TransactionDB, TransactionType, User},
-    routes::user::get_user,
+    routes::{articles::get_article, user::get_user},
 };
 
 use crate::routes::user::MoneyArgs;
+
+#[server]
+pub async fn create_transaction(transaction: Transaction) -> Result<Transaction, ServerFnError> {
+    use crate::backend::ServerState;
+    let state: ServerState = expect_context();
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let mut transaction_db: TransactionDB = transaction.into();
+
+    match transaction_db.add_to_db(&*state.db.lock().await).await {
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to add transaction to db: {}", e);
+            return Err(ServerFnError::new(format!(
+                "Failed to add transaction to db: {}",
+                e
+            )));
+        }
+
+        Ok(_) => {}
+    };
+
+    Ok(transaction_db.into())
+}
 
 #[server]
 pub async fn get_user_transactions(
@@ -246,6 +273,13 @@ pub fn format_transaction(
                     <p></p>
 
                 }.into_any(),
+
+                TransactionType::BOUGTH(_) => {
+                    view!{
+                        <p class="text-red-400">{transaction.money.format_eur_diff()}</p>
+                        <p class="text-white">{transaction.description.clone().unwrap_or("".to_string())}</p>
+                    }.into_any()
+                },
 
                 _ => view!{}.into_any(),
             }
