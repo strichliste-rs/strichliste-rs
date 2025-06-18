@@ -126,7 +126,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                         view!{
                                 <button class="bg-gray-700 rounded p-2"
                                     on:click=move |_| {
-                                        buy_article(user_id, id.unwrap(), money, error, transactions);
+                                        buy_article(user_id, id, money, error, transactions);
                                     }
                                 >
                                     <div>

@@ -1,126 +1,445 @@
-use std::path::{self, PathBuf};
+use crate::models::Money;
 
-use crate::{models::Money, routes::articles::get_article};
-
-use super::{ArticleSound, Barcode, BarcodeDB};
+use super::{ArticleSound, Barcode, BarcodeDB, BarcodeDiff};
 
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
+    crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
     sqlx::query,
     sqlx::query_as,
+    sqlx::Transaction,
+    sqlx::{Executor, Sqlite},
 };
 
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Article {
-    pub id: Option<i64>,
+    pub id: i64,
     pub name: String,
     pub cost: Money,
     pub sounds: Vec<ArticleSound>,
     pub barcodes: Vec<Barcode>,
 }
 
-impl Article {
-    pub fn new(name: String, cost: Money) -> Self {
-        Self {
-            id: None,
-            name,
-            cost,
-            barcodes: Vec::new(),
-            sounds: Vec::new(),
-        }
-    }
-}
-
-impl From<&Article> for ArticleDB {
-    fn from(value: &Article) -> Self {
-        Self {
-            id: value.id.clone(),
-            name: value.name.clone(),
-            cost: value.cost.value,
-        }
-    }
-}
-
-impl From<Article> for ArticleDB {
-    fn from(value: Article) -> Self {
-        let Article {
-            id,
-            name,
-            cost,
-            sounds: _,
-            barcodes: _,
-        } = value;
-
-        Self {
-            id,
-            name,
-            cost: cost.value,
-        }
-    }
-}
-
-impl From<(ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)> for Article {
-    fn from(value: (ArticleDB, Vec<ArticleSound>, Vec<BarcodeDB>)) -> Self {
-        let ArticleDB { id, name, cost } = value.0.clone();
-        Self {
-            id,
-            name,
-            cost: cost.into(),
-            sounds: value.1,
-            barcodes: value.2.into_iter().map(|e| e.into()).collect(),
-        }
-    }
-}
-
 #[cfg(feature = "ssr")]
 impl Article {
-    pub async fn get_all_from_db(db: &DB) -> Result<Vec<Self>, DBError> {
+    pub async fn new(db: &DB, name: String, cost: Money) -> DatabaseResponse<Self> {
+        let mut transaction = db.get_conn_transaction().await?;
+
+        let id = ArticleDB::create(&mut transaction, name, cost.value).await?;
+
+        transaction.commit().await.map_err(DBError::new)?;
+
+        let article = Article::get_from_db(db, id).await?;
+
+        Ok(article.expect("Newly created article should exist!"))
+    }
+
+    pub async fn get_all(db: &DB) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
-        let article_result = sqlx::query_as::<_, ArticleDB>(
-            "
-                select * from Articles
-            ",
-        )
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
+
+        let articles = ArticleDB::get_all(&mut *conn).await?;
 
         let mut article_no_db = Vec::new();
-        for article in article_result {
-            let article_sounds = article.get_sounds(db).await?;
-            let article_barcodes = article.get_barcodes(db).await?;
-            article_no_db.push((article, article_sounds, article_barcodes).into());
+        for article in articles {
+            let ArticleDB { id, name } = article;
+            let article_sounds = ArticleDB::get_sounds(&mut *conn, id).await?;
+            debug!("Fetched sounds");
+            let article_barcodes = ArticleDB::get_barcodes(&mut *conn, id)
+                .await?
+                .into_iter()
+                .map(|elem| Barcode(elem.barcode_content))
+                .collect();
+            debug!("Fetched barcodes");
+            let cost = ArticleDB::get_cost(&mut *conn, id).await?;
+            debug!("Fetched cost");
+
+            article_no_db.push(Article {
+                id,
+                name,
+                cost: cost.into(),
+                sounds: article_sounds,
+                barcodes: article_barcodes,
+            });
         }
         Ok(article_no_db)
     }
 
-    pub async fn get_from_db(db: &DB, id: i64) -> Result<Option<Self>, DBError> {
+    pub async fn get_from_db(db: &DB, id: i64) -> DatabaseResponse<Option<Self>> {
         let mut conn = db.get_conn().await?;
-        let article_result = sqlx::query_as::<_, ArticleDB>(
-            "
-                select * from Articles
-                where id = ?
-            ",
-        )
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-        match article_result {
+
+        match ArticleDB::get_single(&mut *conn, id).await? {
             Some(article) => {
-                let article_sounds = article.get_sounds(db).await?;
-                let article_barcodes = article.get_barcodes(db).await?;
-                Ok(Some((article, article_sounds, article_barcodes).into()))
+                let article_sounds = ArticleDB::get_sounds(&mut *conn, article.id).await?;
+                let article_barcodes = ArticleDB::get_barcodes(&mut *conn, article.id)
+                    .await?
+                    .into_iter()
+                    .map(|elem| Barcode(elem.barcode_content))
+                    .collect();
+
+                let cost = ArticleDB::get_cost(&mut *conn, article.id).await?;
+
+                let ArticleDB { id, name } = article;
+                Ok(Some(Article {
+                    id,
+                    name,
+                    cost: cost.into(),
+                    sounds: article_sounds,
+                    barcodes: article_barcodes,
+                }))
             }
             None => Ok(None),
         }
     }
 
-    pub async fn get_by_barcode(db: &DB, barcode: String) -> Result<Option<Article>, DBError> {
+    pub async fn get_by_barcode(db: &DB, barcode: String) -> DatabaseResponse<Option<Article>> {
         let mut conn = db.get_conn().await?;
+
+        let result = ArticleDB::get_article_id_by_barcode(&mut *conn, barcode).await?;
+
+        match result {
+            None => Ok(None),
+            Some(value) => {
+                let article = Article::get_from_db(db, value).await?;
+                Ok(article)
+            }
+        }
+    }
+
+    pub async fn set_name<T>(&mut self, conn: &mut T, name: String) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = ArticleDB::set_name(conn, self.id, name.clone()).await?;
+
+        self.name = name;
+
+        Ok(())
+    }
+
+    pub async fn set_cost<T>(&mut self, conn: &mut T, cost: Money) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = ArticleDB::set_price(conn, self.id, cost.value).await?;
+
+        self.cost = cost;
+
+        Ok(())
+    }
+
+    pub async fn set_barcodes<T>(
+        &mut self,
+        conn: &mut T,
+        barcode_diff: Vec<BarcodeDiff>,
+    ) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        for diff in barcode_diff.into_iter() {
+            match diff {
+                BarcodeDiff::Removed(barcode) => {
+                    _ = ArticleDB::remove_barcode(&mut *conn, self.id, barcode).await?;
+                }
+
+                BarcodeDiff::Added(barcode) => {
+                    _ = ArticleDB::add_barcode(&mut *conn, self.id, barcode).await?;
+                }
+            }
+        }
+
+        self.barcodes = ArticleDB::get_barcodes(&mut *conn, self.id)
+            .await?
+            .into_iter()
+            .map(|e| Barcode(e.barcode_content))
+            .collect();
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "ssr")]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]
+pub struct ArticleDB {
+    pub id: DatabaseId,
+    pub name: String,
+}
+
+#[cfg(feature = "ssr")]
+impl ArticleDB {
+    pub async fn get_single<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+    ) -> DatabaseResponse<Option<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query_as!(
+            Self,
+            "
+                select * from Articles
+                where id = ?
+            ",
+            article_id
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(result)
+    }
+    pub async fn create<'a>(
+        conn: &mut Transaction<'a, DatabaseType>,
+        name: String,
+        cost: i64,
+    ) -> DatabaseResponse<DatabaseId>
+// where
+    //     for<'a> &'a mut T: Executor<'a, Database = Sqlite>,
+    {
+        let id = Self::_insert_name(conn, name).await?;
+        _ = Self::set_price(&mut **conn, id, cost).await?;
+
+        Ok(id)
+    }
+
+    pub async fn set_price<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+        cost: i64,
+    ) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let now = Utc::now();
+        _ = query!(
+            "
+                insert into ArticleCostMap
+                    (article_id, cost, effective_since)
+                values
+                    (?, ?, ?)
+            ",
+            article_id,
+            cost,
+            now
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(())
+    }
+
+    async fn _insert_name<'a>(
+        conn: &mut Transaction<'a, DatabaseType>,
+        name: String,
+    ) -> DatabaseResponse<DatabaseId> {
+        let result = query!(
+            "
+                insert into Articles
+                    (name)
+                values
+                    (?)
+                returning id
+            ",
+            name,
+        )
+        .fetch_one(&mut **conn)
+        .await
+        .map_err(DBError::new)?
+        .id;
+
+        Ok(result)
+    }
+
+    pub async fn get_all<T>(conn: &mut T) -> DatabaseResponse<Vec<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query_as!(
+            Self,
+            "
+            select * from Articles   
+        "
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(result)
+    }
+
+    pub async fn get_sounds<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+    ) -> DatabaseResponse<Vec<ArticleSound>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let sound_ids = query!(
+            "
+            select sound_id from ArticleSoundMap
+            where article_id = ?
+                
+            ",
+            article_id
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        let mut sounds = Vec::new();
+        for sound_id in sound_ids {
+            let sound = query_as!(
+                ArticleSound,
+                "
+                    select * from ArticleSounds
+                    where id = ?
+                ",
+                sound_id.sound_id
+            )
+            .fetch_one(&mut *conn)
+            .await
+            .map_err(DBError::new)?;
+            sounds.push(sound);
+        }
+        Ok(sounds)
+    }
+
+    pub async fn get_cost<T>(conn: &mut T, article_id: DatabaseId) -> DatabaseResponse<i64>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query!(
+            "
+                select cost from ArticleCostMap
+                where article_id = ?
+                order by effective_since desc
+            ",
+            article_id
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(result.cost)
+    }
+
+    pub async fn get_barcodes<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+    ) -> DatabaseResponse<Vec<BarcodeDB>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        query_as!(
+            BarcodeDB,
+            "
+                select * from ArticleBarcodes
+                where article_id = ?
+            ",
+            article_id
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(DBError::new)
+    }
+
+    pub async fn set_name<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+        name: String,
+    ) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = query!(
+            "
+                update Articles
+                    set name = ?
+                where id = ?
+            ",
+            name,
+            article_id,
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(())
+    }
+
+    pub async fn add_barcode<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+        barcode: String,
+    ) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = query!(
+            "
+                insert into ArticleBarcodes
+                    (article_id, barcode_content)
+                values
+                    (?, ?)
+            ",
+            article_id,
+            barcode
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::Database(e) => {
+                if e.is_unique_violation() {
+                    DBError::new(format!(
+                        "The barcode '{}' is already used elsewhere!",
+                        barcode
+                    ))
+                } else {
+                    DBError::new(e)
+                }
+            }
+
+            _ => DBError::new(e),
+        })?;
+
+        Ok(())
+    }
+
+    pub async fn remove_barcode<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+        barcode: String,
+    ) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = query!(
+            "
+                delete from ArticleBarcodes
+                where article_id = ? and barcode_content = ?
+            ",
+            article_id,
+            barcode
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(())
+    }
+
+    pub async fn get_article_id_by_barcode<T>(
+        conn: &mut T,
+        barcode: String,
+    ) -> DatabaseResponse<Option<DatabaseId>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
         let result = query!(
             "
                 select article_id from ArticleBarcodes
@@ -130,156 +449,9 @@ impl Article {
         )
         .fetch_optional(&mut *conn)
         .await
-        .map_err(DBError::new)?;
+        .map_err(DBError::new)?
+        .map(|elem| elem.article_id);
 
-        match result {
-            None => Ok(None),
-            Some(value) => {
-                let article = Article::get_from_db(db, value.article_id).await?;
-                Ok(article)
-            }
-        }
-    }
-}
-
-#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct ArticleDB {
-    pub id: Option<i64>,
-    pub name: String,
-    pub cost: i64,
-}
-
-#[cfg(feature = "ssr")]
-impl ArticleDB {
-    pub async fn add_to_db(&mut self, db: &DB) -> Result<(), DBError> {
-        let mut conn = db.get_conn().await?;
-        let result = query!(
-            "
-                insert into Articles
-                    (name, cost)
-                values
-                    (?, ?)
-                returning id
-            ",
-            self.name,
-            self.cost,
-        )
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(|e| DBError::new(e))?;
-
-        self.id = Some(result.id);
-
-        Ok(())
-    }
-
-    pub async fn get_sounds(&self, db: &DB) -> Result<Vec<ArticleSound>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let sound_ids = sqlx::query!(
-            "
-            select sound_id from ArticleSoundMap
-            where article_id = ?
-                
-            ",
-            self.id
-        )
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        let mut sounds = Vec::new();
-        for sound_id in sound_ids {
-            let sound = sqlx::query_as::<_, ArticleSound>(
-                "
-                    select * from ArticleSounds
-                    where id = ?
-                ",
-            )
-            .bind(sound_id.sound_id)
-            .fetch_one(&mut *conn)
-            .await
-            .map_err(DBError::new)?;
-            sounds.push(sound);
-        }
-        Ok(sounds)
-    }
-
-    pub async fn get_barcodes(&self, db: &DB) -> Result<Vec<BarcodeDB>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        sqlx::query_as::<_, BarcodeDB>(
-            "
-                    select * from ArticleBarcodes
-                    where article_id = ?
-                ",
-        )
-        .bind(self.id)
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(DBError::new)
-    }
-
-    pub async fn set_barcodes(&self, db: &DB, barcodes: Vec<Barcode>) -> Result<(), DBError> {
-        let mut transaction = db.get_conn_transaction().await?;
-
-        let id = self.id.unwrap();
-
-        _ = query!(
-            "
-            delete from ArticleBarcodes
-            where article_id = ?
-            ",
-            id
-        )
-        .execute(&mut *transaction)
-        .await
-        .map_err(DBError::new)?;
-
-        let mut builder: sqlx::QueryBuilder<'_, sqlx::Sqlite> = sqlx::QueryBuilder::new(
-            "
-                insert into ArticleBarcodes
-                    (article_id, barcode_content)
-            ",
-        );
-
-        builder.push_values(barcodes.into_iter(), |mut b, element| {
-            b.push_bind(id);
-            b.push_bind(element.0);
-        });
-
-        let query = builder.build();
-
-        _ = query
-            .execute(&mut *transaction)
-            .await
-            .map_err(DBError::new)?;
-
-        _ = transaction.commit().await.map_err(DBError::new)?;
-
-        Ok(())
-    }
-
-    pub async fn update(&self, db: &DB) -> Result<(), DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let id = self.id.unwrap();
-
-        _ = query!(
-            "
-                update Articles
-                set name = ?, cost = ?
-                where id = ?
-            ",
-            self.name,
-            self.cost,
-            id
-        )
-        .execute(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        Ok(())
+        Ok(result)
     }
 }

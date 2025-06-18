@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use tracing::error;
 
-use crate::models::{Article, ArticleDB, User};
+use crate::models::{Article, User};
 
 #[server]
 pub async fn get_article_by_barcode(barcode: String) -> Result<Option<Article>, ServerFnError> {
@@ -36,7 +36,7 @@ pub async fn get_all_articles() -> Result<Vec<Article>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let articles = Article::get_all_from_db(&*state.db.lock().await).await;
+    let articles = Article::get_all(&*state.db.lock().await).await;
     articles.map_err(|e| {
         let err = e.to_string();
         error!("Could not fetch articles {}", err);
@@ -100,7 +100,7 @@ fn ShowArticles() -> impl IntoView {
                                                   <td class="p-2 text-center">{article.name}</td>
                                                   <td class="p-2 text-center">{article.cost.format_eur()}</td>
                                                   <td class="bg-green-700 p-2">
-                                                      <a href=format!("/articles/{}", article.id.unwrap())><p class="text-center">"Edit"</p></a>
+                                                      <a href=format!("/articles/{}", article.id)><p class="text-center">"Edit"</p></a>
                                                   </td>
                                                 </tr>
                                             }

@@ -34,7 +34,6 @@ create table Transactions (
 create Table Articles (
     id integer not null,
     name text not null unique,
-    cost integer not null,
 
     primary key (id)
 );
@@ -80,6 +79,15 @@ create Table ArticleSoundMap (
       
     foreign key (sound_id)
         references ArticleSounds(id),
+    foreign key (article_id)
+        references Articles(id)
+);
+
+create Table ArticleCostMap (
+    article_id integer not null,
+    cost integer not null,
+    effective_since date not null,
+
     foreign key (article_id)
         references Articles(id)
 );

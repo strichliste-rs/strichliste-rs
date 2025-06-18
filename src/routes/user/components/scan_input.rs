@@ -59,7 +59,7 @@ pub fn invisible_scan_input(
                         console_log(&format!("Need to buy article: {}", value.name));
                         buy_article(
                             user_id,
-                            value.id.unwrap(),
+                            value.id,
                             money_args_clone.money,
                             money_args_clone.error,
                             money_args_clone.transactions,

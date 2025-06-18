@@ -22,25 +22,8 @@ impl From<BarcodeDB> for Barcode {
     }
 }
 
-#[cfg(feature = "ssr")]
-impl BarcodeDB {
-    pub async fn get_article_id_from_barcode(
-        db: &DB,
-        barcode: &String,
-    ) -> Result<Option<i64>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let result = query!(
-            "
-                select article_id from ArticleBarcodes
-                where barcode_content = ?
-            ",
-            barcode
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        Ok(result.map(|value| value.article_id))
-    }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum BarcodeDiff {
+    Removed(String),
+    Added(String),
 }

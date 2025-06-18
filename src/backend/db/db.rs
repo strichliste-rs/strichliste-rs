@@ -25,6 +25,11 @@ impl fmt::Display for DBError {
     }
 }
 
+pub type DatabaseId = i64;
+pub type DatabaseResponse<T> = Result<T, DBError>;
+
+pub type DatabaseType = Sqlite;
+
 pub struct DB {
     pool: SqlitePool,
 }

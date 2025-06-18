@@ -1,7 +1,7 @@
 use leptos::prelude::*;
-use tracing::debug;
+use tracing::{debug, error};
 
-use crate::models::{Article, ArticleDB, Money};
+use crate::models::{Article, Money};
 
 #[server]
 pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnError> {
@@ -33,19 +33,18 @@ pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnEr
         }
     };
 
-    let article = Article::new(name, money);
+    let article = Article::new(&*state.db.lock().await, name, money).await;
 
-    let mut article_db: ArticleDB = article.into();
-
-    match article_db.add_to_db(&*state.db.lock().await).await {
-        Ok(()) => {}
+    let article = match article {
+        Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new(e));
+            error!("Failed to create new article: {}", e);
+            return Err(ServerFnError::new("Failed to create article!"));
         }
-    }
+    };
 
-    redirect(&format!("/articles/{}", article_db.id.unwrap()));
+    redirect(&format!("/articles/{}", article.id));
 
     Ok(())
 }
