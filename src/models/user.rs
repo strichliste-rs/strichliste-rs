@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{any::Any, str::FromStr};
 
 use super::{Money, Transaction, TransactionDB};
 
@@ -44,21 +44,21 @@ impl User {
     pub async fn add_to_db(&mut self, db: &DB) -> Result<(), DBError> {
         let mut transaction = db.get_conn_transaction().await?;
 
-        let result = query!(
-            "
-                select *
-                from Users
-                where nickname = ?
-            ",
-            self.nickname
-        )
-        .fetch_optional(&mut *transaction)
-        .await
-        .map_err(|e| DBError::new(e.to_string()))?;
+        // let result = query!(
+        //     "
+        //         select *
+        //         from Users
+        //         where nickname = ?
+        //     ",
+        //     self.nickname
+        // )
+        // .fetch_optional(&mut *transaction)
+        // .await
+        // .map_err(|e| DBError::new(e.to_string()))?;
 
-        if result.is_some() {
-            return Err(DBError::new("Nickname must be unique".to_string()));
-        }
+        // if result.is_some() {
+        //     return Err(DBError::new("Nickname must be unique".to_string()));
+        // }
 
         let result = query!(
             "
@@ -73,7 +73,17 @@ impl User {
         )
         .fetch_one(&mut *transaction)
         .await
-        .map_err(|e| DBError::new(e.to_string()))?;
+        .map_err(|e| match e {
+            sqlx::Error::Database(e) => {
+                if e.is_unique_violation() {
+                    DBError::new("Nickname must be unique")
+                } else {
+                    DBError::new(e)
+                }
+            }
+
+            _ => DBError::new(e.to_string()),
+        })?;
 
         let user_id = result.id;
 
