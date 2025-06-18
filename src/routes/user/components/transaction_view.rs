@@ -195,7 +195,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     <div class="pl-4 text-[1.25em]">
                         <For
                             each=move || transaction_signal.get()
-                            key=|transaction| (transaction.id, transaction.is_undone_signal.get())
+                            key=|transaction| (transaction.id, transaction.is_undone_signal.get(), transaction.timestamp)
                             let(child)
                         >
                             {format_transaction(&child, user_id, error_signal, money_signal)}

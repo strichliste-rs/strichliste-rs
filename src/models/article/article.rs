@@ -13,7 +13,7 @@ use {
     sqlx::{Executor, Sqlite},
 };
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
@@ -35,7 +35,7 @@ impl Article {
 
         transaction.commit().await.map_err(DBError::new)?;
 
-        let article = Article::get_from_db(db, id).await?;
+        let article = Article::get(db, id).await?;
 
         Ok(article.expect("Newly created article should exist!"))
     }
@@ -56,7 +56,7 @@ impl Article {
                 .map(|elem| Barcode(elem.barcode_content))
                 .collect();
             debug!("Fetched barcodes");
-            let cost = ArticleDB::get_cost(&mut *conn, id).await?;
+            let cost = ArticleDB::get_latest_cost(&mut *conn, id).await?;
             debug!("Fetched cost");
 
             article_no_db.push(Article {
@@ -70,7 +70,7 @@ impl Article {
         Ok(article_no_db)
     }
 
-    pub async fn get_from_db(db: &DB, id: i64) -> DatabaseResponse<Option<Self>> {
+    pub async fn get(db: &DB, id: i64) -> DatabaseResponse<Option<Self>> {
         let mut conn = db.get_conn().await?;
 
         match ArticleDB::get_single(&mut *conn, id).await? {
@@ -82,7 +82,7 @@ impl Article {
                     .map(|elem| Barcode(elem.barcode_content))
                     .collect();
 
-                let cost = ArticleDB::get_cost(&mut *conn, article.id).await?;
+                let cost = ArticleDB::get_latest_cost(&mut *conn, article.id).await?;
 
                 let ArticleDB { id, name } = article;
                 Ok(Some(Article {
@@ -105,7 +105,7 @@ impl Article {
         match result {
             None => Ok(None),
             Some(value) => {
-                let article = Article::get_from_db(db, value).await?;
+                let article = Article::get(db, value).await?;
                 Ok(article)
             }
         }
@@ -310,7 +310,7 @@ impl ArticleDB {
         Ok(sounds)
     }
 
-    pub async fn get_cost<T>(conn: &mut T, article_id: DatabaseId) -> DatabaseResponse<i64>
+    pub async fn get_latest_cost<T>(conn: &mut T, article_id: DatabaseId) -> DatabaseResponse<i64>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -321,6 +321,31 @@ impl ArticleDB {
                 order by effective_since desc
             ",
             article_id
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(result.cost)
+    }
+
+    pub async fn get_effective_cost<T>(
+        conn: &mut T,
+        article_id: DatabaseId,
+        timestamp: DateTime<Utc>,
+    ) -> DatabaseResponse<i64>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query!(
+            "
+                select cost from ArticleCostMap
+                where article_id = ? and effective_since < ?
+                order by effective_since desc
+                limit 1
+            ",
+            article_id,
+            timestamp
         )
         .fetch_one(&mut *conn)
         .await

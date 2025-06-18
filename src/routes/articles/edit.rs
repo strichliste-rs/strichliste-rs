@@ -19,7 +19,7 @@ pub async fn get_article(article_id: i64) -> Result<Article, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let article = Article::get_from_db(&*state.db.lock().await, article_id).await;
+    let article = Article::get(&*state.db.lock().await, article_id).await;
 
     let article = match article {
         Ok(value) => value,

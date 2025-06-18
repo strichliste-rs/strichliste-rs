@@ -3,10 +3,11 @@ use std::str::FromStr;
 use chrono::{DateTime, Local, Utc};
 use leptos::prelude::RwSignal;
 
-use super::Money;
+use super::{Article, Money};
 
 #[cfg(feature = "ssr")]
 use {
+    super::ArticleDB,
     crate::backend::db::{DBError, DB},
     crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
     sqlx::query,
@@ -266,6 +267,7 @@ impl TransactionDB {
                 timestamp as "timestamp: DateTime<Utc>"
             from Transactions
             where user_id = ?
+            order by timestamp desc
             limit ?
         "#,
             user_id,
@@ -356,13 +358,36 @@ impl Transaction {
     ) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
-        Ok(
-            TransactionDB::get_user_transactions(&mut *conn, user_id, limit)
-                .await?
-                .into_iter()
-                .map(|elem| elem.into())
-                .collect::<Vec<Transaction>>(),
-        )
+        let mut transactions = TransactionDB::get_user_transactions(&mut *conn, user_id, limit)
+            .await?
+            .into_iter()
+            .map(|elem| elem.into())
+            .collect::<Vec<Transaction>>();
+
+        for transaction in transactions.iter_mut() {
+            match transaction.t_type {
+                TransactionType::BOUGTH(article_id) => {
+                    let article = match ArticleDB::get_single(&mut *conn, article_id).await? {
+                        None => continue, // Article got nuked?,
+                        Some(value) => value,
+                    };
+
+                    let price = ArticleDB::get_effective_cost(
+                        &mut *conn,
+                        article_id,
+                        transaction.timestamp,
+                    )
+                    .await?;
+
+                    transaction.money = (-price).into();
+                    transaction.description = Some(article.name);
+                }
+
+                _ => {}
+            }
+        }
+
+        Ok(transactions)
     }
 
     pub async fn set_money<T>(&mut self, conn: &mut T, new_value: i64) -> DatabaseResponse<()>
