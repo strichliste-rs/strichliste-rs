@@ -14,12 +14,12 @@ use leptos_use::{core::IntoElementMaybeSignal, use_event_listener};
 use tracing::{debug, error, instrument::WithSubscriber};
 
 use crate::{
-    models::{Money, User, UserDB},
+    models::{Money, User},
     routes::state::{FrontendStore, FrontendStoreStoreFields},
 };
 
 #[server]
-pub async fn get_users() -> Result<Vec<UserDB>, ServerFnError> {
+pub async fn get_users() -> Result<Vec<User>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -55,7 +55,7 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
         return Ok(None);
     }
 
-    let user = User::get_by_card_number(&*state.db.lock().await, &barcode_string).await;
+    let user = User::get_by_card_number(&*state.db.lock().await, barcode_string).await;
 
     if user.is_err() {
         let err = user.err().unwrap();
@@ -122,7 +122,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
 
                 let user = user.unwrap();
                 let navigate = use_navigate();
-                navigate(&format!("/user/{}", user.id.unwrap()), Default::default());
+                navigate(&format!("/user/{}", user.id), Default::default());
             });
         }
 
@@ -205,14 +205,14 @@ pub fn ShowUsers() -> impl IntoView {
 }
 
 #[component]
-pub fn UserPreview(user: UserDB) -> impl IntoView {
+pub fn UserPreview(user: User) -> impl IntoView {
     view! {
         <div class="flex flex-col bg-[#2e3d4d] gap-2 rounded-[10px] py-2">
             <p class="text-center text-white">{user.nickname.clone()}</p>
             <p class="text-center"
-                class=("text-red-500", move || {user.money < 0})
-                class=("text-green-500", move ||{user.money >= 0})
-            >{Money::format_eur_diff_value(user.money)}</p>
+                class=("text-red-500", move || {user.money.value < 0})
+                class=("text-green-500", move ||{user.money.value >= 0})
+            >{Money::format_eur_diff_value(user.money.value)}</p>
         </div>
     }
 }

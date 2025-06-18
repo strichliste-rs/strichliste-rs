@@ -6,8 +6,13 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{Money, Transaction, TransactionDB, TransactionType, TransactionTypeDB, User}, routes::{articles::{get_article, get_article_by_barcode}, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
+    models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
+
+#[cfg(feature = "ssr")]
+use {
+  crate::models::TransactionDB,
+};
 
 use super::components::transaction_view::{ShowTransactions};
 
@@ -28,16 +33,24 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let user = User::get_by_id(&*state.db.lock().await, id).await;
+    let db = state.db.lock().await;
+    let mut conn = match db.get_conn().await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to create database transaction: {}", e);
+            return Err(ServerFnError::new("Failed to create database transaction"));
+        }
+    };
 
-    if user.is_err() {
-        let err = user.err().unwrap();
-        error!("Failed to fetch user: {}", err);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new(err));
-    }
-
-    let user = user.unwrap();
+    let user = match User::get(&mut *conn, id).await {
+        Ok(value) => value,
+        Err(e) => {            
+            error!("Failed to fetch user: {}", e);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new(e));
+        }
+    };
 
     Ok(user)
 }
@@ -52,53 +65,56 @@ pub async fn create_transaction(user_id: i64, money: Money, transaction_type: Tr
 
     let response_opts: ResponseOptions = expect_context();
 
-    let user = get_user(user_id).await?;
+    let mut user = match get_user(user_id).await? {
+        None => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new(&format!(
+                "No user found with id {}",
+                user_id
+            )));
+        },
 
-    if user.is_none() {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new(&format!(
-            "No user found with id {}",
-            user_id
-        )));
-    }
-
-    let transaction = Transaction {
-        id: None,
-        user_id,
-        t_type: transaction_type,
-        is_undone: false,
-        description: None,
-        timestamp: Utc::now(),
-        money,
-        is_undone_signal: RwSignal::new(false),
-        
+        Some(value) => value
     };
 
-    let mut transaction_db: TransactionDB = (&transaction).into();
+    let db = state.db.lock().await;
+    let mut db_trans = match db.get_conn_transaction().await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get database handle: {}", e);
+            return Err(ServerFnError::new("Failed to get database handle!"));
+        }
+    };
 
-    let result = transaction_db.add_to_db(&*state.db.lock().await).await;
+    let transaction = match Transaction::create(&mut *db_trans, user_id, transaction_type, None, money).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to create transaction: {}", e);
+            return Err(ServerFnError::new("Failed to create transaction!"));
+        }
+    };
 
-    if result.is_err() {
-        let err = result.err().unwrap();
-        error!("{err}");
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new(err));
+    let new_value = user.money.value + transaction.money.value;
+
+    match user.set_money(&mut *db_trans, new_value).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to update user: {}", e);
+            return Err(ServerFnError::new("Failed to update user!"));
+        }
     }
 
-    let mut user = user.unwrap();
-
-    user.money.value += transaction.money.value;
-
-    let result = user.update_money(&*state.db.lock().await).await;
-
-    if result.is_err() {
-        let err = result.err().unwrap();
-        error!("{err}");
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new(err));
+    match db_trans.commit().await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to commit transaction: {}", e);
+            return Err(ServerFnError::new("Failed to commit transaction!"));
+        }
     }
-
-    let transaction: Transaction = transaction_db.into();
 
     Ok(transaction)
 }

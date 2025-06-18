@@ -25,6 +25,12 @@ impl fmt::Display for DBError {
     }
 }
 
+impl From<sqlx::Error> for DBError {
+    fn from(value: sqlx::Error) -> Self {
+        DBError::new(value)
+    }
+}
+
 pub type DatabaseId = i64;
 pub type DatabaseResponse<T> = Result<T, DBError>;
 

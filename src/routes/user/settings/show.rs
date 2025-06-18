@@ -4,7 +4,7 @@ use tracing::{debug, error, warn};
 
 use crate::{models::User, routes::user::get_user};
 
-#[server] pub async fn update_user(id: i64, nickname: String, card_number: String,) -> Result<(), ServerFnError> {
+#[server] pub async fn update_user(id: i64, nickname: String, card_number: String) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -31,39 +31,70 @@ use crate::{models::User, routes::user::get_user};
 
     let mut user = user.unwrap();
 
-    let card_number_exists = User::get_by_card_number(&*state.db.lock().await, &card_number).await;
+    match User::get_by_card_number(&*state.db.lock().await, card_number.clone()).await {
+        Ok(value) => {
+            match value {
+                None => {},
+                Some(user) => {
+                    if user.id != id {
+                        warn!("The card number '{}' is already used!", card_number);
+                        response_opts.set_status(StatusCode::BAD_REQUEST);
+                        return Err(ServerFnError::new("The card number is already used!"));   
+                    }
+                }
+            }
+        },
 
-    if card_number_exists.is_err() {
-        error!("Failed to check for existence of the card number: {}", card_number_exists.err().unwrap());
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to check if the card number is already used!"));
-    }
-
-    let card_number_exists = card_number_exists.unwrap();
-
-    if card_number_exists.is_some() {
-        let user = card_number_exists.unwrap();
-        if user.id.unwrap() != id {
-            warn!("The card number '{}' is already used!", card_number);
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(ServerFnError::new("The card number is already used!"));   
+        Err(e) => {
+            error!("Failed to check for existence of the card number: {}", e);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to check if the card number is already used!"));
         }
     }
 
-    user.nickname = nickname;
-    user.card_number = match card_number.len() {
+    let card_number = match card_number.len() {
         0 => None,
         _ => Some(card_number)
     };
 
-    debug!("Changing card number for user '{}' to '{:?}'", user.id.unwrap(), user.card_number);
+    let db = &*state.db.lock().await;
 
-    let result = user.update_db(&*state.db.lock().await).await;
+    let mut db_trans = match db.get_conn_transaction().await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get database handle: {}", e);
+            return Err(ServerFnError::new("Faile to get a database handle!"));
+        }
+    };
 
-    if result.is_err() {
-        error!("Failed to update user in db: {}", result.err().unwrap());
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to update user!"));
+    match user.set_name(&mut *db_trans, nickname).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to set a new username: {}", e);
+            return Err(ServerFnError::new("Failed to set a new username!"))
+        }
+    }
+
+    debug!("Changing card number for user '{}' to '{:?}'", user.id, user.card_number);
+
+    match user.set_card_number(&mut *db_trans, card_number).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to set a new card number: {}", e);
+            return Err(ServerFnError::new("Failed to set a new card number!"));
+        }
+    }
+
+    match db_trans.commit().await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to commit database transaction: {}", e);
+            return Err(ServerFnError::new("Failed to commit the database transaction"));
+        }
     }
 
     redirect(&format!("/user/{}", id));
@@ -150,7 +181,7 @@ pub fn Show() -> impl IntoView {
                                 <label class="text-white text-[1.25em]">"Card number"</label>
                                 <input class="text-[1.25em]" type="text" value={user.card_number} name="card_number"/>
                             </div>
-                            <input type="hidden" value={user.id.unwrap()} name="id"/>
+                            <input type="hidden" value={user.id} name="id"/>
                             <input class="text-white hover:bg-pink-700 bg-emerald-700 rounded-full text-[1.25em] p-2" type="submit" value="Update user"/>
                         </div>
                         </ActionForm>

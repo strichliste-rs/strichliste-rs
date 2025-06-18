@@ -1,9 +1,10 @@
 use crate::models::Money;
 
-use super::{ArticleSound, Barcode, BarcodeDB, BarcodeDiff};
+use super::{ArticleSound, Barcode, BarcodeDiff};
 
 #[cfg(feature = "ssr")]
 use {
+    super::BarcodeDB,
     crate::backend::db::{DBError, DB},
     crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
     sqlx::query,

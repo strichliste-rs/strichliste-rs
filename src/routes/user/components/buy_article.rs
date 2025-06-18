@@ -8,11 +8,9 @@ use crate::{
     models::{Article, Money, Transaction},
     routes::{
         articles::{get_all_articles, get_article},
-        user::{get_user, MoneyArgs},
+        user::{create_transaction, get_user, MoneyArgs},
     },
 };
-
-use super::transaction_view::create_transaction;
 
 #[server]
 pub async fn buy_article_by_id(
@@ -41,27 +39,49 @@ pub async fn buy_article_by_id(
     let mut cost = article.cost.clone();
     cost.value *= -1;
 
-    let transaction = Transaction {
-        id: None,
-        user_id,
-        is_undone: false,
-        t_type: crate::models::TransactionType::BOUGTH(article_id),
-        money: cost,
-        description: Some(article.name.clone()),
-        timestamp: Utc::now(),
-        is_undone_signal: RwSignal::new(false),
+    let db = state.db.lock().await;
+    let mut db_trans = match db.get_conn_transaction().await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to create db_transaction: {}", e);
+            return Err(ServerFnError::new("Failed to create db connection"));
+        }
     };
 
-    let transaction = create_transaction(transaction).await?;
+    let transaction = match Transaction::create(
+        &mut *db_trans,
+        user_id,
+        crate::models::TransactionType::BOUGTH(article_id),
+        Some(article.name.clone()),
+        cost,
+    )
+    .await
+    {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to create transaction: {}", e);
+            return Err(ServerFnError::new("Failed to create transaction"));
+        }
+    };
+    let new_value = user.money.value + transaction.money.value;
 
-    user.money.value += transaction.money.value;
-
-    match user.update_money(&*state.db.lock().await).await {
+    match user.set_money(&mut *db_trans, new_value).await {
         Ok(_) => {}
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to update money for user in db: {e}");
             return Err(ServerFnError::new("Failed to update money for user in db!"));
+        }
+    }
+
+    match db_trans.commit().await {
+        Ok(_) => {}
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to commit transaction: {e}");
+            return Err(ServerFnError::new("Failed to commit the db transaction!"));
         }
     }
 

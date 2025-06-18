@@ -19,19 +19,18 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Name cannot be empty!"));
     }
-    let mut user = User::new();
-    user.nickname = username.trim().to_string();
+    let username = username.trim().to_string();
 
-    let result = user.add_to_db(&*state.db.lock().await).await;
+    let user_id = match User::create(&*state.db.lock().await, username, None).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to add user: {}", e);
+            return Err(ServerFnError::new(e));
+        }
+    };
 
-    if result.is_err() {
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        let error = result.err().unwrap();
-        error!("Failed to add user: {}", error);
-        return Err(ServerFnError::new(error));
-    }
-
-    redirect(&format!("/user/{}", user.id.unwrap()));
+    redirect(&format!("/user/{}", user_id));
 
     Ok(())
 }

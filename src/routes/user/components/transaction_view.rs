@@ -6,44 +6,20 @@ use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    models::{Money, Transaction, TransactionDB, TransactionType, User},
+    models::{Money, Transaction, TransactionType, User},
     routes::{articles::get_article, user::get_user},
 };
 
+#[cfg(feature = "ssr")]
+use crate::models::TransactionDB;
+
 use crate::routes::user::MoneyArgs;
-
-#[server]
-pub async fn create_transaction(transaction: Transaction) -> Result<Transaction, ServerFnError> {
-    use crate::backend::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let mut transaction_db: TransactionDB = transaction.into();
-
-    match transaction_db.add_to_db(&*state.db.lock().await).await {
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to add transaction to db: {}", e);
-            return Err(ServerFnError::new(format!(
-                "Failed to add transaction to db: {}",
-                e
-            )));
-        }
-
-        Ok(_) => {}
-    };
-
-    Ok(transaction_db.into())
-}
 
 #[server]
 pub async fn get_user_transactions(
     user_id: i64,
     limit: i64,
-) -> Result<Vec<TransactionDB>, ServerFnError> {
+) -> Result<Vec<Transaction>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -52,7 +28,7 @@ pub async fn get_user_transactions(
     let response_opts: ResponseOptions = expect_context();
 
     let transactions =
-        TransactionDB::get_user_transactions(&*state.db.lock().await, user_id, limit).await;
+        Transaction::get_user_transactions(&*state.db.lock().await, user_id, limit).await;
 
     if transactions.is_err() {
         error!(
@@ -89,7 +65,20 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
     }
     let mut user = user.unwrap();
 
-    let transaction = TransactionDB::get_by_id(&*state.db.lock().await, transaction_id).await;
+    let db = state.db.lock().await;
+
+    let mut db_trns = match db.get_conn_transaction().await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get connection to db: {}", e);
+            return Err(ServerFnError::new(
+                "Failed to create connection to database!",
+            ));
+        }
+    };
+
+    let transaction = Transaction::get(&mut *db_trns, transaction_id).await;
 
     if transaction.is_err() {
         error!(
@@ -115,39 +104,33 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
         return Err(ServerFnError::new("The transaction is already undone!"));
     }
 
-    // TODO: Fix with transaction
-    transaction.is_undone = true;
-    user.money.value -= transaction.money;
+    let new_value = user.money.value - transaction.money.value;
 
-    let result = user.update_money(&*state.db.lock().await).await;
-    if result.is_err() {
-        error!(
-            "Failed to update money from user: {}",
-            result.err().unwrap()
-        );
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to update user!"));
+    match user.set_money(&mut *db_trns, new_value).await {
+        Ok(_) => {}
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to update money for user: {}", e);
+            return Err(ServerFnError::new("Failed to update user!"));
+        }
     }
 
-    let result = transaction.update(&*state.db.lock().await).await;
-
-    if result.is_err() {
-        error!("Failed to update transaction: {}", result.err().unwrap());
-        info!("Attempting to revert user change");
-        user.money.value += transaction.money;
-        let result = user.update_money(&*state.db.lock().await).await;
-        if result.is_err() {
-            error!("Failed to revert user change: {}", result.err().unwrap());
-            error!("Transactions most likely out of sync with user!");
+    match transaction.set_undone(&mut *db_trns, true).await {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Failed to set transaction to undone: {}", e);
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new(
-                "Failed to update transaction and failed to revert user change!",
-            ));
+            return Err(ServerFnError::new("Failed to update transaction!"));
         }
+    }
 
-        info!("Reverted user change!");
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to update transaction!"));
+    match db_trns.commit().await {
+        Ok(_) => {}
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to apply transaction: {}", e);
+            return Err(ServerFnError::new("Failed to apply transaction!"));
+        }
     }
 
     Ok(())
@@ -212,7 +195,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     <div class="pl-4 text-[1.25em]">
                         <For
                             each=move || transaction_signal.get()
-                            key=|transaction| (transaction.id.unwrap(), transaction.is_undone_signal.get())
+                            key=|transaction| (transaction.id, transaction.is_undone_signal.get())
                             let(child)
                         >
                             {format_transaction(&child, user_id, error_signal, money_signal)}
@@ -245,7 +228,7 @@ pub fn format_transaction(
     let diff = now - transaction.timestamp;
 
     let undo_action = ServerAction::<UndoTransaction>::new();
-    let transaction_id = transaction.id.unwrap();
+    let transaction_id = transaction.id;
 
     let date_string = format!(
         "{}",

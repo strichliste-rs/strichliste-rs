@@ -8,7 +8,9 @@ use super::Money;
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBError, DB},
+    crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
     sqlx::query,
+    sqlx::{query_as, Executor},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -80,10 +82,10 @@ impl From<(TransactionTypeDB, Option<i64>)> for TransactionType {
 
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(feature = "ssr", derive(sqlx::Type, sqlx::FromRow))]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[cfg(feature = "ssr")]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]
 pub struct TransactionDB {
-    pub id: Option<i64>,
+    pub id: i64,
     pub user_id: i64,
     pub is_undone: bool,
     pub t_type: TransactionTypeDB,
@@ -93,6 +95,7 @@ pub struct TransactionDB {
     pub timestamp: DateTime<Utc>,
 }
 
+#[cfg(feature = "ssr")]
 impl From<&Transaction> for TransactionDB {
     fn from(value: &Transaction) -> Self {
         let Transaction {
@@ -124,6 +127,7 @@ impl From<&Transaction> for TransactionDB {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl From<Transaction> for TransactionDB {
     fn from(value: Transaction) -> Self {
         let Transaction {
@@ -155,6 +159,7 @@ impl From<Transaction> for TransactionDB {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl Into<Transaction> for TransactionDB {
     fn into(self) -> Transaction {
         Transaction {
@@ -172,10 +177,19 @@ impl Into<Transaction> for TransactionDB {
 
 #[cfg(feature = "ssr")]
 impl TransactionDB {
-    pub async fn add_to_db(&mut self, db: &DB) -> Result<(), DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let result = query!(
+    pub async fn create<T>(
+        conn: &mut T,
+        user_id: DatabaseId,
+        t_type: TransactionTypeDB,
+        t_type_data: Option<i64>,
+        description: Option<String>,
+        money: i64,
+    ) -> DatabaseResponse<DatabaseId>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let now = Utc::now();
+        query!(
             "
                 insert into Transactions
                     (user_id, t_type, is_undone, t_type_data, money, description, timestamp)
@@ -183,84 +197,124 @@ impl TransactionDB {
                     (?, ?, ?, ?, ?, ?, ?)
                 returning id
             ",
-            self.user_id,
-            self.t_type,
-            self.is_undone,
-            self.t_type_data,
-            self.money,
-            self.description,
-            self.timestamp,
+            user_id,
+            t_type,
+            false,
+            t_type_data,
+            money,
+            description,
+            now
         )
         .fetch_one(&mut *conn)
         .await
-        .map_err(|e| DBError::new(e.to_string()))?;
+        .map_err(From::from)
+        .map(|elem| elem.id)
+    }
 
-        self.id = Some(result.id);
+    pub async fn get<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Option<TransactionDB>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query_as!(
+            TransactionDB,
+            r#"
+                select
+                    id as "id: i64",
+                    user_id as "user_id: i64",
+                    is_undone,
+                    t_type as "t_type: TransactionTypeDB",
+                    t_type_data,
+                    money,
+                    description,
+                    timestamp as "timestamp: DateTime<Utc>"
+                from Transactions
+                where id = ?
+            "#,
+            id
+        )
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        let result = match result {
+            None => return Ok(None),
+            Some(value) => value,
+        };
+
+        Ok(Some(result))
+    }
+
+    pub async fn get_user_transactions<T>(
+        conn: &mut T,
+        user_id: DatabaseId,
+        limit: i64,
+    ) -> DatabaseResponse<Vec<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query_as!(
+            Self,
+            r#"
+            select
+                id as "id: i64",
+                user_id as "user_id: i64",
+                is_undone,
+                t_type as "t_type: TransactionTypeDB",
+                t_type_data,
+                money,
+                description,
+                timestamp as "timestamp: DateTime<Utc>"
+            from Transactions
+            where user_id = ?
+            limit ?
+        "#,
+            user_id,
+            limit
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(Into::<DBError>::into)?;
+
+        Ok(result)
+    }
+
+    pub async fn set_money<T>(conn: &mut T, id: DatabaseId, new_value: i64) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        _ = query!(
+            "
+                update Transactions
+                set money = ?
+                where id = ?
+            ",
+            new_value,
+            id
+        )
+        .execute(&mut *conn)
+        .await
+        // .map_err(From::<DBError>::from)?;
+        .map_err(DBError::new)?;
 
         Ok(())
     }
 
-    pub async fn get_user_transactions(
-        db: &DB,
-        user_id: i64,
-        limit: i64,
-    ) -> Result<Vec<TransactionDB>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let result = sqlx::query_as::<_, TransactionDB>(
-            "
-                select *
-                from Transactions
-                where user_id = ?
-                order by timestamp desc
-                limit ?
-            ",
-        )
-        .bind(user_id)
-        .bind(limit)
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(|e| DBError::new(e.to_string()))?;
-
-        Ok(result)
-    }
-
-    pub async fn get_by_id(db: &DB, id: i64) -> Result<Option<TransactionDB>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let result = sqlx::query_as::<_, TransactionDB>(
-            "
-                select *
-                from Transactions
-                where id = ?
-            ",
-        )
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(|e| DBError::new(e.to_string()))?;
-
-        Ok(result)
-    }
-
-    /// Will update every field in the db except 'id' and 'user_id'
-    pub async fn update(&self, db: &DB) -> Result<(), DBError> {
-        let mut conn = db.get_conn().await?;
-        let id = self.id.unwrap();
+    async fn set_undone<T>(conn: &mut T, id: i64, new_value: bool) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
         _ = query!(
             "
                 update Transactions
-                set is_undone = ?, t_type = ?, t_type_data = ?, money = ?, description = ?, timestamp = ?
+                set is_undone = ?
                 where id = ?
             ",
-            self.is_undone,
-            self.t_type,
-            self.t_type_data,
-            self.money,
-            self.description,
-            self.timestamp,
+            new_value,
             id
-        ).execute(&mut *conn).await.map_err(|e| DBError::new(e.to_string()))?;
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
 
         Ok(())
     }
@@ -268,7 +322,7 @@ impl TransactionDB {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
-    pub id: Option<i64>,
+    pub id: i64,
     pub user_id: i64,
     pub is_undone: bool,
     pub t_type: TransactionType,
@@ -276,4 +330,85 @@ pub struct Transaction {
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
     pub is_undone_signal: RwSignal<bool>,
+}
+
+#[cfg(feature = "ssr")]
+impl Transaction {
+    pub async fn get<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Option<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let transaction_db = TransactionDB::get(conn, id).await?;
+
+        let transaction_db = match transaction_db {
+            Some(value) => value,
+            None => return Ok(None),
+        };
+
+        let transaction: Transaction = transaction_db.into();
+        Ok(Some(transaction))
+    }
+
+    pub async fn get_user_transactions(
+        db: &DB,
+        user_id: DatabaseId,
+        limit: i64,
+    ) -> DatabaseResponse<Vec<Self>> {
+        let mut conn = db.get_conn().await?;
+
+        Ok(
+            TransactionDB::get_user_transactions(&mut *conn, user_id, limit)
+                .await?
+                .into_iter()
+                .map(|elem| elem.into())
+                .collect::<Vec<Transaction>>(),
+        )
+    }
+
+    pub async fn set_money<T>(&mut self, conn: &mut T, new_value: i64) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        TransactionDB::set_money(&mut *conn, self.id, new_value).await
+    }
+
+    pub async fn set_undone<T>(&mut self, conn: &mut T, new_value: bool) -> DatabaseResponse<()>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        TransactionDB::set_undone(&mut *conn, self.id, new_value).await
+    }
+
+    pub async fn create<T>(
+        conn: &mut T,
+        user_id: DatabaseId,
+        t_type: TransactionType,
+        description: Option<String>,
+        money: Money,
+    ) -> DatabaseResponse<Self>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let t_type_data = match t_type {
+            TransactionType::BOUGTH(id)
+            | TransactionType::RECEIVED(id)
+            | TransactionType::SENT(id) => Some(id),
+
+            _ => None,
+        };
+
+        let t_id = TransactionDB::create(
+            &mut *conn,
+            user_id,
+            t_type.into(),
+            t_type_data,
+            description,
+            money.value,
+        )
+        .await?;
+
+        Ok(Transaction::get(&mut *conn, t_id)
+            .await?
+            .expect("Newly created transaction should be present"))
+    }
 }

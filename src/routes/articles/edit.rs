@@ -76,7 +76,7 @@ pub async fn update_article(id: i64, name: String, cost: String, barcodes: Optio
         }
     };
 
-    match article.set_name(&mut *transaction, name).await {
+    match article.set_name(&mut *transaction, name.trim().to_string()).await {
         Ok(_) => {},
         Err(e) => {
           response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
