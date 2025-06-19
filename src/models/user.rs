@@ -1,6 +1,4 @@
-use std::{any::Any, str::FromStr};
-
-use super::{Money, Transaction};
+use super::Money;
 
 #[cfg(feature = "ssr")]
 use {
@@ -13,7 +11,6 @@ use {
 };
 
 use serde::{Deserialize, Serialize};
-use tracing::debug;
 
 #[cfg(feature = "ssr")]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]
@@ -333,7 +330,7 @@ impl User {
         limit: i64,
     ) -> DatabaseResponse<Vec<TransactionDB>> {
         let mut conn = db.get_conn().await?;
-        TransactionDB::get_user_transactions(&mut *conn, self.id, limit).await
+        TransactionDB::get_user_transactions(&mut *conn, self.id, limit, 0).await
     }
 
     pub async fn get_by_card_number(

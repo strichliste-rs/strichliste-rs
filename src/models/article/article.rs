@@ -9,8 +9,8 @@ use {
     crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
     sqlx::query,
     sqlx::query_as,
+    sqlx::Executor,
     sqlx::Transaction,
-    sqlx::{Executor, Sqlite},
 };
 
 use chrono::{DateTime, Utc};

@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use chrono::Utc;
 use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use tracing::error;
 
@@ -8,7 +7,7 @@ use crate::{
     models::{Article, Money, Transaction},
     routes::{
         articles::{get_all_articles, get_article},
-        user::{create_transaction, get_user, MoneyArgs},
+        user::{get_user, MoneyArgs},
     },
 };
 
@@ -142,7 +141,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                     };
 
                     article.into_iter().map(|article| {
-                        let Article { id, name, cost, sounds, barcodes } = article;
+                        let Article { id, name, cost, sounds: _, barcodes: _ } = article;
                         view!{
                                 <button class="bg-gray-700 rounded p-2"
                                     on:click=move |_| {

@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
-use chrono::Utc;
-use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
+use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
@@ -9,12 +8,7 @@ use crate::{
     models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 
-#[cfg(feature = "ssr")]
-use {
-  crate::models::TransactionDB,
-};
-
-use super::components::transaction_view::{ShowTransactions};
+use super::components::transaction_view::ShowTransactions;
 
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {

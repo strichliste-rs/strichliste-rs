@@ -1,11 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ssr")]
-use {
-    crate::backend::db::{DBError, DB},
-    sqlx::{query, query_as},
-};
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Barcode(pub String);
 

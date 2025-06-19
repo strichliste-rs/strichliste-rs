@@ -1,7 +1,6 @@
 
 use leptos::{
-    html::{self, Audio},
-    leptos_dom::logging::console_log,
+    html::{self},
     prelude::*,
     task::spawn_local,
 };

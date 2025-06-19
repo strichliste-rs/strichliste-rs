@@ -63,6 +63,7 @@ impl From<i64> for Money {
 impl TryFrom<String> for Money {
     type Error = MoneyParseError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
+        #[allow(unused_assignments)] // euros is never read
         let (mut euros, mut cents): (String, String) = (0.to_string(), 0.to_string());
 
         let string = value.replace(",", ".");

@@ -1,22 +1,8 @@
-use std::{iter::Scan, str::FromStr};
-
-use leptos::{
-    ev::{self, blur, KeyboardEvent, SubmitEvent},
-    html,
-    leptos_dom::logging::{console_error, console_log},
-    prelude::*,
-    reactive::signal,
-    tachys::{dom::event_target, html::property::IntoProperty},
-    task::spawn_local,
-};
+use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
-use leptos_use::{core::IntoElementMaybeSignal, use_event_listener};
-use tracing::{debug, error, instrument::WithSubscriber};
+use tracing::{debug, error};
 
-use crate::{
-    models::{Money, User},
-    routes::state::{FrontendStore, FrontendStoreStoreFields},
-};
+use crate::models::{Money, User};
 
 #[server]
 pub async fn get_users() -> Result<Vec<User>, ServerFnError> {

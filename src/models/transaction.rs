@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
-use super::{Article, Money};
+use super::Money;
 
 #[cfg(feature = "ssr")]
 use {
@@ -139,7 +137,7 @@ impl From<Transaction> for TransactionDB {
             money,
             description,
             timestamp,
-            is_undone_signal,
+            is_undone_signal: _,
         } = value;
 
         Self {
@@ -249,6 +247,7 @@ impl TransactionDB {
         conn: &mut T,
         user_id: DatabaseId,
         limit: i64,
+        offset: i64,
     ) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -269,9 +268,11 @@ impl TransactionDB {
             where user_id = ?
             order by timestamp desc
             limit ?
+            offset ?
         "#,
             user_id,
-            limit
+            limit,
+            offset,
         )
         .fetch_all(&mut *conn)
         .await
@@ -355,14 +356,16 @@ impl Transaction {
         db: &DB,
         user_id: DatabaseId,
         limit: i64,
+        offset: i64,
     ) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
-        let mut transactions = TransactionDB::get_user_transactions(&mut *conn, user_id, limit)
-            .await?
-            .into_iter()
-            .map(|elem| elem.into())
-            .collect::<Vec<Transaction>>();
+        let mut transactions =
+            TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
+                .await?
+                .into_iter()
+                .map(|elem| elem.into())
+                .collect::<Vec<Transaction>>();
 
         for transaction in transactions.iter_mut() {
             match transaction.t_type {

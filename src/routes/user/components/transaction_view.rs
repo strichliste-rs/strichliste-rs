@@ -3,15 +3,12 @@ use std::rc::Rc;
 use chrono::{DateTime, Local, Utc};
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 
 use crate::{
-    models::{Money, Transaction, TransactionType, User},
-    routes::{articles::get_article, user::get_user},
+    models::{Money, Transaction, TransactionType},
+    routes::user::get_user,
 };
-
-#[cfg(feature = "ssr")]
-use crate::models::TransactionDB;
 
 use crate::routes::user::MoneyArgs;
 
@@ -19,16 +16,16 @@ use crate::routes::user::MoneyArgs;
 pub async fn get_user_transactions(
     user_id: i64,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<Transaction>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
-
     let response_opts: ResponseOptions = expect_context();
 
     let transactions =
-        Transaction::get_user_transactions(&*state.db.lock().await, user_id, limit).await;
+        Transaction::get_user_transactions(&*state.db.lock().await, user_id, limit, offset).await;
 
     if transactions.is_err() {
         error!(
@@ -152,7 +149,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
     let user_id = user_id.unwrap();
 
-    let transaction_data = OnceResource::new(get_user_transactions(user_id, 10));
+    let transaction_data = OnceResource::new(get_user_transactions(user_id, 10, 0));
 
     let transaction_signal: RwSignal<Vec<Transaction>> = arguments.transactions;
 
