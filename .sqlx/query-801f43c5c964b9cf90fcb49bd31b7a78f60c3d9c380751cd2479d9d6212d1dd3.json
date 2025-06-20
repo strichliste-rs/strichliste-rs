@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select cost from ArticleCostMap\n                where article_id = ?\n                order by effective_since desc\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cost",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "801f43c5c964b9cf90fcb49bd31b7a78f60c3d9c380751cd2479d9d6212d1dd3"
+}

@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    id as \"id: i64\",\n                    user_id as \"user_id: i64\",\n                    is_undone,\n                    t_type as \"t_type: TransactionTypeDB\",\n                    t_type_data,\n                    money,\n                    description,\n                    timestamp as \"timestamp: DateTime<Utc>\"\n                from Transactions\n                where id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id: i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "user_id: i64",
+        "ordinal": 1,
+        "type_info": "Null"
+      },
+      {
+        "name": "is_undone",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "t_type: TransactionTypeDB",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "t_type_data",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "money",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "description",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "timestamp: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Date"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "f51429f5afcd2590198f85d3398a27667ccd040c26d7a98c4bd50ba1892025cb"
+}

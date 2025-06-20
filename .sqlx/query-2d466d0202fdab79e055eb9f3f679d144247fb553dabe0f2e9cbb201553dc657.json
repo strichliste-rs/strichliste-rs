@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                insert into UserCardNumberMap\n                                    (user_id, card_number)\n                                values\n                                    (?, ?)\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2d466d0202fdab79e055eb9f3f679d144247fb553dabe0f2e9cbb201553dc657"
+}

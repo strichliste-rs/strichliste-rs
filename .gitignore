@@ -12,3 +12,5 @@ target/
 tmp/*
 !tmp/.gitkeep
 .direnv/
+
+result

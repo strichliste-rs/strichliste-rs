@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select * from ArticleBarcodes\n                where article_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "article_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "barcode_content",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "37a6b9ad7cdb0903b568e55844f06462f67f3dafd0a1ebb4336caac3e32506d5"
+}

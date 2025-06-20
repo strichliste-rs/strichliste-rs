@@ -43,6 +43,10 @@
 
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           DATABASE_URL = "sqlite:tmp/db.sqlite";
+
+          shellHook = ''
+            alias prepare-sqlx = "cargo sqlx prepare -- --all-targets --all-features"
+          '';
         };
 
         packages.default = pkgs.callPackage ./pkg.nix { inherit name version; };

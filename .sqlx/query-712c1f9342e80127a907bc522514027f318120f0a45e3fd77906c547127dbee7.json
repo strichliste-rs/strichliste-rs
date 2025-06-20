@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ArticleBarcodes\n                    (article_id, barcode_content)\n                values\n                    (?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "712c1f9342e80127a907bc522514027f318120f0a45e3fd77906c547127dbee7"
+}

@@ -16,8 +16,7 @@ rustPlatform.buildRustPackage rec {
     tailwindcss
   ];
 
-  # cargoHash = "sha256-AMuSaJljSt4pKE8jTNigJWoFILHL03JxSZCfkoNBv14=";
-  cargoHash = "sha256-bkCj3flNKI+BYfjAXtM5u7RjPnHYbNjiSDoVy9BubSI=";
+  cargoHash = "sha256-SCDmDIUWkCJnrvxEFwQ0k0ohs6+mcA7wSO12mlMGAoA=";
   useFetchCargoVendor = true;
 
   buildPhase = ''

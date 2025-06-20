@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ArticleCostMap\n                    (article_id, cost, effective_since)\n                values\n                    (?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e2001c5711ae698d794eb95a632d034c0ba2ce107ed5eaf8f0aae5ba8750c1a3"
+}

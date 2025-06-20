@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                update Transactions\n                set is_undone = ?\n                where id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c0b96e53efcf134a1cc4adc731856296f7f18a547d521d9e2124134f7ea99ac6"
+}

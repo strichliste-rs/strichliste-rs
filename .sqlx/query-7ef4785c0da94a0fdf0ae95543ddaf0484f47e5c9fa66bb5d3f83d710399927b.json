@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        delete from UserCardNumberMap\n                        where user_id = ?\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "7ef4785c0da94a0fdf0ae95543ddaf0484f47e5c9fa66bb5d3f83d710399927b"
+}

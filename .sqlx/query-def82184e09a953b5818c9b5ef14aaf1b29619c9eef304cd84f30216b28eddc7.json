@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select *\n                from Users\n                where id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "nickname",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "money",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "def82184e09a953b5818c9b5ef14aaf1b29619c9eef304cd84f30216b28eddc7"
+}

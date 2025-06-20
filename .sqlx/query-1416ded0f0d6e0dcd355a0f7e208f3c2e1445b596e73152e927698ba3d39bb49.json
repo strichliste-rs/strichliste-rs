@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into Transactions\n                    (user_id, t_type, is_undone, t_type_data, money, description, timestamp)\n                values\n                    (?, ?, ?, ?, ?, ?, ?)\n                returning id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1416ded0f0d6e0dcd355a0f7e208f3c2e1445b596e73152e927698ba3d39bb49"
+}

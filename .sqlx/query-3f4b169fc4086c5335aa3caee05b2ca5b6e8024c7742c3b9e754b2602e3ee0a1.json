@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select card_number\n                from UserCardNumberMap\n                where user_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "card_number",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3f4b169fc4086c5335aa3caee05b2ca5b6e8024c7742c3b9e754b2602e3ee0a1"
+}

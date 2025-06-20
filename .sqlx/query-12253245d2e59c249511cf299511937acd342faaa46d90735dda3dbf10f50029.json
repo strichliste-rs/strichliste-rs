@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                update UserCardNumberMap\n                                set\n                                    card_number = ?\n                                where user_id = ?\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "12253245d2e59c249511cf299511937acd342faaa46d90735dda3dbf10f50029"
+}

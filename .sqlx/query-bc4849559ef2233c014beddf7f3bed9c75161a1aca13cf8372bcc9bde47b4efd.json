@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ArticleBarcodes\n                where article_id = ? and barcode_content = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "bc4849559ef2233c014beddf7f3bed9c75161a1aca13cf8372bcc9bde47b4efd"
+}
