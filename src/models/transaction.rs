@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
@@ -367,23 +369,38 @@ impl Transaction {
                 .map(|elem| elem.into())
                 .collect::<Vec<Transaction>>();
 
+        let mut article_cache = HashMap::<i64, (i64, String)>::new();
+
         for transaction in transactions.iter_mut() {
             match transaction.t_type {
                 TransactionType::BOUGTH(article_id) => {
-                    let article = match ArticleDB::get_single(&mut *conn, article_id).await? {
-                        None => continue, // Article got nuked?,
-                        Some(value) => value,
+                    let (price, article_name) = match article_cache.get(&article_id) {
+                        None => {
+                            let article =
+                                match ArticleDB::get_single(&mut *conn, article_id).await? {
+                                    None => continue, // Article got nuked?,
+                                    Some(value) => value,
+                                };
+
+                            let price = ArticleDB::get_effective_cost(
+                                &mut *conn,
+                                article_id,
+                                transaction.timestamp,
+                            )
+                            .await?;
+
+                            let result = (-price, article.name);
+
+                            _ = article_cache.insert(article_id, result.clone());
+
+                            result
+                        }
+
+                        Some(value) => value.clone(),
                     };
 
-                    let price = ArticleDB::get_effective_cost(
-                        &mut *conn,
-                        article_id,
-                        transaction.timestamp,
-                    )
-                    .await?;
-
                     transaction.money = (-price).into();
-                    transaction.description = Some(article.name);
+                    transaction.description = Some(article_name);
                 }
 
                 _ => {}
