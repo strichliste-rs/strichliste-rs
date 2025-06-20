@@ -1,4 +1,4 @@
-use leptos::{html, leptos_dom::logging::console_log, prelude::*};
+use leptos::{html, prelude::*};
 use leptos_router::hooks::use_params_map;
 
 use crate::{
@@ -49,7 +49,7 @@ pub fn Show() -> impl IntoView {
                     <button class=go_back_padding><a href=format!("/user/{}", user_id) class=format!("text-white bg-gray-400 rounded {}", go_back_padding)>"Go back"</a></button>
                 </div>
                 <ShowNavigationButtons page_count=page_count transaction_signal=transaction_signal transactions_per_page=transactions_per_page/>
-                <Suspense
+                <Transition
                     fallback=move || view!{<h1 class="text-white text-center">"Loading transactions!"</h1>}
                 >
                     {move || match trans_resource.get() {
@@ -73,7 +73,7 @@ pub fn Show() -> impl IntoView {
                             }
                         },
                     }}
-                </Suspense>
+                </Transition>
             </div>
             <ShowNavigationButtons page_count=page_count transaction_signal=transaction_signal transactions_per_page=transactions_per_page/>
         }.into_any()
@@ -104,7 +104,9 @@ pub fn ShowNavigationButtons(
                             },
                         }
                     }
-                    <button class="bg-gray-400 text-white rounded p-5"
+                    <button class="rounded p-5"
+                        class=(["bg-gray-400", "text-white"], move || page_count.get() != 0)
+                        class=(["bg-white", "text-black"], move || page_count.get() == 0)
                         node_ref=button_ref_prev
                         on:click=move |_| {
                             page_count.update(|value| {
@@ -114,7 +116,9 @@ pub fn ShowNavigationButtons(
                             });
                         }
                     >"Previous page"</button>
-                    <button class="bg-gray-400 text-white rounded p-5"
+                    <button class="rounded p-5"
+                        class=(["bg-gray-400", "text-white"], move || transaction_signal.get().len() == transactions_per_page as usize)
+                        class=(["bg-white", "text-black"], move || transaction_signal.get().len() != transactions_per_page as usize)
                         on:click=move |_| {
                             let transaction_count = transaction_signal.get_untracked().len();
 
