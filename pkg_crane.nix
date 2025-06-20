@@ -42,6 +42,8 @@ let
       # wrapProgram $out/bin/${name} \
       #   --set LEPTOS_SITE_ROOT $out/bin/site
 
+
+      # WHERE IS MY site/ DIR?
       mkdir -p $out/bin
       cp target/release/${name} $out/bin
       echo LS target/
