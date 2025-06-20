@@ -3,6 +3,7 @@ Infos:
 
 # Build
 
+## Build with nix
 ```bash
 # this is an alias to scripts/prepare-sqlx
 prepare-sqlx
