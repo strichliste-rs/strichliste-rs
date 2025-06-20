@@ -1,4 +1,4 @@
-use leptos::{leptos_dom::logging::console_log, prelude::*};
+use leptos::{html, leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
 
 use crate::{
@@ -49,27 +49,31 @@ pub fn Show() -> impl IntoView {
                     <button class=go_back_padding><a href=format!("/user/{}", user_id) class=format!("text-white bg-gray-400 rounded {}", go_back_padding)>"Go back"</a></button>
                 </div>
                 <ShowNavigationButtons page_count=page_count transaction_signal=transaction_signal transactions_per_page=transactions_per_page/>
-                {move || match trans_resource.get() {
-                    None => view!{}.into_any(),
-                    Some(value) => match value {
-                        Err(e) => {
-                            return view! {
-                                <p class="text-red-400">"Failed to fetch transactions: "{e.to_string()}</p>
-                            }.into_any();
-                        }
-
-                        Ok(value) => {
-                            transaction_signal.update(|transactions| *transactions = value);
-                            return view!{
-                            {
-                                 transaction_signal.get().iter().map(|transaction| {
-                                    format_transaction(transaction, user_id, error, money_signal)
-                                }).collect_view()
+                <Suspense
+                    fallback=move || view!{<h1 class="text-white text-center">"Loading transactions!"</h1>}
+                >
+                    {move || match trans_resource.get() {
+                        None => view!{}.into_any(),
+                        Some(value) => match value {
+                            Err(e) => {
+                                return view! {
+                                    <p class="text-red-400">"Failed to fetch transactions: "{e.to_string()}</p>
+                                }.into_any();
                             }
-                            }.into_any();
-                        }
-                    },
-                }}
+
+                            Ok(value) => {
+                                transaction_signal.update(|transactions| *transactions = value);
+                                return view!{
+                                {
+                                     transaction_signal.get().iter().map(|transaction| {
+                                        format_transaction(transaction, user_id, error, money_signal)
+                                    }).collect_view()
+                                }
+                                }.into_any();
+                            }
+                        },
+                    }}
+                </Suspense>
             </div>
             <ShowNavigationButtons page_count=page_count transaction_signal=transaction_signal transactions_per_page=transactions_per_page/>
         }.into_any()
@@ -84,8 +88,24 @@ pub fn ShowNavigationButtons(
     view! {
         <div class="flex justify-between p-2">
             {
+                let button_ref_prev = NodeRef::<html::Button>::new();
                 view!{
+                    {
+                        move || match transaction_signal.get().len() {
+                            0 => {
+                                button_ref_prev.get().map(|elem| {
+                                   elem.set_attribute("disabled", "")
+                                });
+                            },
+                            _ => {
+                                button_ref_prev.get().map(|elem| {
+                                   elem.remove_attribute("disabled")
+                                });
+                            },
+                        }
+                    }
                     <button class="bg-gray-400 text-white rounded p-5"
+                        node_ref=button_ref_prev
                         on:click=move |_| {
                             page_count.update(|value| {
                                 if *value != 0 {
