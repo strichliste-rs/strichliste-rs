@@ -1,39 +1,41 @@
 { rustPlatform, lib, pkgs, name, version, ... }:
+let
+  package = rustPlatform.buildRustPackage rec {
+    inherit name version;
+    pname = name;
 
-rustPlatform.buildRustPackage rec {
-  inherit name version;
-  pname = name;
+    src = ./.;
 
-  src = ./.;
+    nativeBuildInputs = with pkgs; [
+      cargo-leptos
+      lld
+      binaryen
+      dart-sass
+      sqlx-cli
+      makeWrapper
+      tailwindcss
+    ];
 
-  nativeBuildInputs = with pkgs; [
-    cargo-leptos
-    lld
-    binaryen
-    dart-sass
-    sqlx-cli
-    makeWrapper
-    tailwindcss
-  ];
+    cargoHash = "sha256-SCDmDIUWkCJnrvxEFwQ0k0ohs6+mcA7wSO12mlMGAoA=";
+    useFetchCargoVendor = true;
 
-  cargoHash = "sha256-SCDmDIUWkCJnrvxEFwQ0k0ohs6+mcA7wSO12mlMGAoA=";
-  useFetchCargoVendor = true;
+    buildPhase = ''
+      cargo leptos build --release -vvv
+    '';
 
-  buildPhase = ''
-    cargo leptos build --release -vvv
-  '';
+    installPhase = ''
+      mkdir -p $out/bin
+      cp target/release/${name} $out/bin/
+      cp -r target/site $out/bin/
+      wrapProgram $out/bin/${name} \
+        --set LEPTOS_SITE_ROOT $out/bin/site
+    '';
 
-  installPhase = ''
-    mkdir -p $out/bin
-    cp target/release/${name} $out/bin/
-    cp -r target/site $out/bin/
-    wrapProgram $out/bin/${name} \
-      --set LEPTOS_SITE_ROOT $out/bin/site
-  '';
-
-  meta = with lib; {
-    description = "A ditigal tally-sheet";
-    license = licenses.gpl2;
-    platforms = platforms.all;
+    meta = with lib; {
+      description = "A ditigal tally-sheet";
+      license = licenses.gpl2;
+      platforms = platforms.all;
+    };
   };
-}
+
+in { packages.default = package; }
