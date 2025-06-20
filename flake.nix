@@ -12,7 +12,6 @@
     inputs.flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        # craneLib = inputs.crane.mkLib pkgs;
 
         toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
         name = toml.package.name;
@@ -43,48 +42,8 @@
 
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           DATABASE_URL = "sqlite:tmp/db.sqlite";
-
-          shellHook = ''
-            alias prepare-sqlx = "cargo sqlx prepare -- --all-targets --all-features"
-          '';
         };
 
         packages.default = pkgs.callPackage ./pkg.nix { inherit name version; };
-        # packages.default = let
-        #   toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        #   name = toml.package.name;
-        #   version = toml.package.version;
-
-        #   src = craneLib.cleanCargoSource ./.;
-
-        #   commonArgs = {
-        #     inherit src version;
-        #     pname = name;
-        #     buildInputs = with pkgs; [ cargo-leptos binaryen lld ];
-        #   };
-
-        #   artifacts = craneLib.buildDepsOnly commonArgs;
-        # in craneLib.buildPackage commonArgs // {
-        #   cargoArtifacts = artifacts;
-
-        #   buildInputs = with pkgs; [
-        #     pkgs.cargo-leptos
-        #     pkgs.binaryen
-        #     tailwindcss
-        #   ];
-        #   buildPhaseCommand = "cargo leptos build --release -vvv";
-
-        #   nativeBuildInputs = with pkgs; [ makeWrapper ];
-        #   installPhaseCommand = ''
-        #     mkdir -p $out/bin
-        #     cp target/server/release/${name} $out/bin/
-        #     echo out is $out
-        #     echo target ls
-        #     ls target/
-        #     cp -r target/site $out/bin/
-        #     wrapProgram $out/bin/${name} \
-        #       --set LEPTOS_SITE_ROOT $out/bin/site
-        #   '';
-        # };
-      });
+      } // pkgs.callPackage ./pkg_crane.nix { inherit name version inputs; });
 }

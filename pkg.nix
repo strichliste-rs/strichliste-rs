@@ -32,7 +32,7 @@ rustPlatform.buildRustPackage rec {
   '';
 
   meta = with lib; {
-    description = "A program";
+    description = "A ditigal tally-sheet";
     license = licenses.gpl2;
     platforms = platforms.all;
   };
