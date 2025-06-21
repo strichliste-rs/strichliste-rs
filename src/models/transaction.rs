@@ -18,7 +18,7 @@ use {
 pub enum TransactionType {
     DEPOSIT,
     WITHDRAW,
-    BOUGTH(i64),
+    BOUGHT(i64),
     RECEIVED(i64),
     SENT(i64),
 }
@@ -28,7 +28,7 @@ pub enum TransactionType {
 pub enum TransactionTypeDB {
     DEPOSIT,
     WITHDRAW,
-    BOUGTH,
+    BOUGHT,
     RECEIVED,
     SENT,
 }
@@ -38,7 +38,7 @@ impl From<&TransactionType> for TransactionTypeDB {
         match value {
             TransactionType::DEPOSIT => Self::DEPOSIT,
             TransactionType::WITHDRAW => Self::WITHDRAW,
-            TransactionType::BOUGTH(_) => Self::BOUGTH,
+            TransactionType::BOUGHT(_) => Self::BOUGHT,
             TransactionType::RECEIVED(_) => Self::RECEIVED,
             TransactionType::SENT(_) => Self::SENT,
         }
@@ -50,7 +50,7 @@ impl From<TransactionType> for TransactionTypeDB {
         match value {
             TransactionType::DEPOSIT => Self::DEPOSIT,
             TransactionType::WITHDRAW => Self::WITHDRAW,
-            TransactionType::BOUGTH(_) => Self::BOUGTH,
+            TransactionType::BOUGHT(_) => Self::BOUGHT,
             TransactionType::RECEIVED(_) => Self::RECEIVED,
             TransactionType::SENT(_) => Self::SENT,
         }
@@ -62,7 +62,7 @@ impl From<(&TransactionTypeDB, Option<i64>)> for TransactionType {
         match value.0 {
             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-            TransactionTypeDB::BOUGTH => Self::BOUGTH(value.1.unwrap()),
+            TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap()),
             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap()),
         }
@@ -74,7 +74,7 @@ impl From<(TransactionTypeDB, Option<i64>)> for TransactionType {
         match value.0 {
             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-            TransactionTypeDB::BOUGTH => Self::BOUGTH(value.1.unwrap()),
+            TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap()),
             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap()),
         }
@@ -116,7 +116,7 @@ impl From<&Transaction> for TransactionDB {
             is_undone: *is_undone,
             t_type_data: match value.t_type {
                 TransactionType::SENT(var)
-                | TransactionType::BOUGTH(var)
+                | TransactionType::BOUGHT(var)
                 | TransactionType::RECEIVED(var) => Some(var),
                 _ => None,
             },
@@ -148,7 +148,7 @@ impl From<Transaction> for TransactionDB {
             is_undone,
             t_type_data: match t_type {
                 TransactionType::SENT(var)
-                | TransactionType::BOUGTH(var)
+                | TransactionType::BOUGHT(var)
                 | TransactionType::RECEIVED(var) => Some(var),
                 _ => None,
             },
@@ -373,7 +373,7 @@ impl Transaction {
 
         for transaction in transactions.iter_mut() {
             match transaction.t_type {
-                TransactionType::BOUGTH(article_id) => {
+                TransactionType::BOUGHT(article_id) => {
                     let (price, article_name) = match article_cache.get(&article_id) {
                         None => {
                             let article =
@@ -435,7 +435,7 @@ impl Transaction {
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
         let t_type_data = match t_type {
-            TransactionType::BOUGTH(id)
+            TransactionType::BOUGHT(id)
             | TransactionType::RECEIVED(id)
             | TransactionType::SENT(id) => Some(id),
 
