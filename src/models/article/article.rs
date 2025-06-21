@@ -1,4 +1,4 @@
-use crate::models::Money;
+use crate::{models::Money, routes::articles::get_article};
 
 use super::{ArticleSound, Barcode, BarcodeDiff};
 
@@ -24,6 +24,10 @@ pub struct Article {
     pub cost: Money,
     pub sounds: Vec<ArticleSound>,
     pub barcodes: Vec<Barcode>,
+}
+
+impl Article {
+    pub const DEFAULT_ARTICLE_AMOUNT: usize = 9;
 }
 
 #[cfg(feature = "ssr")]
@@ -160,6 +164,45 @@ impl Article {
             .collect();
 
         Ok(())
+    }
+
+    pub async fn get_articles_for_user(
+        db: &DB,
+        user_id: DatabaseId,
+    ) -> DatabaseResponse<Vec<Self>> {
+        let mut conn = db.get_conn().await?;
+
+        let mut articles_amount_bought =
+            ArticleDB::get_articles_for_user(&mut *conn, user_id).await?;
+
+        articles_amount_bought.sort_by(|a, b| b.1.cmp(&a.1));
+
+        let mut full_articles = Vec::<Article>::new();
+
+        for (article_id, _amount_bought) in articles_amount_bought.iter() {
+            full_articles.push(
+                Article::get(db, *article_id)
+                    .await?
+                    .expect("fetched article should exist!"),
+            );
+        }
+
+        let mut articles = Self::get_all(db, None).await?;
+
+        for article in full_articles.iter() {
+            articles = articles
+                .into_iter()
+                .filter(|value| value.id != article.id)
+                .collect();
+        }
+
+        full_articles.reverse();
+
+        for article in full_articles.into_iter() {
+            articles.insert(0, article);
+        }
+
+        Ok(articles)
     }
 }
 
@@ -491,6 +534,40 @@ impl ArticleDB {
         .await
         .map_err(DBError::new)?
         .map(|elem| elem.article_id);
+
+        Ok(result)
+    }
+
+    /// returns the article_id and amount of items bought for the user
+    pub async fn get_articles_for_user<T>(
+        conn: &mut T,
+        user_id: DatabaseId,
+    ) -> DatabaseResponse<Vec<(i64, i64)>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let result = query!(
+            "
+                select
+                    t_type_data as article_id, count(id) as amount
+                from
+                    Transactions
+                where
+                    user_id = ? and is_undone = 0 and t_type = 'BOUGHT'
+                group by t_type_data
+                order by timestamp desc
+                limit 50
+            ",
+            user_id
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(DBError::new)
+        .map(|elem| {
+            elem.into_iter()
+                .map(|value| (value.article_id.unwrap(), value.amount))
+                .collect::<Vec<(i64, i64)>>()
+        })?;
 
         Ok(result)
     }

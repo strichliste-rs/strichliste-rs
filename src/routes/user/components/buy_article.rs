@@ -12,6 +12,28 @@ use crate::{
 };
 
 #[server]
+pub async fn get_articles_per_user(user_id: i64) -> Result<Vec<Article>, ServerFnError> {
+    use crate::backend::ServerState;
+    let state: ServerState = expect_context();
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let db = state.db.lock().await;
+
+    match Article::get_articles_for_user(&*db, user_id).await {
+        Ok(value) => Ok(value),
+
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to fetch per user articles: {}", e);
+            Err(ServerFnError::new("Failed to fetch per user articles!"))
+        }
+    }
+}
+
+#[server]
 pub async fn buy_article_by_id(
     user_id: i64,
     article_id: i64,
@@ -51,7 +73,7 @@ pub async fn buy_article_by_id(
     let transaction = match Transaction::create(
         &mut *db_trans,
         user_id,
-        crate::models::TransactionType::BOUGTH(article_id),
+        crate::models::TransactionType::BOUGHT(article_id),
         Some(article.name.clone()),
         cost,
     )
@@ -112,14 +134,14 @@ pub fn buy_article(
 
 #[component]
 pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
-    let articles_resource = OnceResource::new(get_all_articles(None));
+    let m_clone = args.clone();
     let MoneyArgs {
         user_id,
         money,
         error,
         transactions,
     } = *args;
-    let article_signal = RwSignal::new(Vec::<Article>::new());
+    let personal_articles = OnceResource::new(get_articles_per_user(user_id));
     view! {
         <div>
             <Suspense
@@ -128,11 +150,10 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
             <div class="grid grid-cols-3 text-white text-center gap-2 text-[1.25em] p-2 pt-4">
             {
                 move || {
-                    articles_resource.get().map(|article| {
+                    personal_articles.get().map(|article| {
                         let article = match article {
                             Ok(value) => {
-                                article_signal.update(|val| *val = value.clone());
-                                value.into_iter().take(9).collect::<Vec<Article>>()
+                                value.into_iter().take(Article::DEFAULT_ARTICLE_AMOUNT).collect::<Vec<Article>>()
                             },
                             Err(e) => {
                                 let msg = match e {
@@ -165,30 +186,39 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
             }
             </div>
             </Suspense>
-            <ArticleSearch articles=article_signal user_id=user_id money=money error=error transactions=transactions/>
+            <ArticleSearch money_args=m_clone.clone()/>
         </div>
     }
 }
 
 #[component]
-pub fn ArticleSearch(
-    articles: RwSignal<Vec<Article>>,
-    user_id: i64,
-    money: RwSignal<Money>,
-    error: RwSignal<String>,
-    transactions: RwSignal<Vec<Transaction>>,
-) -> impl IntoView {
+pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
+    let MoneyArgs {
+        user_id,
+        money,
+        error,
+        transactions,
+    } = *money_args;
+    let articles_resource = OnceResource::new(get_all_articles(None));
+
     let dropdown_div = NodeRef::<html::Div>::new();
     let search_term = RwSignal::new(String::new());
     let filtered_articles = RwSignal::new(Vec::<Article>::new());
+
+    let articles_signal = RwSignal::new(Vec::<Article>::new());
+
     let on_input = move |_ev: ev::Event| {
         match search_term.get().len() {
             0 => filtered_articles.set(Vec::<Article>::new()),
             _ => filtered_articles.update(|val| {
-                *val = articles
+                *val = articles_signal
                     .get()
                     .iter()
-                    .filter(|elem| elem.name.contains(&search_term.get()))
+                    .filter(|elem| {
+                        elem.name
+                            .to_lowercase()
+                            .contains(&search_term.get().to_lowercase())
+                    })
                     .take(5)
                     .map(|elem| elem.clone())
                     .collect::<Vec<Article>>();
@@ -197,6 +227,26 @@ pub fn ArticleSearch(
     };
 
     view! {
+        {
+            move || articles_resource.get().map(|value| {
+                match value {
+                    Ok(value) => {
+                        articles_signal.set(value);
+                        view!{}.into_any()
+                    },
+
+                    Err(e) => {
+                        let msg = match e {
+                          ServerFnError::ServerError(msg) => msg,
+                          _ => e.to_string(),
+                        };
+                        return view!{
+                            <p class="bg-red-400 text-white text-center">{format!("Failed to fetch articles: {}", msg)}</p>
+                        }.into_any();
+                    }
+                }
+            })
+        }
         <div class="w-full min-w-[200px] flex flex-col items-center p-2">
             <div class="relative">
                 <input
