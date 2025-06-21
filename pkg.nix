@@ -1,5 +1,6 @@
-{ rustPlatform, lib, pkgs, name, version, ... }:
+{ rustPlatform, lib, pkgs, name, version, config, ... }:
 let
+  cfg = config.services.strichliste-rs;
   package = rustPlatform.buildRustPackage rec {
     inherit name version;
     pname = name;
@@ -28,7 +29,8 @@ let
       cp target/release/${name} $out/bin/
       cp -r target/site $out/bin/
       wrapProgram $out/bin/${name} \
-        --set LEPTOS_SITE_ROOT $out/bin/site
+        --set LEPTOS_SITE_ROOT $out/bin/site \
+        --set LEPTOS_SITE_ADDR ${cfg.address}:${cfg.port}
     '';
 
     meta = with lib; {

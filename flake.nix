@@ -19,6 +19,11 @@
         name = toml.package.name;
         version = toml.package.version;
       in {
+        nixosModules = rec {
+          default = import ./module.nix self;
+          strichliste = default;
+        };
+
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             rustc
