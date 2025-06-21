@@ -40,10 +40,10 @@ impl Article {
         Ok(article.expect("Newly created article should exist!"))
     }
 
-    pub async fn get_all(db: &DB) -> DatabaseResponse<Vec<Self>> {
+    pub async fn get_all(db: &DB, limit: Option<i64>) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
-        let articles = ArticleDB::get_all(&mut *conn).await?;
+        let articles = ArticleDB::get_all(&mut *conn, limit).await?;
 
         let mut article_no_db = Vec::new();
         for article in articles {
@@ -256,21 +256,35 @@ impl ArticleDB {
         Ok(result)
     }
 
-    pub async fn get_all<T>(conn: &mut T) -> DatabaseResponse<Vec<Self>>
+    pub async fn get_all<T>(conn: &mut T, limit: Option<i64>) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        let result = query_as!(
-            Self,
-            "
-            select * from Articles   
-        "
-        )
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
+        let result = match limit {
+            Some(limit) => query_as!(
+                Self,
+                "
+                        select * from Articles
+                        limit ?
+                    ",
+                limit
+            )
+            .fetch_all(&mut *conn)
+            .await
+            .map_err(DBError::new),
 
-        Ok(result)
+            None => query_as!(
+                Self,
+                "
+                    select * from Articles
+                "
+            )
+            .fetch_all(&mut *conn)
+            .await
+            .map_err(DBError::new),
+        };
+
+        Ok(result?)
     }
 
     pub async fn get_sounds<T>(

@@ -28,7 +28,7 @@ pub async fn get_article_by_barcode(barcode: String) -> Result<Option<Article>, 
 }
 
 #[server]
-pub async fn get_all_articles() -> Result<Vec<Article>, ServerFnError> {
+pub async fn get_all_articles(limit: Option<i64>) -> Result<Vec<Article>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -36,7 +36,7 @@ pub async fn get_all_articles() -> Result<Vec<Article>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let articles = Article::get_all(&*state.db.lock().await).await;
+    let articles = Article::get_all(&*state.db.lock().await, limit).await;
     articles.map_err(|e| {
         let err = e.to_string();
         error!("Could not fetch articles {}", err);
@@ -49,8 +49,8 @@ pub async fn get_all_articles() -> Result<Vec<Article>, ServerFnError> {
 pub fn View() -> impl IntoView {
     view! {
         <div class="grid grid-cols-10 gap-10 py-10">
-            <div class="col-span-1 pl-5">
-                <a href="/articles/create">
+            <div class="col-span-1 pl-5 justify-self-center">
+                <a href="/articles/create" class="inline-block">
                     <div class="flex justify-center">
                         // joinked from: https://gist.github.com/ibelick/0c92c1aba54c2f7e8b3a7381426ed029
                         <button class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-black drop-shadow-sm transition-colors duration-150 hover:bg-gray-200">
@@ -68,7 +68,7 @@ pub fn View() -> impl IntoView {
 
 #[component]
 fn ShowArticles() -> impl IntoView {
-    let all_articles = OnceResource::new(get_all_articles());
+    let all_articles = OnceResource::new(get_all_articles(None));
     view! {
             <Suspense
                     fallback=move || view!{<h1>"Loading articles..."</h1>}
@@ -84,7 +84,7 @@ fn ShowArticles() -> impl IntoView {
                                 <p class="text-red-900"> "Failed to fetch article: " {msg} </p>
                             }.into_any()
                         },
-                        Ok(articles) => view!{
+                        Ok(mut articles) => view!{
                             <table class="w-full text-white p-2">
                                 <thead>
                                     <tr class="bg-black">
@@ -94,6 +94,7 @@ fn ShowArticles() -> impl IntoView {
                                 </thead>
                                 <tbody>
                                     {
+                                        articles.sort_by(|a, b| a.name.cmp(&b.name));
                                         articles.into_iter().map(|article| {
                                             view!{
                                                 <tr class="even:bg-gray-700 odd:bg-gray-500">
