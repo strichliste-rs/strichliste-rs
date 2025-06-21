@@ -1,4 +1,4 @@
-use crate::{models::Money, routes::articles::get_article};
+use crate::models::Money;
 
 use super::{ArticleSound, Barcode, BarcodeDiff};
 
@@ -198,6 +198,8 @@ impl Article {
 
         full_articles.reverse();
 
+        // #[allow(unused_variables)]
+        // // somehow the variable is unused, but marking it as _article does not work. Warning comes from the frontend
         for article in full_articles.into_iter() {
             articles.insert(0, article);
         }

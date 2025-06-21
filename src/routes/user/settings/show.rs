@@ -4,7 +4,8 @@ use tracing::{debug, error, warn};
 
 use crate::{models::User, routes::user::get_user};
 
-#[server] pub async fn update_user(id: i64, nickname: String, card_number: String) -> Result<(), ServerFnError> {
+#[server]
+pub async fn update_user(id: i64, nickname: String, card_number: String) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;

@@ -51,6 +51,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/user/:id") view=routes::user::ShowUser/>
                 <Route path=path!("/user/:id/settings") view=routes::user::settings::Show/>
                 <Route path=path!("/user/:id/transactions") view=routes::user::extra_transactions::Show/>
+                // <Route path=path!("/user/:id/send_money") view=routes::user::send_money::Show/>
                 <Route path=path!("/articles") view=routes::articles::View/>
                 <Route path=path!("/articles/create") view=routes::articles::Create/>
                 <Route path=path!("/articles/:article_id") view=routes::articles::Edit/>
