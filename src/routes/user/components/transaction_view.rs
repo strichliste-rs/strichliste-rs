@@ -254,7 +254,7 @@ pub fn format_transaction(
 
                 }.into_any(),
 
-                TransactionType::BOUGTH(_) => {
+                TransactionType::BOUGHT(_) => {
                     view!{
                         <p class="text-red-400">{transaction.money.format_eur_diff()}</p>
                         <p class="text-white"><ArticleBasketIcon class="inline"/>" "{transaction.description.clone().unwrap_or("".to_string())}</p>
