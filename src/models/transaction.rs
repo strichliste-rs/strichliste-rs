@@ -389,7 +389,7 @@ impl Transaction {
                             )
                             .await?;
 
-                            let result = (-price, article.name);
+                            let result = (price, article.name);
 
                             _ = article_cache.insert(article_id, result.clone());
 
