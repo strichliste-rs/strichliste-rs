@@ -5,7 +5,7 @@ use tracing::{debug, error};
 use crate::models::{Money, User};
 
 #[server]
-pub async fn get_users() -> Result<Vec<User>, ServerFnError> {
+pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -133,7 +133,7 @@ pub fn ShowUsers() -> impl IntoView {
 
     // let fetch_users = RwSignal::new(0 as i64);
 
-    let user_data = Resource::new(move || {}, |_| get_users());
+    let user_data = Resource::new(move || {}, |_| get_all_users());
 
     view! {
         <Suspense
