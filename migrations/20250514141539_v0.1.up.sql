@@ -7,7 +7,7 @@ create table Users (
     primary key (id)
 );
 
-create Table UserCardNumberMap (
+create table UserCardNumberMap (
     user_id integer not null,
     card_number varchar(255) not null unique,
 
@@ -31,14 +31,14 @@ create table Transactions (
         references Users(id)
 );
 
-create Table Articles (
+create table Articles (
     id integer not null,
     name text not null unique,
 
     primary key (id)
 );
 
-create Table ArticleBarcodes (
+create table ArticleBarcodes (
     article_id integer not null,
     barcode_content text not null unique,
 
@@ -47,14 +47,14 @@ create Table ArticleBarcodes (
         references Articles(id)
 );
 
-create Table ArticleTags (
+create table ArticleTags (
     id integer not null,
     name text not null,
 
     primary key (id)
 );
 
-create Table ArticleTagMap (
+create table ArticleTagMap (
     tag_id integer not null,
     article_id integer not null,
 
@@ -64,7 +64,7 @@ create Table ArticleTagMap (
         references Articles(id)
 );
 
-create Table ArticleSounds (
+create table ArticleSounds (
     id integer not null,
     name text not null,
     path text not null,
@@ -72,7 +72,7 @@ create Table ArticleSounds (
     primary key (id)
 );
 
-create Table ArticleSoundMap (
+create table ArticleSoundMap (
     sound_id integer not null,
     article_id integer not null,
 
@@ -83,7 +83,7 @@ create Table ArticleSoundMap (
         references Articles(id)
 );
 
-create Table ArticleCostMap (
+create table ArticleCostMap (
     article_id integer not null,
     cost integer not null,
     effective_since date not null,
