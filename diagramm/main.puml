@@ -1,0 +1,105 @@
+@startuml
+!theme plain
+hide empty methods
+
+!procedure $schema($name, $slug)
+package "$name" as $slug <<Rectangle>>
+!endprocedure
+
+!procedure $table($name, $slug)
+entity "<b>$name</b>" as $slug << (T, Orange) table >>
+!endprocedure
+
+!procedure $view($name, $slug)
+entity "<b>$name</b>" as $slug << (V, Aquamarine) view >>
+!endprocedure
+
+!procedure $pk($name)
+<color:#GoldenRod><&key></color> <b>$name</b>
+!endprocedure
+
+!procedure $fk($name)
+<color:#Silver><&key></color> $name
+!endprocedure
+
+!procedure $column($name)
+{field} <color:#White><&media-record></color> $name
+!endprocedure
+
+title "Strichliste database schema"
+
+$schema("STRICHLISTE", "strichliste") {
+	$table("User", "users") {
+		$pk("id"): integer not null
+	    $column("nickname"): varchar(255) not null unique
+	    $column("money"): integer not null
+	}
+
+	$table("UserCardNumberMap", "user_card_number_map") {
+	    $fk("user_id"): integer not null pk unique
+	    $column("card_number"): varchar(255) not null unique
+	}
+
+	$table("Transactions", "transactions") {
+		$pk("id"): integer not null
+	    $fk("user_id"): not null
+	    $column("is_undone"): boolean not null default false
+	    $column("t_type"): text not null
+	    $column("t_type_data"): integer
+	    $column("money"): integer not null
+	    $column("description"): varchar(255)
+	    $column("timestamp"): date not null
+	}
+
+	$table("Articles", "articles") {
+		$pk("id"): integer not null
+		$column("name"): text not null unique
+	}
+
+	$table("ArticleBarcodes", "article_barcodes") {
+	    $pk("barcode_content"): text not null unique
+	    $fk("article_id"): integer not null
+	}
+
+	$table("ArticleTags", "article_tags") {
+	    $pk("id"): integer not null
+	    $column("name"): text not null
+	}
+
+	$table("ArticleTagMap", "article_tag_map") {
+	    $fk("tag_id"): integer not null
+	    $fk("article_id"): integer not null
+	}
+
+	$table("ArticleSounds", "article_sounds") {
+	    $pk("id"): integer not null
+	    $column("name"): text not null
+	    $column("path"): text not null
+	}
+
+	$table("ArticleSoundsMap", "article_sounds_map") {
+	    $fk("sound_id"): integer not null
+	    $fk("article_id"): integer not null
+	}
+
+	$table("ArticleCostMap", "article_cost_map") {
+	    $fk("article_id"): integer not null
+	    $column("cost"): integer not null
+	    $column("effective_since"): date not null
+	}
+}
+
+strichliste.users::id -- strichliste.user_card_number_map::user_id : FK_User
+strichliste.users::id -- strichliste.transactions::user_id : FK_User
+
+strichliste.article_barcodes::article_id -- strichliste.articles::id : FK_Article
+
+strichliste.article_tag_map::tag_id -- strichliste.article_tags::id : FK_Article_Tags
+strichliste.article_tag_map::article_id -- strichliste.articles::id : FK_Article
+
+strichliste.article_sounds_map::sound_id -- strichliste.article_sounds::id : FK_Article_Sounds
+strichliste.article_sounds_map::article_id -- strichliste.articles::id : FK_Article
+
+strichliste.article_cost_map::article_id -- strichliste.articles::id : FK_Article
+
+@enduml
