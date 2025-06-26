@@ -5,7 +5,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+    backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID}, models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 
 use super::components::transaction_view::ShowTransactions;
@@ -81,12 +81,29 @@ pub async fn create_transaction(user_id: i64, money: Money, transaction_type: Tr
         }
     };
 
-    let transaction = match Transaction::create(&mut *db_trans, user_id, transaction_type, None, money).await {
+    let (sender_id, receiver_id) = match transaction_type {
+        TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
+        TransactionType::WITHDRAW => (user_id, DBUSER_AUFLADUNG_ID),
+        TransactionType::BOUGHT(_) => (user_id, DBUSER_KASSE_ID),
+        TransactionType::RECEIVED(tx_user) => (tx_user, user_id),
+        TransactionType::SENT(rx_user) => (user_id, rx_user),
+    };
+
+    let transaction_id = match Transaction::create(&mut *db_trans, sender_id, receiver_id,  transaction_type, None, money).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to create transaction: {}", e);
             return Err(ServerFnError::new("Failed to create transaction!"));
+        }
+    };
+
+    let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
+        Ok(Some(value)) => value,
+        _ => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to find newly created transaction");
+            return Err(ServerFnError::new("Failed to find newly created transaction!"));
         }
     };
 

@@ -18,6 +18,7 @@ pub struct UserDB {
     pub id: i64,
     pub nickname: String,
     pub money: i64,
+    pub is_system_user: bool,
 }
 
 #[cfg(feature = "ssr")]
@@ -379,6 +380,7 @@ impl User {
                     id,
                     nickname,
                     money,
+                    ..
                 } = value;
                 let card_number = UserDB::get_card_number(&mut *conn, id).await?;
 
@@ -403,6 +405,7 @@ impl User {
                     id,
                     nickname,
                     money,
+                    ..
                 } = value;
                 let card_number = UserDB::get_card_number(&mut *conn, id).await?;
 

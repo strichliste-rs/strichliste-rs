@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use sqlx::{
     pool::PoolConnection,
+    query,
     sqlite::{SqliteConnectOptions, SqlitePool},
     Sqlite, Transaction,
 };
@@ -36,6 +37,9 @@ pub type DatabaseResponse<T> = Result<T, DBError>;
 
 pub type DatabaseType = Sqlite;
 
+pub const DBUSER_KASSE_ID: i64 = 0;
+pub const DBUSER_AUFLADUNG_ID: i64 = 1;
+
 pub struct DB {
     pool: SqlitePool,
 }
@@ -55,10 +59,7 @@ impl DB {
 
         let db = DB { pool: db };
 
-        let setup = db.setup().await;
-        if setup.is_some() {
-            return Err(setup.unwrap());
-        };
+        _ = db.setup().await?;
 
         Ok(db)
     }
@@ -74,20 +75,48 @@ impl DB {
         self.pool.begin().await.map_err(|e| DBError::new(e))
     }
 
-    async fn setup(&self) -> Option<DBError> {
+    async fn setup(&self) -> Result<(), DBError> {
         let mut conn = self.get_conn().await.unwrap();
 
-        let result = sqlx::migrate!("./migrations")
+        _ = sqlx::migrate!("./migrations")
             .run(&mut *conn)
             .await
-            .map_err(|e| DBError::new(e.to_string()));
-
-        if result.is_err() {
-            return Some(result.err().unwrap());
-        }
+            .map_err(DBError::new)?;
 
         info!("Applied database migrations (if necessary)");
 
-        None
+        _ = query!(
+            "
+                insert or ignore into Users
+                    (id, nickname, money, is_system_user)
+                values
+                    (?, ?, ?, ?)
+            ",
+            DBUSER_KASSE_ID,
+            "kasse",
+            0,
+            true,
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        _ = query!(
+            "
+                insert or ignore into Users
+                    (id, nickname, money, is_system_user)
+                values
+                    (?, ?, ?, ?)
+            ",
+            DBUSER_AUFLADUNG_ID,
+            "aufladung",
+            0,
+            true
+        )
+        .execute(&mut *conn)
+        .await
+        .map_err(DBError::new)?;
+
+        Ok(())
     }
 }

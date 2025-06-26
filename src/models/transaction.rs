@@ -87,7 +87,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]
 pub struct TransactionDB {
     pub id: i64,
-    pub user_id: i64,
+    pub sender: i64,
+    pub receiver: i64,
     pub is_undone: bool,
     pub t_type: TransactionTypeDB,
     pub t_type_data: Option<i64>,
@@ -96,82 +97,94 @@ pub struct TransactionDB {
     pub timestamp: DateTime<Utc>,
 }
 
+// #[cfg(feature = "ssr")]
+// impl From<&Transaction> for TransactionDB {
+//     fn from(value: &Transaction) -> Self {
+//         let Transaction {
+//             id,
+//             user_id,
+//             is_undone,
+//             t_type,
+//             money,
+//             description,
+//             timestamp,
+//             is_undone_signal: _,
+//         } = value;
+
+//         TransactionDB {
+//             id: *id,
+//             user_id: *user_id,
+//             is_undone: *is_undone,
+//             t_type_data: match value.t_type {
+//                 TransactionType::SENT(var)
+//                 | TransactionType::BOUGHT(var)
+//                 | TransactionType::RECEIVED(var) => Some(var),
+//                 _ => None,
+//             },
+//             t_type: t_type.into(),
+//             money: (*money).value,
+//             description: description.clone(),
+//             timestamp: *timestamp,
+//         }
+//     }
+// }
+
+// #[cfg(feature = "ssr")]
+// impl From<Transaction> for TransactionDB {
+//     fn from(value: Transaction) -> Self {
+//         let Transaction {
+//             id,
+//             user_id,
+//             is_undone,
+//             t_type,
+//             money,
+//             description,
+//             timestamp,
+//             is_undone_signal: _,
+//         } = value;
+
+//         Self {
+//             id,
+//             user_id,
+//             is_undone,
+//             t_type_data: match t_type {
+//                 TransactionType::SENT(var)
+//                 | TransactionType::BOUGHT(var)
+//                 | TransactionType::RECEIVED(var) => Some(var),
+//                 _ => None,
+//             },
+//             t_type: t_type.into(),
+//             money: money.value,
+//             description,
+//             timestamp,
+//         }
+//     }
+// }
+
 #[cfg(feature = "ssr")]
-impl From<&Transaction> for TransactionDB {
-    fn from(value: &Transaction) -> Self {
-        let Transaction {
+impl Into<Transaction> for (TransactionDB, DatabaseId) {
+    fn into(self: (TransactionDB, DatabaseId)) -> Transaction {
+        let TransactionDB {
             id,
-            user_id,
+            sender: _,
+            receiver: _,
             is_undone,
             t_type,
+            t_type_data,
             money,
             description,
             timestamp,
-            is_undone_signal: _,
-        } = value;
+        } = self.0;
 
-        TransactionDB {
-            id: *id,
-            user_id: *user_id,
-            is_undone: *is_undone,
-            t_type_data: match value.t_type {
-                TransactionType::SENT(var)
-                | TransactionType::BOUGHT(var)
-                | TransactionType::RECEIVED(var) => Some(var),
-                _ => None,
-            },
-            t_type: t_type.into(),
-            money: (*money).value,
-            description: description.clone(),
-            timestamp: *timestamp,
-        }
-    }
-}
-
-#[cfg(feature = "ssr")]
-impl From<Transaction> for TransactionDB {
-    fn from(value: Transaction) -> Self {
-        let Transaction {
-            id,
-            user_id,
-            is_undone,
-            t_type,
-            money,
-            description,
-            timestamp,
-            is_undone_signal: _,
-        } = value;
-
-        Self {
-            id,
-            user_id,
-            is_undone,
-            t_type_data: match t_type {
-                TransactionType::SENT(var)
-                | TransactionType::BOUGHT(var)
-                | TransactionType::RECEIVED(var) => Some(var),
-                _ => None,
-            },
-            t_type: t_type.into(),
-            money: money.value,
-            description,
-            timestamp,
-        }
-    }
-}
-
-#[cfg(feature = "ssr")]
-impl Into<Transaction> for TransactionDB {
-    fn into(self) -> Transaction {
         Transaction {
-            id: self.id,
-            user_id: self.user_id,
-            is_undone: self.is_undone,
-            t_type: (self.t_type, self.t_type_data).into(),
-            money: self.money.into(),
-            description: self.description,
-            timestamp: self.timestamp,
-            is_undone_signal: RwSignal::new(self.is_undone), // might fail on server
+            id,
+            user_id: self.1,
+            is_undone,
+            t_type: (t_type, t_type_data).into(),
+            money: money.into(),
+            description,
+            timestamp,
+            is_undone_signal: RwSignal::new(is_undone), // might fail on server
         }
     }
 }
@@ -180,7 +193,8 @@ impl Into<Transaction> for TransactionDB {
 impl TransactionDB {
     pub async fn create<T>(
         conn: &mut T,
-        user_id: DatabaseId,
+        sender: DatabaseId,
+        receiver: DatabaseId,
         t_type: TransactionTypeDB,
         t_type_data: Option<i64>,
         description: Option<String>,
@@ -193,12 +207,13 @@ impl TransactionDB {
         query!(
             "
                 insert into Transactions
-                    (user_id, t_type, is_undone, t_type_data, money, description, timestamp)
+                    (receiver, sender, t_type, is_undone, t_type_data, money, description, timestamp)
                 values
-                    (?, ?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?, ?)
                 returning id
             ",
-            user_id,
+            receiver,
+            sender,
             t_type,
             false,
             t_type_data,
@@ -221,7 +236,8 @@ impl TransactionDB {
             r#"
                 select
                     id as "id: i64",
-                    user_id as "user_id: i64",
+                    sender as "sender: i64",
+                    receiver as "receiver: i64",
                     is_undone,
                     t_type as "t_type: TransactionTypeDB",
                     t_type_data,
@@ -259,7 +275,8 @@ impl TransactionDB {
             r#"
             select
                 id as "id: i64",
-                user_id as "user_id: i64",
+                sender as "sender: i64",
+                receiver as "receiver: i64",
                 is_undone,
                 t_type as "t_type: TransactionTypeDB",
                 t_type_data,
@@ -267,11 +284,12 @@ impl TransactionDB {
                 description,
                 timestamp as "timestamp: DateTime<Utc>"
             from Transactions
-            where user_id = ?
+            where sender = ? or receiver = ?
             order by timestamp desc
             limit ?
             offset ?
         "#,
+            user_id,
             user_id,
             limit,
             offset,
@@ -339,7 +357,11 @@ pub struct Transaction {
 
 #[cfg(feature = "ssr")]
 impl Transaction {
-    pub async fn get<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Option<Self>>
+    pub async fn get<T>(
+        conn: &mut T,
+        id: DatabaseId,
+        user_id: DatabaseId,
+    ) -> DatabaseResponse<Option<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -350,7 +372,7 @@ impl Transaction {
             None => return Ok(None),
         };
 
-        let transaction: Transaction = transaction_db.into();
+        let transaction: Transaction = (transaction_db, user_id).into();
         Ok(Some(transaction))
     }
 
@@ -366,7 +388,7 @@ impl Transaction {
             TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
                 .await?
                 .into_iter()
-                .map(|elem| elem.into())
+                .map(|elem| (elem, user_id).into())
                 .collect::<Vec<Transaction>>();
 
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
@@ -426,11 +448,12 @@ impl Transaction {
 
     pub async fn create<T>(
         conn: &mut T,
-        user_id: DatabaseId,
+        sender: DatabaseId,
+        receiver: DatabaseId,
         t_type: TransactionType,
         description: Option<String>,
         money: Money,
-    ) -> DatabaseResponse<Self>
+    ) -> DatabaseResponse<DatabaseId>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -444,7 +467,8 @@ impl Transaction {
 
         let t_id = TransactionDB::create(
             &mut *conn,
-            user_id,
+            sender,
+            receiver,
             t_type.into(),
             t_type_data,
             description,
@@ -452,8 +476,6 @@ impl Transaction {
         )
         .await?;
 
-        Ok(Transaction::get(&mut *conn, t_id)
-            .await?
-            .expect("Newly created transaction should be present"))
+        Ok(t_id)
     }
 }

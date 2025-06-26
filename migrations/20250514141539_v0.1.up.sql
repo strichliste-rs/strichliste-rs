@@ -3,6 +3,7 @@ create table Users (
     id integer not null,
     nickname varchar(255) not null unique,
     money integer not null,
+    is_system_user boolean not null default false,
 
     primary key (id)
 );
@@ -18,7 +19,8 @@ create table UserCardNumberMap (
 
 create table Transactions (
     id integer not null,
-    user_id not null,
+    sender not null,
+    receiver not null,
     is_undone boolean not null default false,
     t_type text not null,
     t_type_data integer,
@@ -27,8 +29,10 @@ create table Transactions (
     timestamp date not null,
 
     primary key (id),
-    foreign key (user_id)
-        references Users(id)
+    foreign key (sender)
+        references Groups(id),
+    foreign key (receiver)
+        references Groups(id)
 );
 
 create table Articles (
@@ -90,4 +94,10 @@ create table ArticleCostMap (
 
     foreign key (article_id)
         references Articles(id)
+);
+
+create table Groups(
+    id integer not null,
+
+    primary key(id)
 );
