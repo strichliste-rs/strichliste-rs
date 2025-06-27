@@ -1,19 +1,42 @@
-use sqlx::{query, Executor};
+use sqlx::{query, query_as, Executor};
 
 use crate::{
     backend::db::{DBError, DatabaseResponse, DatabaseType},
     models::DatabaseId,
 };
 
-use super::GroupId;
+use super::{GroupId, UserId};
 
-pub(crate) struct Group {
+pub struct Group {
     id: GroupId,
     members: Vec<String>,
 }
 
-pub(crate) struct GroupDB {
-    id: DatabaseId,
+impl Group {
+    pub async fn get<T>(conn: &mut T, gid: GroupId) -> DatabaseResponse<Self>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let group_db = GroupDB::get(conn, gid).await?;
+
+        let members = GroupDB::get_members(conn, group_db.id).await?;
+
+        Ok(Self {
+            id: group_db.id.into(),
+            members,
+        })
+    }
+
+    pub async fn get_user_group<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<GroupId>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        Ok(GroupDB::get_single_group(conn, uid).await?.into())
+    }
+}
+
+pub struct GroupDB {
+    pub id: DatabaseId,
 }
 
 impl From<DatabaseId> for GroupDB {
@@ -23,6 +46,28 @@ impl From<DatabaseId> for GroupDB {
 }
 
 impl GroupDB {
+    pub async fn get_members<T>(conn: &mut T, gid: DatabaseId) -> DatabaseResponse<Vec<String>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        query!(
+            "
+                select Users.nickname
+                    from UserGroupMap
+                join Users on Users.id = UserGroupMap.uid 
+                    where UserGroupMap.gid = ?
+            ",
+            gid
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(From::from)
+        .map(|vec| {
+            vec.into_iter()
+                .map(|record| record.nickname)
+                .collect::<Vec<String>>()
+        })
+    }
     pub async fn _create<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Self>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -61,7 +106,7 @@ impl GroupDB {
         .map(From::from)
     }
 
-    pub async fn link_user<T>(&self, conn: &mut T, user_id: DatabaseId) -> DatabaseResponse<()>
+    pub async fn link_user<T>(&self, conn: &mut T, user_id: UserId) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -73,7 +118,7 @@ impl GroupDB {
                 (?, ?)
                 ",
             self.id,
-            user_id
+            user_id.0
         )
         .execute(&mut *conn)
         .await
@@ -106,29 +151,45 @@ impl GroupDB {
             Err(e) => Err(e),
         }
     }
-    pub async fn get_groups<T>(conn: &mut T, )
-}
-impl Group {
+    pub async fn get_groups<T>(conn: &mut T, user_id: UserId) -> DatabaseResponse<Vec<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        query!(
+            "
+                select Groups.id as id
+                from Groups
+                join UserGroupMap on Groups.id = UserGroupMap.gid
+                where UserGroupMap.uid = ?
+            ",
+            user_id.0
+        )
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(From::from)
+        .map(|elem| elem.into_iter().map(|elem| Self { id: elem.id }).collect())
+    }
+
     pub async fn get<T>(conn: &mut T, gid: GroupId) -> DatabaseResponse<Self>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        let members = query!(
+        let group = query_as!(
+            Self,
             "
-                select Users.nickname
-                    from UserGroupMap
-                join Users on Users.id = UserGroupMap.uid 
-                    where UserGroupMap.gid = ?
+                select *
+                from Groups
+                where id = ?
             ",
             gid.0
         )
-        .fetch_all(&mut *conn)
+        .fetch_optional(&mut *conn)
         .await
-        .map_err(From::<DBError>::from)?
-        .into_iter()
-        .map(|elem| elem.nickname)
-        .collect();
+        .map_err(DBError::new)?;
 
-        Ok(Self { id: gid, members })
+        match group {
+            None => Err(DBError::new(&format!("Failed to find group: {}", gid.0))),
+            Some(value) => Ok(value),
+        }
     }
 }

@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
-use super::{DatabaseId, GroupDB, GroupId, Money, UserId};
+use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
+
+use super::{DatabaseId, Group, GroupDB, GroupId, Money, UserId};
 
 #[cfg(feature = "ssr")]
 use {
@@ -63,8 +65,8 @@ impl From<(&TransactionTypeDB, Option<i64>)> for TransactionType {
             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-            TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap()),
-            TransactionTypeDB::SENT => Self::SENT(value.1.unwrap()),
+            TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
+            TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
         }
     }
 }
@@ -75,8 +77,8 @@ impl From<(TransactionTypeDB, Option<i64>)> for TransactionType {
             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-            TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap()),
-            TransactionTypeDB::SENT => Self::SENT(value.1.unwrap()),
+            TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
+            TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
         }
     }
 }
@@ -162,12 +164,14 @@ pub struct TransactionDB {
 // }
 
 #[cfg(feature = "ssr")]
+/// Use the GroupId (self.1) if the user is the only person relevant in the
+/// transaction
 impl Into<Transaction> for (TransactionDB, GroupId) {
     fn into(self: (TransactionDB, GroupId)) -> Transaction {
         let TransactionDB {
             id,
-            sender: _,
-            receiver: _,
+            sender,
+            receiver,
             is_undone,
             t_type,
             t_type_data,
@@ -178,7 +182,13 @@ impl Into<Transaction> for (TransactionDB, GroupId) {
 
         Transaction {
             id,
-            group_id: self.1,
+            group_id: match t_type {
+                TransactionTypeDB::WITHDRAW => self.1,
+                TransactionTypeDB::DEPOSIT => self.1,
+                TransactionTypeDB::BOUGHT => self.1,
+                TransactionTypeDB::RECEIVED => sender.into(),
+                TransactionTypeDB::SENT => receiver.into(),
+            },
             is_undone,
             t_type: (t_type, t_type_data).into(),
             money: money.into(),
@@ -193,8 +203,8 @@ impl Into<Transaction> for (TransactionDB, GroupId) {
 impl TransactionDB {
     pub async fn create<T>(
         conn: &mut T,
-        sender: DatabaseId,
-        receiver: DatabaseId,
+        sender: GroupId,
+        receiver: GroupId,
         t_type: TransactionTypeDB,
         t_type_data: Option<i64>,
         description: Option<String>,
@@ -212,8 +222,8 @@ impl TransactionDB {
                     (?, ?, ?, ?, ?, ?, ?, ?)
                 returning id
             ",
-            receiver,
-            sender,
+            receiver.0,
+            sender.0,
             t_type,
             false,
             t_type_data,
@@ -263,14 +273,21 @@ impl TransactionDB {
 
     pub async fn get_user_transactions<T>(
         conn: &mut T,
-        user_id: UserID,
+        user_id: UserId,
         limit: i64,
         offset: i64,
     ) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        let group_id = GroupDB
+        let groups = GroupDB::get_groups(&mut *conn, user_id).await?;
+
+        let string = groups
+            .into_iter()
+            .map(|group| format!("{}", group.id))
+            .collect::<Vec<String>>()
+            .join(", ");
+
         let result = query_as!(
             Self,
             r#"
@@ -285,13 +302,13 @@ impl TransactionDB {
                 description,
                 timestamp as "timestamp: DateTime<Utc>"
             from Transactions
-            where sender = ? or receiver = ?
+            where sender in (?) or receiver in (?)
             order by timestamp desc
             limit ?
             offset ?
         "#,
-            user_id,
-            user_id,
+            string,
+            string,
             limit,
             offset,
         )
@@ -374,7 +391,9 @@ impl Transaction {
             None => return Ok(None),
         };
 
-        let transaction: Transaction = (transaction_db, user_id).into();
+        let user_group_single = GroupDB::get_single_group(&mut *conn, user_id.into()).await?;
+
+        let transaction: Transaction = (transaction_db, user_group_single.into()).into();
         Ok(Some(transaction))
     }
 
@@ -386,16 +405,15 @@ impl Transaction {
     ) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
-        let mut _transactions =
-            TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
-                .await?;
+        let user_id: UserId = user_id.into();
 
-        let mut transactions = Vec::new();
-        for t in transactions{
-            if(t.)
-        }
+        let user_group_id = Group::get_user_group(&mut *conn, user_id).await?;
+
+        let mut transactions =
+            TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
+                .await?
                 .into_iter()
-                .map(|elem| (elem, group_id).into())
+                .map(|elem| (elem, user_group_id).into())
                 .collect::<Vec<Transaction>>();
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
 
@@ -449,8 +467,8 @@ impl Transaction {
 
     pub async fn create<T>(
         conn: &mut T,
-        sender: DatabaseId,
-        receiver: DatabaseId,
+        sender: GroupId,
+        receiver: GroupId,
         t_type: TransactionType,
         description: Option<String>,
         money: Money,
@@ -459,9 +477,8 @@ impl Transaction {
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
         let t_type_data = match t_type {
-            TransactionType::BOUGHT(id)
-            | TransactionType::RECEIVED(id)
-            | TransactionType::SENT(id) => Some(id),
+            TransactionType::BOUGHT(id) => Some(id),
+            TransactionType::RECEIVED(id) | TransactionType::SENT(id) => Some(id.0),
 
             _ => None,
         };

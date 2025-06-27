@@ -1,11 +1,13 @@
-use super::{DatabaseId, Money};
+use std::fmt;
+
+use super::{DatabaseId, Group, Money};
 
 #[cfg(feature = "ssr")]
 use {
     super::TransactionDB,
     crate::backend::db::{DBError, DB},
     crate::backend::db::{DatabaseResponse, DatabaseType},
-    crate::backend::models::GroupDB,
+    crate::models::GroupDB,
     sqlx::query,
     sqlx::query_as,
     sqlx::Executor,
@@ -16,6 +18,30 @@ pub struct GroupId(pub DatabaseId);
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub struct UserId(pub DatabaseId);
 
+impl fmt::Display for UserId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl fmt::Display for GroupId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<i64> for GroupId {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<i64> for UserId {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+use leptos::attr::Display;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
@@ -29,11 +55,7 @@ pub struct UserDB {
 
 #[cfg(feature = "ssr")]
 impl UserDB {
-    pub async fn set_money<T>(
-        conn: &mut T,
-        user_id: DatabaseId,
-        new_value: i64,
-    ) -> DatabaseResponse<()>
+    pub async fn set_money<T>(conn: &mut T, user_id: UserId, new_value: i64) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -44,7 +66,7 @@ impl UserDB {
                 where id = ?
             ",
             new_value,
-            user_id
+            user_id.0
         )
         .execute(&mut *conn)
         .await
@@ -53,7 +75,7 @@ impl UserDB {
         Ok(())
     }
 
-    pub async fn insert<T>(conn: &mut T, nickname: String) -> DatabaseResponse<DatabaseId>
+    pub async fn insert<T>(conn: &mut T, nickname: String) -> DatabaseResponse<UserId>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -71,12 +93,12 @@ impl UserDB {
         .fetch_one(&mut *conn)
         .await
         .map_err(From::from)
-        .map(|elem| elem.id)
+        .map(|elem| elem.id.into())
     }
 
     pub async fn insert_card<T>(
         conn: &mut T,
-        user_id: DatabaseId,
+        user_id: UserId,
         card_number: String,
     ) -> DatabaseResponse<()>
     where
@@ -89,7 +111,7 @@ impl UserDB {
                 values
                     (?, ?)
             ",
-            user_id,
+            user_id.0,
             card_number
         )
         .fetch_one(&mut *conn)
@@ -101,7 +123,7 @@ impl UserDB {
     pub async fn get_id_by_card_number<T>(
         conn: &mut T,
         card_number: String,
-    ) -> DatabaseResponse<Option<DatabaseId>>
+    ) -> DatabaseResponse<Option<UserId>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -116,10 +138,10 @@ impl UserDB {
         .fetch_optional(&mut *conn)
         .await
         .map_err(From::from)
-        .map(|elem| elem.map(|e| e.user_id))
+        .map(|elem| elem.map(|e| e.user_id.into()))
     }
 
-    async fn set_name<T>(conn: &mut T, id: i64, new_value: String) -> Result<(), DBError>
+    async fn set_name<T>(conn: &mut T, id: UserId, new_value: String) -> Result<(), DBError>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -130,7 +152,7 @@ impl UserDB {
                 where id = ?
             ",
             new_value,
-            id
+            id.0
         )
         .execute(&mut *conn)
         .await
@@ -140,12 +162,13 @@ impl UserDB {
 
     async fn set_card_number<T>(
         conn: &mut T,
-        user_id: i64,
+        user_id: UserId,
         new_value: Option<String>,
     ) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        let user_id = user_id.0;
         match new_value {
             Some(new_value) => {
                 let card_number_exists = Self::get_card_number(&mut *conn, user_id).await?;
@@ -271,7 +294,7 @@ impl UserDB {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct User {
-    pub id: i64,
+    pub id: UserId,
     pub nickname: String,
     pub card_number: Option<String>,
     pub money: Money,
@@ -316,7 +339,7 @@ impl User {
         db: &DB,
         nickname: String,
         card_number: Option<String>,
-    ) -> DatabaseResponse<DatabaseId> {
+    ) -> DatabaseResponse<UserId> {
         let mut transaction = db.get_conn_transaction().await?;
 
         let id = UserDB::insert(&mut *transaction, nickname).await?;
@@ -378,10 +401,11 @@ impl User {
         }
     }
 
-    pub async fn get<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Option<User>>
+    pub async fn get<T>(conn: &mut T, id: UserId) -> DatabaseResponse<Option<User>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        let id = id.0;
         match UserDB::get(&mut *conn, id).await? {
             None => Ok(None),
             Some(value) => {
@@ -394,7 +418,7 @@ impl User {
                 let card_number = UserDB::get_card_number(&mut *conn, id).await?;
 
                 Ok(Some(User {
-                    id,
+                    id: id.into(),
                     nickname,
                     card_number,
                     money: money.into(),
