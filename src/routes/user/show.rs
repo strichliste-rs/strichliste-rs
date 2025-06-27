@@ -5,8 +5,10 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID}, models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
+#[cfg(feature = "ssr")]
+use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
 
 use super::components::transaction_view::ShowTransactions;
 

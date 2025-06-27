@@ -26,7 +26,7 @@ pub async fn send_money(
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(ServerFnError::new(&format!(
+            return Err(ServerFnError::new(format!(
                 "Failed to convert '{}' to internal representation: {}",
                 amount, e
             )));
@@ -97,7 +97,7 @@ pub async fn send_money(
         }
     }
 
-    match to_user.add_money(&mut *db_trans, money.clone()).await {
+    match to_user.add_money(&mut *db_trans, money).await {
         Ok(_) => {}
         Err(e) => {
             error!("Failed to apply new money value: {}", e);
@@ -106,47 +106,25 @@ pub async fn send_money(
         }
     }
 
-    _ = match Transaction::create(
+    if let Err(e) = Transaction::create(
         &mut *db_trans,
         from_user.id,
+        to_user.id,
         crate::models::TransactionType::SENT(to_user.id),
         None,
-        (-money.value).into(),
+        money,
     )
     .await
     {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to create transaction: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to create transaction!"));
-        }
+        error!("Failed to create transaction: {}", e);
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to create transaction!"));
     };
 
-    _ = match Transaction::create(
-        &mut *db_trans,
-        to_user.id,
-        crate::models::TransactionType::RECEIVED(from_user.id),
-        None,
-        money.clone(),
-    )
-    .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to create transaction: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to create transaction!"));
-        }
-    };
-
-    match db_trans.commit().await {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to commit transaction: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to apply transaction!"));
-        }
+    if let Err(e) = db_trans.commit().await {
+        error!("Failed to commit transaction: {}", e);
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to apply transaction!"));
     };
 
     redirect(&format!("/user/{}", from_user.id));

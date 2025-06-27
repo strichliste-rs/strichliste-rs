@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
-use super::Money;
+use super::{DatabaseId, GroupDB, GroupId, Money, UserId};
 
 #[cfg(feature = "ssr")]
 use {
     super::ArticleDB,
     crate::backend::db::{DBError, DB},
-    crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
+    crate::backend::db::{DatabaseResponse, DatabaseType},
     sqlx::query,
     sqlx::{query_as, Executor},
 };
@@ -19,8 +19,8 @@ pub enum TransactionType {
     DEPOSIT,
     WITHDRAW,
     BOUGHT(i64),
-    RECEIVED(i64),
-    SENT(i64),
+    RECEIVED(GroupId),
+    SENT(GroupId),
 }
 
 #[cfg_attr(feature = "ssr", derive(sqlx::Type))]
@@ -162,8 +162,8 @@ pub struct TransactionDB {
 // }
 
 #[cfg(feature = "ssr")]
-impl Into<Transaction> for (TransactionDB, DatabaseId) {
-    fn into(self: (TransactionDB, DatabaseId)) -> Transaction {
+impl Into<Transaction> for (TransactionDB, GroupId) {
+    fn into(self: (TransactionDB, GroupId)) -> Transaction {
         let TransactionDB {
             id,
             sender: _,
@@ -178,7 +178,7 @@ impl Into<Transaction> for (TransactionDB, DatabaseId) {
 
         Transaction {
             id,
-            user_id: self.1,
+            group_id: self.1,
             is_undone,
             t_type: (t_type, t_type_data).into(),
             money: money.into(),
@@ -263,13 +263,14 @@ impl TransactionDB {
 
     pub async fn get_user_transactions<T>(
         conn: &mut T,
-        user_id: DatabaseId,
+        user_id: UserID,
         limit: i64,
         offset: i64,
     ) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        let group_id = GroupDB
         let result = query_as!(
             Self,
             r#"
@@ -345,8 +346,9 @@ impl TransactionDB {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
-    pub id: i64,
-    pub user_id: i64,
+    pub id: DatabaseId,
+    /// used to look up name (for split transaction)
+    pub group_id: GroupId,
     pub is_undone: bool,
     pub t_type: TransactionType,
     pub money: Money,
@@ -384,48 +386,47 @@ impl Transaction {
     ) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
-        let mut transactions =
+        let mut _transactions =
             TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
-                .await?
-                .into_iter()
-                .map(|elem| (elem, user_id).into())
-                .collect::<Vec<Transaction>>();
+                .await?;
 
+        let mut transactions = Vec::new();
+        for t in transactions{
+            if(t.)
+        }
+                .into_iter()
+                .map(|elem| (elem, group_id).into())
+                .collect::<Vec<Transaction>>();
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
 
         for transaction in transactions.iter_mut() {
-            match transaction.t_type {
-                TransactionType::BOUGHT(article_id) => {
-                    let (price, article_name) = match article_cache.get(&article_id) {
-                        None => {
-                            let article =
-                                match ArticleDB::get_single(&mut *conn, article_id).await? {
-                                    None => continue, // Article got nuked?,
-                                    Some(value) => value,
-                                };
+            if let TransactionType::BOUGHT(article_id) = transaction.t_type {
+                let (price, article_name) = match article_cache.get(&article_id) {
+                    None => {
+                        let article = match ArticleDB::get_single(&mut *conn, article_id).await? {
+                            None => continue, // Article got nuked?,
+                            Some(value) => value,
+                        };
 
-                            let price = ArticleDB::get_effective_cost(
-                                &mut *conn,
-                                article_id,
-                                transaction.timestamp,
-                            )
-                            .await?;
+                        let price = ArticleDB::get_effective_cost(
+                            &mut *conn,
+                            article_id,
+                            transaction.timestamp,
+                        )
+                        .await?;
 
-                            let result = (price, article.name);
+                        let result = (price, article.name);
 
-                            _ = article_cache.insert(article_id, result.clone());
+                        _ = article_cache.insert(article_id, result.clone());
 
-                            result
-                        }
+                        result
+                    }
 
-                        Some(value) => value.clone(),
-                    };
+                    Some(value) => value.clone(),
+                };
 
-                    transaction.money = (-price).into();
-                    transaction.description = Some(article_name);
-                }
-
-                _ => {}
+                transaction.money = (-price).into();
+                transaction.description = Some(article_name);
             }
         }
 

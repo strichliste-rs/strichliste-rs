@@ -1,14 +1,20 @@
-use super::Money;
+use super::{DatabaseId, Money};
 
 #[cfg(feature = "ssr")]
 use {
     super::TransactionDB,
     crate::backend::db::{DBError, DB},
-    crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
+    crate::backend::db::{DatabaseResponse, DatabaseType},
+    crate::backend::models::GroupDB,
     sqlx::query,
     sqlx::query_as,
     sqlx::Executor,
 };
+
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
+pub struct GroupId(pub DatabaseId);
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
+pub struct UserId(pub DatabaseId);
 
 use serde::{Deserialize, Serialize};
 
@@ -321,6 +327,9 @@ impl User {
                 UserDB::insert_card(&mut *transaction, id, card_number).await?;
             }
         }
+
+        let group = GroupDB::create(&mut *transaction).await?;
+        group.link_user(&mut *transaction, id).await?;
 
         transaction.commit().await.map_err(DBError::new)?;
         Ok(id)

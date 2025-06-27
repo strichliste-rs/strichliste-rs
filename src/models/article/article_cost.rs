@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
-use crate::backend::db::DatabaseId;
+use crate::models::DatabaseId;
 
 #[cfg(feature = "ssr")]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]

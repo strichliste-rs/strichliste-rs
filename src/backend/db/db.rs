@@ -9,6 +9,8 @@ use sqlx::{
 };
 use tracing::info;
 
+use crate::models::GroupDB;
+
 #[derive(Debug)]
 pub struct DBError(String);
 
@@ -32,7 +34,6 @@ impl From<sqlx::Error> for DBError {
     }
 }
 
-pub type DatabaseId = i64;
 pub type DatabaseResponse<T> = Result<T, DBError>;
 
 pub type DatabaseType = Sqlite;
@@ -76,10 +77,10 @@ impl DB {
     }
 
     async fn setup(&self) -> Result<(), DBError> {
-        let mut conn = self.get_conn().await.unwrap();
+        let mut transaction = self.get_conn_transaction().await.unwrap();
 
         _ = sqlx::migrate!("./migrations")
-            .run(&mut *conn)
+            .run(&mut *transaction)
             .await
             .map_err(DBError::new)?;
 
@@ -97,7 +98,7 @@ impl DB {
             0,
             true,
         )
-        .execute(&mut *conn)
+        .execute(&mut *transaction)
         .await
         .map_err(DBError::new)?;
 
@@ -113,10 +114,22 @@ impl DB {
             0,
             true
         )
-        .execute(&mut *conn)
+        .execute(&mut *transaction)
         .await
         .map_err(DBError::new)?;
 
-        Ok(())
+        let group_k = GroupDB::_create(&mut *transaction, DBUSER_KASSE_ID).await?;
+        let group_a = GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
+
+        group_k
+            .link_user(&mut *transaction, DBUSER_KASSE_ID)
+            .await?;
+        group_a
+            .link_user(&mut *transaction, DBUSER_AUFLADUNG_ID)
+            .await?;
+
+        GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
+
+        transaction.commit().await.map_err(From::from)
     }
 }

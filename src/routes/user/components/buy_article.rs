@@ -38,6 +38,7 @@ pub async fn buy_article_by_id(
     user_id: i64,
     article_id: i64,
 ) -> Result<Transaction, ServerFnError> {
+    use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -57,7 +58,7 @@ pub async fn buy_article_by_id(
     };
 
     // Article costs are positive, but the transaction should subtract money from the user
-    let mut cost = article.cost.clone();
+    let mut cost = article.cost;
     cost.value *= -1;
 
     let db = state.db.lock().await;
@@ -70,9 +71,10 @@ pub async fn buy_article_by_id(
         }
     };
 
-    let transaction = match Transaction::create(
+    let transaction_id = match Transaction::create(
         &mut *db_trans,
         user_id,
+        DBUSER_KASSE_ID,
         crate::models::TransactionType::BOUGHT(article_id),
         Some(article.name.clone()),
         cost,
@@ -84,6 +86,14 @@ pub async fn buy_article_by_id(
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to create transaction: {}", e);
             return Err(ServerFnError::new("Failed to create transaction"));
+        }
+    };
+    let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
+        Ok(Some(o)) => o,
+        _ => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to reaad back db_transaction");
+            return Err(ServerFnError::new("Failed to reaad back db_transaction"));
         }
     };
     let new_value = user.money.value + transaction.money.value;

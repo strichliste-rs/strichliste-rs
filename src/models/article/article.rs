@@ -1,4 +1,4 @@
-use crate::models::Money;
+use crate::models::{DatabaseId, Money};
 
 use super::{ArticleSound, Barcode, BarcodeDiff};
 
@@ -6,7 +6,7 @@ use super::{ArticleSound, Barcode, BarcodeDiff};
 use {
     super::BarcodeDB,
     crate::backend::db::{DBError, DB},
-    crate::backend::db::{DatabaseId, DatabaseResponse, DatabaseType},
+    crate::backend::db::{DatabaseResponse, DatabaseType},
     sqlx::query,
     sqlx::query_as,
     sqlx::Executor,
@@ -175,6 +175,7 @@ impl Article {
         let mut articles_amount_bought =
             ArticleDB::get_articles_for_user(&mut *conn, user_id).await?;
 
+        //sort by most bought
         articles_amount_bought.sort_by(|a, b| b.1.cmp(&a.1));
 
         let mut full_articles = Vec::<Article>::new();
@@ -555,7 +556,7 @@ impl ArticleDB {
                 from
                     Transactions
                 where
-                    user_id = ? and is_undone = 0 and t_type = 'BOUGHT'
+                    sender = ? and is_undone = 0 and t_type = 'BOUGHT'
                 group by t_type_data
                 order by timestamp desc
                 limit 50

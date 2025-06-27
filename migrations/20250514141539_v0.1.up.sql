@@ -101,3 +101,17 @@ create table Groups(
 
     primary key(id)
 );
+
+create table UserGroupMap(
+    gid integer not null,
+    uid integer not null,
+
+    unique(gid, uid),
+
+    foreign key (gid)
+        references Groups(id),
+    foreign key (uid)
+        references Users(id)
+
+    
+);

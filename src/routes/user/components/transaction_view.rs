@@ -75,7 +75,7 @@ pub async fn undo_transaction(user_id: i64, transaction_id: i64) -> Result<(), S
         }
     };
 
-    let transaction = Transaction::get(&mut *db_trns, transaction_id).await;
+    let transaction = Transaction::get(&mut *db_trns, transaction_id, user_id).await;
 
     if transaction.is_err() {
         error!(
