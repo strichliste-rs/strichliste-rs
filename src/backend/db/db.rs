@@ -127,7 +127,7 @@ impl DB {
 
         match group_k.link_user(&mut *transaction, DBUSER_KASSE_ID).await {
             Ok(_) => {}
-            Err(e) => {
+            Err(_) => {
                 debug!("Failed to link DBUSER_KASSE with group. (Hopefully) Already linked")
             }
         };
@@ -137,7 +137,7 @@ impl DB {
             .await
         {
             Ok(_) => {}
-            Err(e) => {
+            Err(_) => {
                 debug!("Failed to link DBUSER_AUFLADUNG with group. (Hopefully) Already linked")
             }
         };

@@ -39,6 +39,11 @@ pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
         }
     };
 
+    if id == DBUSER_AUFLADUNG_ID || id == DBUSER_KASSE_ID {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new("Failed to fetch user"));
+    }
+
     let user = match User::get(&mut *conn, id).await {
         Ok(value) => value,
         Err(e) => {            
