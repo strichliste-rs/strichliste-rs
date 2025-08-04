@@ -14,7 +14,7 @@ use crate::routes::user::MoneyArgs;
 
 #[server]
 pub async fn get_user_transactions(
-    user_id: i64,
+    user_id: UserId,
     limit: i64,
     offset: i64,
 ) -> Result<Vec<Transaction>, ServerFnError> {
@@ -242,7 +242,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
         .into_any();
     }
 
-    let user_id = user_id.unwrap();
+    let user_id = UserId(user_id.unwrap());
 
     let transaction_data = OnceResource::new(get_user_transactions(user_id, 10, 0));
 
@@ -311,7 +311,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
 pub fn format_transaction(
     transaction: &Transaction,
-    user_id: i64,
+    user_id: UserId,
     error_write: RwSignal<String>,
     money_signal: RwSignal<Money>,
 ) -> impl IntoView {
@@ -423,7 +423,7 @@ pub fn format_transaction(
                     } else {
                         view! {
                             <ActionForm action=undo_action>
-                                <input type="hidden" name="user_id" value={user_id}/>
+                                <input type="hidden" name="user_id" value={user_id.0}/>
                                 <input type="hidden" name="transaction_id" value={transaction_id}/>
                                 <input type="submit" class="text-white" value="Undo"/>
                             </ActionForm>

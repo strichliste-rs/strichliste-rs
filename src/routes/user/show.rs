@@ -5,10 +5,13 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-     models::{Money, Transaction,  TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 #[cfg(feature = "ssr")]
-use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
+use {
+    crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID},
+    crate::models::Group,
+};
 
 use super::components::transaction_view::ShowTransactions;
 
@@ -88,6 +91,51 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         }
     };
 
+    let mut user_group = match Group::get_user_group(&mut *db_trans, user_id).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get user group: {}", e);
+            return Err(ServerFnError::new("Failed to get user group"));
+        }
+    };
+
+    let mut aufladung_user = match User::get(&mut *db_trans, DBUSER_AUFLADUNG_ID).await {
+        Ok(Some(value)) => value,
+        _ => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get aufladungs_user");
+            return Err(ServerFnError::new("Failed to get a system user!"));
+        }
+    };
+
+    let mut kasse_user = match User::get(&mut *db_trans, DBUSER_KASSE_ID).await {
+        Ok(Some(value)) => value,
+        _ => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get kasse_user");
+            return Err(ServerFnError::new("Failed to get a system user!"));
+        }
+    };
+
+    let dbuser_aufladung_group = match Group::get_user_group(&mut *db_trans, DBUSER_AUFLADUNG_ID).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get dbuser_aufladung group: {}", e);
+            return Err(ServerFnError::new("Failed to get internal group"));
+        }
+    };
+
+    let dbuser_kasse_group = match Group::get_user_group(&mut *db_trans, DBUSER_KASSE_ID).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to get dbuser_kasse group: {}", e);
+            return Err(ServerFnError::new("Failed to get internal group"));
+        }
+    };
+    
     // let (sender_id, receiver_id) = match transaction_type {
     //     TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
     //     TransactionType::WITHDRAW => (user_id, DBUSER_AUFLADUNG_ID),
@@ -96,47 +144,90 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     //     TransactionType::SENT(rx_user) => (user_id, rx_user),
     // };
 
-    // let transaction_id = match Transaction::create(&mut *db_trans, sender_id, receiver_id,  transaction_type, None, money).await {
-    //     Ok(value) => value,
-    //     Err(e) => {
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         error!("Failed to create transaction: {}", e);
-    //         return Err(ServerFnError::new("Failed to create transaction!"));
-    //     }
-    // };
+    let (sender_group, receiver_group) = match transaction_type {
+      TransactionType::DEPOSIT => (dbuser_aufladung_group, user_group),
+      TransactionType::WITHDRAW => (user_group, dbuser_aufladung_group),
+      TransactionType::BOUGHT(_) => (user_group, dbuser_kasse_group),
 
-    // let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
-    //     Ok(Some(value)) => value,
-    //     _ => {
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         error!("Failed to find newly created transaction");
-    //         return Err(ServerFnError::new("Failed to find newly created transaction!"));
-    //     }
-    // };
+      _ => return Err(ServerFnError::new("WIP")),
+    };
+
+    let transaction_id = match Transaction::create(&mut *db_trans, sender_group, receiver_group, transaction_type, None, money).await {
+        Ok(value) => value,
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to create transaction: {}", e);
+            return Err(ServerFnError::new("Failed to create transaction!"));
+        }
+    };
+
+    let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
+        Ok(Some(value)) => value,
+        _ => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to find newly created transaction");
+            return Err(ServerFnError::new("Failed to find newly created transaction!"));
+        }
+    };
+
+    let mut new_user_money = user.money.value;
+    let mut new_aufladung_money = aufladung_user.money.value;
+    let mut new_kasse_money = kasse_user.money.value;
 
     // let new_value = user.money.value + transaction.money.value;
+    match transaction_type {
+        TransactionType::DEPOSIT | TransactionType::WITHDRAW => {
+            new_user_money += transaction.money.value;
+            new_aufladung_money -= transaction.money.value;
+        },
 
-    // match user.set_money(&mut *db_trans, new_value).await {
-    //     Ok(_) => {},
-    //     Err(e) => {
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         error!("Failed to update user: {}", e);
-    //         return Err(ServerFnError::new("Failed to update user!"));
-    //     }
-    // }
+        TransactionType::BOUGHT(_) => {
+            new_user_money += transaction.money.value;
+            new_kasse_money -= transaction.money.value;
+        }
 
-    // match db_trans.commit().await {
-    //     Ok(_) => {},
-    //     Err(e) => {
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         error!("Failed to commit transaction: {}", e);
-    //         return Err(ServerFnError::new("Failed to commit transaction!"));
-    //     }
-    // }
+        _ => return Err(ServerFnError::new("WIP")),
+    }
 
-    // Ok(transaction)
+    match user.set_money(&mut *db_trans, new_user_money).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to update user: {}", e);
+            return Err(ServerFnError::new("Failed to update user!"));
+        }
+    }
 
-    Err(ServerFnError::new("WIP"))
+    match aufladung_user.set_money(&mut *db_trans, new_aufladung_money).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to update user: {}", e);
+            return Err(ServerFnError::new("Failed to update system user!"));
+        }
+    }
+
+    match kasse_user.set_money(&mut *db_trans, new_kasse_money).await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to update user: {}", e);
+            return Err(ServerFnError::new("Failed to update system user!"));
+        }
+    }
+
+    match db_trans.commit().await {
+        Ok(_) => {},
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to commit transaction: {}", e);
+            return Err(ServerFnError::new("Failed to commit transaction!"));
+        }
+    }
+
+    Ok(transaction)
+
+    // Err(ServerFnError::new("WIP"))
 }
 
 #[component]

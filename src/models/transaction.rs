@@ -15,7 +15,7 @@ use {
     sqlx::{query_as, Executor},
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TransactionType {
     DEPOSIT,
     WITHDRAW,
@@ -398,7 +398,7 @@ impl Transaction {
 
     pub async fn get_user_transactions(
         db: &DB,
-        user_id: DatabaseId,
+        user_id: UserId,
         limit: i64,
         offset: i64,
     ) -> DatabaseResponse<Vec<Self>> {

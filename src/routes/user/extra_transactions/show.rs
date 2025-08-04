@@ -2,7 +2,7 @@ use leptos::{html, prelude::*};
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    models::{Money, Transaction},
+    models::{Money, Transaction, UserId},
     routes::user::components::transaction_view::{format_transaction, get_user_transactions},
 };
 
@@ -12,7 +12,7 @@ pub fn Show() -> impl IntoView {
     let user_id_string = params.read_untracked().get("id").unwrap_or_default();
 
     let user_id = match user_id_string.parse::<i64>() {
-        Ok(value) => value,
+        Ok(value) => UserId(value),
         Err(_) => {
             return view! {
                 <p class="text-red-400">"Invalid user id"</p>
