@@ -7,9 +7,9 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePool},
     Sqlite, Transaction,
 };
-use tracing::info;
+use tracing::{debug, info};
 
-use crate::models::GroupDB;
+use crate::models::{GroupDB, UserId};
 
 #[derive(Debug)]
 pub struct DBError(String);
@@ -38,8 +38,8 @@ pub type DatabaseResponse<T> = Result<T, DBError>;
 
 pub type DatabaseType = Sqlite;
 
-pub const DBUSER_KASSE_ID: i64 = 0;
-pub const DBUSER_AUFLADUNG_ID: i64 = 1;
+pub const DBUSER_KASSE_ID: UserId = UserId(0);
+pub const DBUSER_AUFLADUNG_ID: UserId = UserId(1);
 
 pub struct DB {
     pool: SqlitePool,
@@ -60,7 +60,7 @@ impl DB {
 
         let db = DB { pool: db };
 
-        _ = db.setup().await?;
+        db.setup().await?;
 
         Ok(db)
     }
@@ -79,7 +79,7 @@ impl DB {
     async fn setup(&self) -> Result<(), DBError> {
         let mut transaction = self.get_conn_transaction().await.unwrap();
 
-        _ = sqlx::migrate!("./migrations")
+        sqlx::migrate!("./migrations")
             .run(&mut *transaction)
             .await
             .map_err(DBError::new)?;
@@ -93,7 +93,7 @@ impl DB {
                 values
                     (?, ?, ?, ?)
             ",
-            DBUSER_KASSE_ID,
+            DBUSER_KASSE_ID.0,
             "kasse",
             0,
             true,
@@ -102,6 +102,8 @@ impl DB {
         .await
         .map_err(DBError::new)?;
 
+        debug!("Created DBUSER_KASSE user");
+
         _ = query!(
             "
                 insert or ignore into Users
@@ -109,7 +111,7 @@ impl DB {
                 values
                     (?, ?, ?, ?)
             ",
-            DBUSER_AUFLADUNG_ID,
+            DBUSER_AUFLADUNG_ID.0,
             "aufladung",
             0,
             true
@@ -118,17 +120,31 @@ impl DB {
         .await
         .map_err(DBError::new)?;
 
-        let group_k = GroupDB::_create(&mut *transaction, DBUSER_KASSE_ID).await?;
-        let group_a = GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
+        debug!("Created DBUSER_AUFLADUNG user");
 
-        group_k
-            .link_user(&mut *transaction, DBUSER_KASSE_ID)
-            .await?;
-        group_a
+        let group_k = GroupDB::_create(&mut *transaction, DBUSER_KASSE_ID.0).await?;
+        let group_a = GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID.0).await?;
+
+        match group_k.link_user(&mut *transaction, DBUSER_KASSE_ID).await {
+            Ok(_) => {}
+            Err(e) => {
+                debug!("Failed to link DBUSER_KASSE with group. (Hopefully) Already linked")
+            }
+        };
+        debug!("Linked group to user: DBUSER_KASSE");
+        match group_a
             .link_user(&mut *transaction, DBUSER_AUFLADUNG_ID)
-            .await?;
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                debug!("Failed to link DBUSER_AUFLADUNG with group. (Hopefully) Already linked")
+            }
+        };
+        debug!("Linked group to user: DBUSER_AUFLADUNG");
 
-        GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
+        // no need ?
+        // GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
 
         transaction.commit().await.map_err(From::from)
     }

@@ -1,4 +1,4 @@
-use sqlx::{query, query_as, Executor};
+use sqlx::{error::DatabaseError, query, query_as, Executor};
 
 use crate::{
     backend::db::{DBError, DatabaseResponse, DatabaseType},
@@ -78,15 +78,14 @@ impl GroupDB {
                 (id)
                 values
                 (?)
-                returning id
             ",
             id
         )
-        .fetch_one(&mut *conn)
+        .execute(&mut *conn)
         .await
-        .map_err(From::from)
-        .map(|e| e.id)
-        .map(From::from)
+        .map_err(DBError::new)?;
+
+        Ok(GroupDB { id })
     }
     pub async fn create<T>(conn: &mut T) -> DatabaseResponse<Self>
     where

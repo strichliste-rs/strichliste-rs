@@ -3,15 +3,14 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
-use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
-
-use super::{DatabaseId, Group, GroupDB, GroupId, Money, UserId};
+use super::{DatabaseId, GroupId, Money, UserId};
 
 #[cfg(feature = "ssr")]
 use {
     super::ArticleDB,
     crate::backend::db::{DBError, DB},
     crate::backend::db::{DatabaseResponse, DatabaseType},
+    crate::models::{Group, GroupDB},
     sqlx::query,
     sqlx::{query_as, Executor},
 };
@@ -379,7 +378,7 @@ impl Transaction {
     pub async fn get<T>(
         conn: &mut T,
         id: DatabaseId,
-        user_id: DatabaseId,
+        user_id: UserId,
     ) -> DatabaseResponse<Option<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -391,7 +390,7 @@ impl Transaction {
             None => return Ok(None),
         };
 
-        let user_group_single = GroupDB::get_single_group(&mut *conn, user_id.into()).await?;
+        let user_group_single = GroupDB::get_single_group(&mut *conn, user_id).await?;
 
         let transaction: Transaction = (transaction_db, user_group_single.into()).into();
         Ok(Some(transaction))

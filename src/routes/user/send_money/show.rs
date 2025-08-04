@@ -1,16 +1,16 @@
-use leptos::{html, prelude::*, task::spawn_local};
+use leptos::{html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{Money, Transaction, User},
+    models::{GroupId, Money, Transaction, User, UserId},
     routes::{home::get_all_users, user::get_user},
 };
 
 #[server]
 pub async fn send_money(
-    from_user: i64,
-    to_user: String,
+    from_group: GroupId,
+    to_group: GroupId,
     amount: String,
 ) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
@@ -38,15 +38,15 @@ pub async fn send_money(
         return Err(ServerFnError::new("Amount to be sent must be > 0!"));
     }
 
-    let mut from_user = match get_user(from_user).await? {
-        Some(value) => value,
-        None => {
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(ServerFnError::new(
-                "The user you are trying to send the money from does not exist!",
-            ));
-        }
-    };
+    // let mut from_user = match get_user(from_user).await? {
+    //     Some(value) => value,
+    //     None => {
+    //         response_opts.set_status(StatusCode::BAD_REQUEST);
+    //         return Err(ServerFnError::new(
+    //             "The user you are trying to send the money from does not exist!",
+    //         ));
+    //     }
+    // };
 
     let db = state.db.lock().await;
 
@@ -59,77 +59,79 @@ pub async fn send_money(
         }
     };
 
-    let mut to_user = match User::get_by_nick(&mut *db_trans, to_user.clone()).await {
-        Ok(value) => match value {
-            Some(value) => value,
-            None => {
-                response_opts.set_status(StatusCode::BAD_REQUEST);
-                return Err(ServerFnError::new(&format!(
-                    "There is no such user with the nick '{}'!",
-                    to_user
-                )));
-            }
-        },
+    // let mut to_user = match User::get_by_nick(&mut *db_trans, to_user.clone()).await {
+    //     Ok(value) => match value {
+    //         Some(value) => value,
+    //         None => {
+    //             response_opts.set_status(StatusCode::BAD_REQUEST);
+    //             return Err(ServerFnError::new(&format!(
+    //                 "There is no such user with the nick '{}'!",
+    //                 to_user
+    //             )));
+    //         }
+    //     },
 
-        Err(e) => {
-            error!("Failed to get user by nick: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to get user by nick!"));
-        }
-    };
+    //     Err(e) => {
+    //         error!("Failed to get user by nick: {}", e);
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         return Err(ServerFnError::new("Failed to get user by nick!"));
+    //     }
+    // };
 
-    if from_user.id == to_user.id {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new(
-            "Sending and receiving user must not be the same!",
-        ));
-    }
+    // if from_user.id == to_user.id {
+    //     response_opts.set_status(StatusCode::BAD_REQUEST);
+    //     return Err(ServerFnError::new(
+    //         "Sending and receiving user must not be the same!",
+    //     ));
+    // }
 
-    match from_user
-        .add_money(&mut *db_trans, (-money.value).into())
-        .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to apply new money value: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to apply money!"));
-        }
-    }
+    // match from_user
+    //     .add_money(&mut *db_trans, (-money.value).into())
+    //     .await
+    // {
+    //     Ok(_) => {}
+    //     Err(e) => {
+    //         error!("Failed to apply new money value: {}", e);
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         return Err(ServerFnError::new("Failed to apply money!"));
+    //     }
+    // }
 
-    match to_user.add_money(&mut *db_trans, money).await {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to apply new money value: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to apply money!"));
-        }
-    }
+    // match to_user.add_money(&mut *db_trans, money).await {
+    //     Ok(_) => {}
+    //     Err(e) => {
+    //         error!("Failed to apply new money value: {}", e);
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         return Err(ServerFnError::new("Failed to apply money!"));
+    //     }
+    // }
 
-    if let Err(e) = Transaction::create(
-        &mut *db_trans,
-        from_user.id,
-        to_user.id,
-        crate::models::TransactionType::SENT(to_user.id),
-        None,
-        money,
-    )
-    .await
-    {
-        error!("Failed to create transaction: {}", e);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to create transaction!"));
-    };
+    // if let Err(e) = Transaction::create(
+    //     &mut *db_trans,
+    //     from_user.id,
+    //     to_user.id,
+    //     crate::models::TransactionType::SENT(to_user.id),
+    //     None,
+    //     money,
+    // )
+    // .await
+    // {
+    //     error!("Failed to create transaction: {}", e);
+    //     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //     return Err(ServerFnError::new("Failed to create transaction!"));
+    // };
 
-    if let Err(e) = db_trans.commit().await {
-        error!("Failed to commit transaction: {}", e);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to apply transaction!"));
-    };
+    // if let Err(e) = db_trans.commit().await {
+    //     error!("Failed to commit transaction: {}", e);
+    //     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //     return Err(ServerFnError::new("Failed to apply transaction!"));
+    // };
 
-    redirect(&format!("/user/{}", from_user.id));
+    // redirect(&format!("/user/{}", from_user.id));
 
-    Ok(())
+    // Ok(())
+    //
+    Err(ServerFnError::new("WIP"))
 }
 
 #[component]
@@ -146,6 +148,8 @@ pub fn Show() -> impl IntoView {
             .into_any();
         }
     };
+
+    let user_id = UserId(user_id);
 
     let user_resource = OnceResource::new(get_user(user_id));
     let all_users_resource = OnceResource::new(get_all_users());
@@ -174,7 +178,7 @@ pub fn Show() -> impl IntoView {
                     Some(value) => value,
                     None => {
                         return view!{
-                            <p class="bg-red-400 text-white text-center">"No such user with id '"{user_id}"' exists!"</p>
+                            <p class="bg-red-400 text-white text-center">"No such user with id '"{user_id.0}"' exists!"</p>
                         }.into_any();
                     }
                 };
@@ -225,12 +229,13 @@ pub fn Show() -> impl IntoView {
                             <input class="w-full bg-indigo-700 hover:bg-pink-700 text-white font-bold py-2 px-4 mb-6 rounded" type="submit" value="Send money"
                                 on:click=move |_| {
                                     spawn_local(async move {
-                                        match send_money(user_id, receiver_input.get(), amount_input.get()).await {
-                                            Ok(_) => {},
-                                            Err(e) => {
-                                                error_result.set(e.to_string());
-                                            }
-                                        }
+                                        console_log("Need to send_money ()");
+                                        // match send_money(user_id, receiver_input.get(), amount_input.get()).await {
+                                        //     Ok(_) => {},
+                                        //     Err(e) => {
+                                        //         error_result.set(e.to_string());
+                                        //     }
+                                        // }
                                     });
                                 }
                             />

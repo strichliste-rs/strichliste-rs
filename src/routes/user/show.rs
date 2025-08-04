@@ -5,7 +5,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-     models::{Money, Transaction,  TransactionType, User}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{Money, Transaction,  TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 #[cfg(feature = "ssr")]
 use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID};
@@ -14,14 +14,14 @@ use super::components::transaction_view::ShowTransactions;
 
 #[derive(Debug, Clone)]
 pub struct MoneyArgs {
-    pub user_id: i64,
+    pub user_id: UserId,
     pub money: RwSignal<Money>,
     pub error: RwSignal<String>,
     pub transactions: RwSignal<Vec<Transaction>>,
 }
 
 #[server]
-pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
+pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -52,7 +52,7 @@ pub async fn get_user(id: i64) -> Result<Option<User>, ServerFnError> {
 }
 
 #[server]
-pub async fn create_transaction(user_id: i64, money: Money, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
+pub async fn create_transaction(user_id: UserId, money: Money, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -83,53 +83,55 @@ pub async fn create_transaction(user_id: i64, money: Money, transaction_type: Tr
         }
     };
 
-    let (sender_id, receiver_id) = match transaction_type {
-        TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
-        TransactionType::WITHDRAW => (user_id, DBUSER_AUFLADUNG_ID),
-        TransactionType::BOUGHT(_) => (user_id, DBUSER_KASSE_ID),
-        TransactionType::RECEIVED(tx_user) => (tx_user, user_id),
-        TransactionType::SENT(rx_user) => (user_id, rx_user),
-    };
+    // let (sender_id, receiver_id) = match transaction_type {
+    //     TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
+    //     TransactionType::WITHDRAW => (user_id, DBUSER_AUFLADUNG_ID),
+    //     TransactionType::BOUGHT(_) => (user_id, DBUSER_KASSE_ID),
+    //     TransactionType::RECEIVED(tx_user) => (tx_user, user_id),
+    //     TransactionType::SENT(rx_user) => (user_id, rx_user),
+    // };
 
-    let transaction_id = match Transaction::create(&mut *db_trans, sender_id, receiver_id,  transaction_type, None, money).await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to create transaction: {}", e);
-            return Err(ServerFnError::new("Failed to create transaction!"));
-        }
-    };
+    // let transaction_id = match Transaction::create(&mut *db_trans, sender_id, receiver_id,  transaction_type, None, money).await {
+    //     Ok(value) => value,
+    //     Err(e) => {
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         error!("Failed to create transaction: {}", e);
+    //         return Err(ServerFnError::new("Failed to create transaction!"));
+    //     }
+    // };
 
-    let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
-        Ok(Some(value)) => value,
-        _ => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to find newly created transaction");
-            return Err(ServerFnError::new("Failed to find newly created transaction!"));
-        }
-    };
+    // let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
+    //     Ok(Some(value)) => value,
+    //     _ => {
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         error!("Failed to find newly created transaction");
+    //         return Err(ServerFnError::new("Failed to find newly created transaction!"));
+    //     }
+    // };
 
-    let new_value = user.money.value + transaction.money.value;
+    // let new_value = user.money.value + transaction.money.value;
 
-    match user.set_money(&mut *db_trans, new_value).await {
-        Ok(_) => {},
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to update user: {}", e);
-            return Err(ServerFnError::new("Failed to update user!"));
-        }
-    }
+    // match user.set_money(&mut *db_trans, new_value).await {
+    //     Ok(_) => {},
+    //     Err(e) => {
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         error!("Failed to update user: {}", e);
+    //         return Err(ServerFnError::new("Failed to update user!"));
+    //     }
+    // }
 
-    match db_trans.commit().await {
-        Ok(_) => {},
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to commit transaction: {}", e);
-            return Err(ServerFnError::new("Failed to commit transaction!"));
-        }
-    }
+    // match db_trans.commit().await {
+    //     Ok(_) => {},
+    //     Err(e) => {
+    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+    //         error!("Failed to commit transaction: {}", e);
+    //         return Err(ServerFnError::new("Failed to commit transaction!"));
+    //     }
+    // }
 
-    Ok(transaction)
+    // Ok(transaction)
+
+    Err(ServerFnError::new("WIP"))
 }
 
 #[component]
@@ -146,7 +148,7 @@ pub fn ShowUser() -> impl IntoView {
         .into_any();
     }
 
-    let user_id = user_id.unwrap();
+    let user_id = UserId(user_id.unwrap());
 
     let user_resource = OnceResource::new(get_user(user_id));
 
@@ -200,7 +202,7 @@ pub fn ShowUser() -> impl IntoView {
 
                             if user.is_none(){
                                 return view! {
-                                    <p class="text-red-500">"No user with the id "{user_id}" has been found!"</p>
+                                    <p class="text-red-500">"No user with the id "{user_id.0}" has been found!"</p>
                                 }.into_any();
                             }
 
@@ -211,10 +213,10 @@ pub fn ShowUser() -> impl IntoView {
                             let transactions = RwSignal::new(Vec::<Transaction>::new());
 
                             let m_args = MoneyArgs {
-                                user_id: user_id,
+                                user_id,
                                 money: money_signal,
                                 error: error_signal,
-                                transactions: transactions,
+                                transactions,
                             };
 
                             let args1 = m_args.clone();
@@ -353,7 +355,7 @@ fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
     change_money_logic_raw(money, user_id, money_signal, error, transactions);
 }
 
-fn change_money_logic_raw(money: Money, user_id: i64, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
         let t_type = if money.value > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
         

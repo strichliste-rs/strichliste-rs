@@ -3,7 +3,10 @@ use std::rc::Rc;
 use chrono::Utc;
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 
-use crate::routes::{articles::get_article_by_barcode, user::MoneyArgs};
+use crate::{
+    models::UserId,
+    routes::{articles::get_article_by_barcode, user::MoneyArgs},
+};
 
 use super::buy_article::buy_article;
 
@@ -11,7 +14,7 @@ pub fn invisible_scan_input(
     is_focused_signal: RwSignal<bool>,
     error_signal: RwSignal<String>,
     money_args: Rc<MoneyArgs>,
-    user_id: i64,
+    user_id: UserId,
 ) -> impl IntoView {
     let input_signal = RwSignal::new(String::new());
     let last_input = RwSignal::new(Utc::now());

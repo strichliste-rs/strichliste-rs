@@ -123,7 +123,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
         handle.remove();
     });
 
-    return view! {};
+    view! {}
 }
 
 #[component]

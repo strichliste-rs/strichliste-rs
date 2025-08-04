@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{DatabaseId, Group, Money};
+use super::{DatabaseId, Money};
 
 #[cfg(feature = "ssr")]
 use {
@@ -41,7 +41,6 @@ impl From<i64> for UserId {
     }
 }
 
-use leptos::attr::Display;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
@@ -266,6 +265,7 @@ impl UserDB {
             "
                 select *
                 from Users
+                where is_system_user = false
             ",
         )
         .fetch_all(&mut *conn)
@@ -366,13 +366,13 @@ impl User {
 
         for user_db in users_db.into_iter() {
             users.push(
-                Self::get(&mut *conn, user_db.id)
+                Self::get(&mut *conn, UserId(user_db.id))
                     .await?
                     .expect("user should exist"),
             )
         }
 
-        return Ok(users);
+        Ok(users)
     }
 
     pub async fn get_transactions(
@@ -443,7 +443,7 @@ impl User {
                 let card_number = UserDB::get_card_number(&mut *conn, id).await?;
 
                 Ok(Some(User {
-                    id,
+                    id: UserId(id),
                     nickname,
                     card_number,
                     money: money.into(),

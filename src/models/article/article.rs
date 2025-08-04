@@ -1,4 +1,4 @@
-use crate::models::{DatabaseId, Money};
+use crate::models::{DatabaseId, Money, UserId};
 
 use super::{ArticleSound, Barcode, BarcodeDiff};
 
@@ -166,10 +166,7 @@ impl Article {
         Ok(())
     }
 
-    pub async fn get_articles_for_user(
-        db: &DB,
-        user_id: DatabaseId,
-    ) -> DatabaseResponse<Vec<Self>> {
+    pub async fn get_articles_for_user(db: &DB, user_id: UserId) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
 
         let mut articles_amount_bought =
@@ -544,7 +541,7 @@ impl ArticleDB {
     /// returns the article_id and amount of items bought for the user
     pub async fn get_articles_for_user<T>(
         conn: &mut T,
-        user_id: DatabaseId,
+        user_id: UserId,
     ) -> DatabaseResponse<Vec<(i64, i64)>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -561,7 +558,7 @@ impl ArticleDB {
                 order by timestamp desc
                 limit 50
             ",
-            user_id
+            user_id.0
         )
         .fetch_all(&mut *conn)
         .await

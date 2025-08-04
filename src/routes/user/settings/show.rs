@@ -2,10 +2,10 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, warn};
 
-use crate::{models::User, routes::user::get_user};
+use crate::{models::{User, UserId}, routes::user::get_user};
 
 #[server]
-pub async fn update_user(id: i64, nickname: String, card_number: String) -> Result<(), ServerFnError> {
+pub async fn update_user(id: UserId, nickname: String, card_number: String) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -117,7 +117,7 @@ pub fn Show() -> impl IntoView {
         .into_any();
     }
 
-    let user_id = user_id.unwrap();
+    let user_id = UserId(user_id.unwrap());
     let user_resource = OnceResource::new(get_user(user_id));
 
     let update_action = ServerAction::<UpdateUser>::new();
@@ -148,7 +148,7 @@ pub fn Show() -> impl IntoView {
 
                 if user.is_none(){
                     return view! {
-                        <p class="text-red-500">"No user with the id "{user_id}" has been found!"</p>
+                        <p class="text-red-500">"No user with the id "{user_id.0}" has been found!"</p>
                     }.into_any();
                 }
 
@@ -182,7 +182,7 @@ pub fn Show() -> impl IntoView {
                                 <label class="text-white text-[1.25em]">"Card number"</label>
                                 <input class="text-[1.25em]" type="text" value={user.card_number} name="card_number"/>
                             </div>
-                            <input type="hidden" value={user.id} name="id"/>
+                            <input type="hidden" value={user.id.0} name="id"/>
                             <input class="text-white hover:bg-pink-700 bg-emerald-700 rounded-full text-[1.25em] p-2" type="submit" value="Update user"/>
                         </div>
                         </ActionForm>
