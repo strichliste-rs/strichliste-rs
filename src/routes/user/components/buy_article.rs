@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[cfg(feature = "ssr")]
-use crate::models::Group;
+use crate::{backend::db::DBUSER_SNACKBAR_ID, models::Group};
 
 #[server]
 pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
@@ -41,7 +41,6 @@ pub async fn buy_article_by_id(
     user_id: UserId,
     article_id: i64,
 ) -> Result<Transaction, ServerFnError> {
-    use crate::backend::db::DBUSER_KASSE_ID;
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -85,7 +84,7 @@ pub async fn buy_article_by_id(
         }
     };
 
-    let kasse_group = match Group::get_user_group(&mut *db_trans, DBUSER_KASSE_ID).await {
+    let kasse_group = match Group::get_user_group(&mut *db_trans, DBUSER_SNACKBAR_ID).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);

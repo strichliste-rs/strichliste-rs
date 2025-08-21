@@ -9,7 +9,7 @@ use sqlx::{
 };
 use tracing::{debug, info};
 
-use crate::models::{GroupDB, UserId};
+use crate::models::{GroupDB, GroupId, UserId};
 
 #[derive(Debug)]
 pub struct DBError(String);
@@ -38,7 +38,9 @@ pub type DatabaseResponse<T> = Result<T, DBError>;
 
 pub type DatabaseType = Sqlite;
 
-pub const DBUSER_KASSE_ID: UserId = UserId(0);
+pub const DBGROUP_SNACKBAR_ID: GroupId = GroupId(0);
+pub const DBGROUP_AUFLADUNG_ID: GroupId = GroupId(1);
+pub const DBUSER_SNACKBAR_ID: UserId = UserId(0);
 pub const DBUSER_AUFLADUNG_ID: UserId = UserId(1);
 
 pub struct DB {
@@ -93,7 +95,7 @@ impl DB {
                 values
                     (?, ?, ?, ?)
             ",
-            DBUSER_KASSE_ID.0,
+            DBGROUP_SNACKBAR_ID.0,
             "kasse",
             0,
             true,
@@ -111,7 +113,7 @@ impl DB {
                 values
                     (?, ?, ?, ?)
             ",
-            DBUSER_AUFLADUNG_ID.0,
+            DBGROUP_AUFLADUNG_ID.0,
             "aufladung",
             0,
             true
@@ -122,10 +124,13 @@ impl DB {
 
         debug!("Created DBUSER_AUFLADUNG user");
 
-        let group_k = GroupDB::_create(&mut *transaction, DBUSER_KASSE_ID.0).await?;
-        let group_a = GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID.0).await?;
+        let group_k = GroupDB::_create(&mut *transaction, DBGROUP_SNACKBAR_ID.0).await?;
+        let group_a = GroupDB::_create(&mut *transaction, DBGROUP_AUFLADUNG_ID.0).await?;
 
-        match group_k.link_user(&mut *transaction, DBUSER_KASSE_ID).await {
+        match group_k
+            .link_user(&mut *transaction, DBUSER_SNACKBAR_ID)
+            .await
+        {
             Ok(_) => {}
             Err(_) => {
                 debug!("Failed to link DBUSER_KASSE with group. (Hopefully) Already linked")

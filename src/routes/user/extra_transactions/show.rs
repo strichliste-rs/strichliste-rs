@@ -37,7 +37,7 @@ pub fn Show() -> impl IntoView {
 
     let error = RwSignal::new(String::new());
 
-    let money_signal = RwSignal::new(Into::<Money>::into(0));
+    let money_signal = RwSignal::new(Money::new());
 
     let go_back_padding = "p-5";
 

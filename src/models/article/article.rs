@@ -546,6 +546,8 @@ impl ArticleDB {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        use crate::backend::db::DBGROUP_SNACKBAR_ID;
+
         let result = query!(
             "
                 select
@@ -553,12 +555,13 @@ impl ArticleDB {
                 from
                     Transactions
                 where
-                    sender = ? and is_undone = 0 and t_type = 'BOUGHT'
+                    sender = ? and is_undone = 0 and receiver = ?
                 group by t_type_data
                 order by timestamp desc
                 limit 50
             ",
-            user_id.0
+            user_id.0,
+            DBGROUP_SNACKBAR_ID.0
         )
         .fetch_all(&mut *conn)
         .await

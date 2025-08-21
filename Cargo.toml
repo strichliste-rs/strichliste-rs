@@ -43,6 +43,7 @@ ssr = [
     "dep:clap",
     "dep:tracing-subscriber",
     "dep:futures",
+    "dep:itertools",
 ]
 sqlx = ["dep:sqlx"]
 clap = ["dep:clap"]

@@ -9,8 +9,9 @@ use crate::{
 ;
 #[cfg(feature = "ssr")]
 use {
-    crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_KASSE_ID},
+    crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     crate::models::Group,
+    crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
 };
 
 use super::components::transaction_view::ShowTransactions;
@@ -42,7 +43,7 @@ pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
         }
     };
 
-    if id == DBUSER_AUFLADUNG_ID || id == DBUSER_KASSE_ID {
+    if id == DBUSER_AUFLADUNG_ID || id == DBUSER_SNACKBAR_ID {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Failed to fetch user"));
     }
@@ -109,7 +110,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         }
     };
 
-    let mut kasse_user = match User::get(&mut *db_trans, DBUSER_KASSE_ID).await {
+    let mut snackbar_user = match User::get(&mut *db_trans, DBUSER_SNACKBAR_ID).await {
         Ok(Some(value)) => value,
         _ => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
@@ -118,23 +119,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         }
     };
 
-    let dbuser_aufladung_group = match Group::get_user_group(&mut *db_trans, DBUSER_AUFLADUNG_ID).await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get dbuser_aufladung group: {}", e);
-            return Err(ServerFnError::new("Failed to get internal group"));
-        }
-    };
 
-    let dbuser_kasse_group = match Group::get_user_group(&mut *db_trans, DBUSER_KASSE_ID).await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get dbuser_kasse group: {}", e);
-            return Err(ServerFnError::new("Failed to get internal group"));
-        }
-    };
     
     // let (sender_id, receiver_id) = match transaction_type {
     //     TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
@@ -145,9 +130,9 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     // };
 
     let (sender_group, receiver_group) = match transaction_type {
-      TransactionType::DEPOSIT => (dbuser_aufladung_group, user_group),
-      TransactionType::WITHDRAW => (user_group, dbuser_aufladung_group),
-      TransactionType::BOUGHT(_) => (user_group, dbuser_kasse_group),
+      TransactionType::DEPOSIT => (DBGROUP_AUFLADUNG_ID, user_group),
+      TransactionType::WITHDRAW => (user_group, DBGROUP_AUFLADUNG_ID),
+      TransactionType::BOUGHT(_) => (user_group, DBGROUP_SNACKBAR_ID),
 
       _ => return Err(ServerFnError::new("WIP")),
     };
@@ -172,7 +157,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
 
     let mut new_user_money = user.money.value;
     let mut new_aufladung_money = aufladung_user.money.value;
-    let mut new_kasse_money = kasse_user.money.value;
+    let mut new_kasse_money = snackbar_user.money.value;
 
     // let new_value = user.money.value + transaction.money.value;
     match transaction_type {
@@ -207,7 +192,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         }
     }
 
-    match kasse_user.set_money(&mut *db_trans, new_kasse_money).await {
+    match snackbar_user.set_money(&mut *db_trans, new_kasse_money).await {
         Ok(_) => {},
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);

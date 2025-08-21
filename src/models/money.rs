@@ -54,6 +54,13 @@ impl Money {
     }
 }
 
+impl From<u64> for Money {
+    fn from(value: u64) -> Self {
+        Self {
+            value: value as i64,
+        }
+    }
+}
 impl From<i64> for Money {
     fn from(value: i64) -> Self {
         Self { value }

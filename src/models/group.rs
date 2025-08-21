@@ -124,6 +124,7 @@ impl GroupDB {
         .map_err(From::from)
         .map(|_| ())
     }
+    /// get primitive group id
     pub async fn get_single_group<T>(conn: &mut T, user_id: UserId) -> DatabaseResponse<DatabaseId>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,

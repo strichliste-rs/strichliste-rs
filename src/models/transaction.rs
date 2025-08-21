@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
+#[cfg(feature = "ssr")]
+use leptos::{prelude::ServerFnError, server_fn::error::ServerFnErrorErr};
 
 use super::{DatabaseId, GroupId, Money, UserId};
 
@@ -91,9 +93,8 @@ pub struct TransactionDB {
     pub sender: i64,
     pub receiver: i64,
     pub is_undone: bool,
-    pub t_type: TransactionTypeDB,
     pub t_type_data: Option<i64>,
-    pub money: i64,
+    pub money: u64,
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
 }
@@ -165,36 +166,56 @@ pub struct TransactionDB {
 #[cfg(feature = "ssr")]
 /// Use the GroupId (self.1) if the user is the only person relevant in the
 /// transaction
-impl Into<Transaction> for (TransactionDB, GroupId) {
-    fn into(self: (TransactionDB, GroupId)) -> Transaction {
-        let TransactionDB {
-            id,
-            sender,
-            receiver,
-            is_undone,
-            t_type,
-            t_type_data,
-            money,
-            description,
-            timestamp,
-        } = self.0;
+impl TryInto<Transaction> for (TransactionDB, GroupId) {
+    type Error = DBError;
+    fn try_into(self: (TransactionDB, GroupId)) -> Result<Transaction, DBError> {
+        use crate::backend::db::DBGROUP_AUFLADUNG_ID;
 
-        Transaction {
-            id,
-            group_id: match t_type {
-                TransactionTypeDB::WITHDRAW => self.1,
-                TransactionTypeDB::DEPOSIT => self.1,
-                TransactionTypeDB::BOUGHT => self.1,
-                TransactionTypeDB::RECEIVED => sender.into(),
-                TransactionTypeDB::SENT => receiver.into(),
+        let (
+            TransactionDB {
+                id,
+                sender,
+                receiver,
+                is_undone,
+                t_type_data,
+                money,
+                description,
+                timestamp,
             },
+            group_id_us,
+        ) = self;
+        let (sender, receiver) = (GroupId(sender), GroupId(receiver));
+        if sender != group_id_us && receiver != group_id_us {
+            return Err(DBError::new(
+                "invalid state when converting TransactionDB to Transaction either sender or reciever must be group id",
+            ));
+        }
+
+        Ok(Transaction {
+            id,
+            group_id: group_id_us,
             is_undone,
-            t_type: (t_type, t_type_data).into(),
+            t_type: {
+                use crate::backend::db::DBGROUP_SNACKBAR_ID;
+                match (sender, receiver) {
+                    (DBGROUP_AUFLADUNG_ID, _) => TransactionType::WITHDRAW,
+                    (_, DBGROUP_AUFLADUNG_ID) => TransactionType::DEPOSIT,
+                    (_, DBGROUP_SNACKBAR_ID) => TransactionType::BOUGHT(t_type_data.unwrap()),
+                    (a, b) => {
+                        if a == group_id_us {
+                            TransactionType::SENT(b)
+                        } else {
+                            //b == group_id_us
+                            TransactionType::RECEIVED(a)
+                        }
+                    }
+                }
+            },
             money: money.into(),
             description,
             timestamp,
             is_undone_signal: RwSignal::new(is_undone), // might fail on server
-        }
+        })
     }
 }
 
@@ -216,14 +237,13 @@ impl TransactionDB {
         query!(
             "
                 insert into Transactions
-                    (receiver, sender, t_type, is_undone, t_type_data, money, description, timestamp)
+                    (receiver, sender, is_undone, t_type_data, money, description, timestamp)
                 values
-                    (?, ?, ?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?)
                 returning id
             ",
             receiver.0,
             sender.0,
-            t_type,
             false,
             t_type_data,
             money,
@@ -248,9 +268,8 @@ impl TransactionDB {
                     sender as "sender: i64",
                     receiver as "receiver: i64",
                     is_undone,
-                    t_type as "t_type: TransactionTypeDB",
                     t_type_data,
-                    money,
+                    money as "money: u64",
                     description,
                     timestamp as "timestamp: DateTime<Utc>"
                 from Transactions
@@ -279,6 +298,8 @@ impl TransactionDB {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        use tracing::debug;
+
         let groups = GroupDB::get_groups(&mut *conn, user_id).await?;
 
         let string = groups
@@ -287,34 +308,50 @@ impl TransactionDB {
             .collect::<Vec<String>>()
             .join(", ");
 
-        let result = query_as!(
-            Self,
-            r#"
-            select
-                id as "id: i64",
-                sender as "sender: i64",
-                receiver as "receiver: i64",
-                is_undone,
-                t_type as "t_type: TransactionTypeDB",
-                t_type_data,
-                money,
-                description,
-                timestamp as "timestamp: DateTime<Utc>"
+        debug!("Group String: {string}");
+        // let result = query_as!(
+        //     Self,
+        //     r#"
+        //     select
+        //         id as "id: i64",
+        //         sender as "sender: i64",
+        //         receiver as "receiver: i64",
+        //         is_undone,
+        //         t_type_data,
+        //         money as "money: u64",
+        //         description,
+        //         timestamp as "timestamp: DateTime<Utc>"
+        //     from Transactions
+        //     where receiver = ?
+        //     order by timestamp desc
+        //     limit ?
+        //     offset ?
+        // "#,
+        //     string,
+        //     // string,
+        //     limit,
+        //     offset,
+        // );
+        let result = sqlx::query_as::<_, Self>(
+            "
+            select *
             from Transactions
-            where sender in (?) or receiver in (?)
             order by timestamp desc
             limit ?
             offset ?
-        "#,
-            string,
-            string,
-            limit,
-            offset,
+        ",
+            // where receiver = ?
         )
-        .fetch_all(&mut *conn)
-        .await
-        .map_err(Into::<DBError>::into)?;
+        // .bind(string)
+        .bind(limit)
+        .bind(offset);
 
+        let result = result
+            .fetch_all(&mut *conn)
+            .await
+            .map_err(Into::<DBError>::into)?;
+
+        debug!("Database result: {:#?}", result);
         Ok(result)
     }
 
@@ -333,7 +370,6 @@ impl TransactionDB {
         )
         .execute(&mut *conn)
         .await
-        // .map_err(From::<DBError>::from)?;
         .map_err(DBError::new)?;
 
         Ok(())
@@ -392,7 +428,7 @@ impl Transaction {
 
         let user_group_single = GroupDB::get_single_group(&mut *conn, user_id).await?;
 
-        let transaction: Transaction = (transaction_db, user_group_single.into()).into();
+        let transaction: Transaction = (transaction_db, user_group_single.into()).try_into()?;
         Ok(Some(transaction))
     }
 
@@ -402,9 +438,8 @@ impl Transaction {
         limit: i64,
         offset: i64,
     ) -> DatabaseResponse<Vec<Self>> {
+        use itertools::Itertools;
         let mut conn = db.get_conn().await?;
-
-        let user_id: UserId = user_id.into();
 
         let user_group_id = Group::get_user_group(&mut *conn, user_id).await?;
 
@@ -412,8 +447,9 @@ impl Transaction {
             TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
                 .await?
                 .into_iter()
-                .map(|elem| (elem, user_group_id).into())
-                .collect::<Vec<Transaction>>();
+                .map(|elem| (elem, user_group_id).try_into())
+                .process_results(|e| e.collect::<Vec<Transaction>>())?;
+
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
 
         for transaction in transactions.iter_mut() {

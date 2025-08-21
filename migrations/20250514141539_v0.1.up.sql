@@ -22,9 +22,8 @@ create table Transactions (
     sender not null,
     receiver not null,
     is_undone boolean not null default false,
-    t_type text not null,
     t_type_data integer,
-    money integer not null,
+    money integer unsigned not null,
     description varchar(255),
     timestamp date not null,
 
