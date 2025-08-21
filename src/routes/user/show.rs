@@ -130,9 +130,9 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     // };
 
     let (sender_group, receiver_group) = match transaction_type {
-      TransactionType::DEPOSIT => (DBGROUP_AUFLADUNG_ID, user_group),
-      TransactionType::WITHDRAW => (user_group, DBGROUP_AUFLADUNG_ID),
-      TransactionType::BOUGHT(_) => (user_group, DBGROUP_SNACKBAR_ID),
+      TransactionType::Deposit => (DBGROUP_AUFLADUNG_ID, user_group),
+      TransactionType::Withdraw => (user_group, DBGROUP_AUFLADUNG_ID),
+      TransactionType::Bought(_) => (user_group, DBGROUP_SNACKBAR_ID),
 
       _ => return Err(ServerFnError::new("WIP")),
     };
@@ -161,12 +161,12 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
 
     // let new_value = user.money.value + transaction.money.value;
     match transaction_type {
-        TransactionType::DEPOSIT | TransactionType::WITHDRAW => {
+        TransactionType::Deposit | TransactionType::Withdraw => {
             new_user_money += transaction.money.value;
             new_aufladung_money -= transaction.money.value;
         },
 
-        TransactionType::BOUGHT(_) => {
+        TransactionType::Bought(_) => {
             new_user_money += transaction.money.value;
             new_kasse_money -= transaction.money.value;
         }
@@ -438,7 +438,7 @@ fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
 
 fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
-        let t_type = if money.value > 0 { TransactionType::DEPOSIT } else { TransactionType::WITHDRAW };
+        let t_type = if money.value > 0 { TransactionType::Deposit } else { TransactionType::Withdraw };
         
         let resp = create_transaction(user_id, money.clone(), t_type).await;
 

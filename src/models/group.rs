@@ -193,3 +193,15 @@ impl GroupDB {
         }
     }
 }
+
+impl Into<GroupId> for GroupDB {
+    fn into(self) -> GroupId {
+        GroupId(self.id)
+    }
+}
+
+impl From<&GroupDB> for GroupId {
+    fn from(value: &GroupDB) -> Self {
+        Self(value.id)
+    }
+}

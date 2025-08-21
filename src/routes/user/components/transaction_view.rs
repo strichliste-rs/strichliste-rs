@@ -340,7 +340,7 @@ pub fn format_transaction(
         >
         {
             match transaction.t_type {
-                TransactionType::DEPOSIT | TransactionType::WITHDRAW => view!{
+                TransactionType::Deposit | TransactionType::Withdraw => view!{
                     <p class=""
                         class=("text-green-500", transaction.money.value >= 0)
                         class=("text-red-400", transaction.money.value < 0)
@@ -349,15 +349,19 @@ pub fn format_transaction(
 
                 }.into_any(),
 
-                TransactionType::BOUGHT(_) => {
+                TransactionType::Bought(_) => {
                     view!{
                         <p class="text-red-400">{transaction.money.format_eur_diff()}</p>
                         <p class="text-white"><ArticleBasketIcon class="inline"/>" "{transaction.description.clone().unwrap_or("".to_string())}</p>
                     }.into_any()
                 },
 
-                TransactionType::RECEIVED(user)
-                | TransactionType::SENT(user) => {
+                TransactionType::SentAndReceived(received_group) => {
+                    todo!()
+                }
+
+                TransactionType::Received(user)
+                | TransactionType::Sent(user) => {
                     let transaction = transaction.clone();
                     view!{}.into_any()
                     // let user = OnceResource::new(get_user(user.clone()));

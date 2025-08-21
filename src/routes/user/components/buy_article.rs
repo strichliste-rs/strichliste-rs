@@ -97,7 +97,7 @@ pub async fn buy_article_by_id(
         &mut *db_trans,
         user_group,
         kasse_group,
-        crate::models::TransactionType::BOUGHT(article_id),
+        crate::models::TransactionType::Bought(article_id),
         Some(article.name.clone()),
         cost,
     )
