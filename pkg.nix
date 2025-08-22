@@ -18,7 +18,6 @@ let
     ];
 
     cargoHash = "sha256-SCDmDIUWkCJnrvxEFwQ0k0ohs6+mcA7wSO12mlMGAoA=";
-    useFetchCargoVendor = true;
 
     buildPhase = ''
       cargo leptos build --release -vvv
@@ -30,7 +29,7 @@ let
       cp -r target/site $out/bin/
       wrapProgram $out/bin/${name} \
         --set LEPTOS_SITE_ROOT $out/bin/site \
-        --set LEPTOS_SITE_ADDR ${cfg.address}:${cfg.port}
+        --set LEPTOS_SITE_ADDR ${cfg.address}:${toString cfg.port}
     '';
 
     meta = with lib; {
@@ -40,4 +39,4 @@ let
     };
   };
 
-in { packages.default = package; }
+in package

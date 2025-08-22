@@ -18,6 +18,11 @@
         toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
         name = toml.package.name;
         version = toml.package.version;
+
+        config.services.strichliste-rs = {
+          port = 3200;
+          address = "localhost";
+        };
       in {
         nixosModules = rec {
           default = import ./module.nix self;
@@ -50,10 +55,8 @@
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           DATABASE_URL = "sqlite:tmp/db.sqlite";
         };
-        # } // (lib.mkMerge [
-        #   (pkgs.callPackage ./pkg.nix { inherit name version; })
-        #   (pkgs.callPackage ./pkg_crane.nix { inherit name version inputs; })
-        # ]));
-      } // (pkgs.callPackage ./pkg.nix { inherit name version; }));
-  # });
+
+        packages.default =
+          (pkgs.callPackage ./pkg.nix { inherit name version config; });
+      });
 }
