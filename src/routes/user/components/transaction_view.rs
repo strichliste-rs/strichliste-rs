@@ -75,31 +75,29 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         }
     };
 
-    // let transaction = Transaction::get(&mut *db_trns, transaction_id, user_id).await;
+    let transaction = match Transaction::get(&mut *db_trns, transaction_id, user_id).await {
+        Ok(value) => value,
+        Err(e) => {
+            error!("Failed to fetch transactions: {}", e);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to fetch transaction!"));
+        }
+    };
 
-    // if transaction.is_err() {
-    //     error!(
-    //         "Failed to fetch transaction: {}",
-    //         transaction.err().unwrap()
-    //     );
-    //     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //     return Err(ServerFnError::new("Failed to fetch transaction!"));
-    // }
+    let transaction = match transaction {
+        None => {
+            warn!("A transaction with id '{}' does not exist!", transaction_id);
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new("Invalid transaction!"));
+        }
+        Some(value) => value,
+    };
 
-    // let transaction = transaction.unwrap();
-    // if transaction.is_none() {
-    //     warn!("A transaction with id '{}' does not exist!", transaction_id);
-    //     response_opts.set_status(StatusCode::BAD_REQUEST);
-    //     return Err(ServerFnError::new("Invalid transaction!"));
-    // }
-
-    // let mut transaction = transaction.unwrap();
-
-    // if transaction.is_undone {
-    //     warn!("Attempting to undo a transaction that is already undone!");
-    //     response_opts.set_status(StatusCode::BAD_REQUEST);
-    //     return Err(ServerFnError::new("The transaction is already undone!"));
-    // }
+    if transaction.is_undone {
+        warn!("Attempting to undo a transaction that is already undone!");
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new("The transaction is already undone!"));
+    }
 
     // match transaction.t_type {
     //     TransactionType::DEPOSIT | TransactionType::WITHDRAW | TransactionType::BOUGHT(_) => {
