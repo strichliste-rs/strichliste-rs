@@ -3,7 +3,7 @@ use std::rc::Rc;
 use chrono::{DateTime, Local, Utc};
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 use crate::{
     models::{Money, Transaction, TransactionType, User, UserId},
@@ -11,6 +11,9 @@ use crate::{
 };
 
 use crate::routes::user::MoneyArgs;
+
+#[cfg(feature = "ssr")]
+use crate::models::{Group, GroupId, TransactionDB};
 
 #[server]
 pub async fn get_user_transactions(
@@ -54,6 +57,7 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         "Need to undo transaction {} for user {}",
         transaction_id, user_id
     );
+
     let user = get_user(user_id).await?;
     if user.is_none() {
         warn!("A user with id '{}' does not exist!", user_id);
@@ -75,7 +79,7 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         }
     };
 
-    let transaction = match Transaction::get(&mut *db_trns, transaction_id, user_id).await {
+    let transaction_db = match TransactionDB::get(&mut *db_trns, transaction_id).await {
         Ok(value) => value,
         Err(e) => {
             error!("Failed to fetch transactions: {}", e);
@@ -84,7 +88,7 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         }
     };
 
-    let transaction = match transaction {
+    let transaction_db = match transaction_db {
         None => {
             warn!("A transaction with id '{}' does not exist!", transaction_id);
             response_opts.set_status(StatusCode::BAD_REQUEST);
@@ -93,137 +97,210 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         Some(value) => value,
     };
 
-    if transaction.is_undone {
+    if transaction_db.is_undone {
         warn!("Attempting to undo a transaction that is already undone!");
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("The transaction is already undone!"));
     }
 
-    // match transaction.t_type {
-    //     TransactionType::DEPOSIT | TransactionType::WITHDRAW | TransactionType::BOUGHT(_) => {
-    //         let new_value = user.money.value - transaction.money.value;
+    let (receiver_group, sender_group) = (
+        match Group::get(&mut *db_trns, GroupId(transaction_db.receiver)).await {
+            Ok(val) => val,
+            Err(e) => {
+                warn!(
+                    "Failed to find receiver group with id '{}': {}",
+                    transaction_db.receiver, e
+                );
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find group!"));
+            }
+        },
+        match Group::get(&mut *db_trns, GroupId(transaction_db.sender)).await {
+            Ok(val) => val,
+            Err(e) => {
+                warn!(
+                    "Failed to find sender group with id '{}': {}",
+                    transaction_db.sender, e
+                );
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find group!"));
+            }
+        },
+    );
 
-    //         match user.set_money(&mut *db_trns, new_value).await {
-    //             Ok(_) => {}
-    //             Err(e) => {
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 error!("Failed to update money for user: {}", e);
-    //                 return Err(ServerFnError::new("Failed to update user!"));
-    //             }
-    //         }
-    //     }
+    let money_shares_sender = transaction_db.money / sender_group.members.len() as u64;
 
-    //     TransactionType::RECEIVED(recv_from_user_id) => {
-    //         let mut recv_from_user = match User::get(&mut *db_trns, recv_from_user_id).await {
-    //             Ok(value) => match value {
-    //                 Some(value) => value,
-    //                 None => {
-    //                     error!(
-    //                         "Got user db '{}' from database, but the user was not found!",
-    //                         recv_from_user_id
-    //                     );
-    //                     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                     return Err(ServerFnError::new("Failed to get user!"));
-    //                 }
-    //             },
-    //             Err(e) => {
-    //                 error!("Failed to get user to undo transaction: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to get user!"));
-    //             }
-    //         };
+    let mut full_money = transaction_db.money;
+    trace!("full_money: {}", full_money);
 
-    //         match recv_from_user
-    //             .add_money(&mut *db_trns, transaction.money.clone())
-    //             .await
-    //         {
-    //             Ok(_) => {}
-    //             Err(e) => {
-    //                 error!("Failed to upate user money: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to update user!"));
-    //             }
-    //         };
+    let mut users_sender = Vec::<User>::new();
+    let mut users_receiver = Vec::<User>::new();
 
-    //         match user
-    //             .add_money(&mut *db_trns, (-transaction.money.value).into())
-    //             .await
-    //         {
-    //             Ok(_) => {}
-    //             Err(e) => {
-    //                 error!("Failed to upate user money: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to update user!"));
-    //             }
-    //         };
-    //     }
+    for user_db in sender_group.members.iter() {
+        let user = match User::get(&mut *db_trns, UserId(user_db.id)).await {
+            Ok(val) => val,
+            Err(e) => {
+                error!("Failed to lookup user: '{}'", e);
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find user"));
+            }
+        };
 
-    //     TransactionType::SENT(sent_to_user) => {
-    //         let mut sent_to_user = match User::get(&mut *db_trns, sent_to_user).await {
-    //             Ok(value) => match value {
-    //                 Some(value) => value,
-    //                 None => {
-    //                     error!(
-    //                         "Got user db '{}' from database, but the user was not found!",
-    //                         sent_to_user
-    //                     );
-    //                     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                     return Err(ServerFnError::new("Failed to get user!"));
-    //                 }
-    //             },
-    //             Err(e) => {
-    //                 error!("Failed to get user to undo transaction: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to get user!"));
-    //             }
-    //         };
+        let user = match user {
+            Some(val) => val,
+            None => {
+                error!("Failed to find user with id '{}'", user_db.id);
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find user"));
+            }
+        };
 
-    //         match sent_to_user
-    //             .add_money(&mut *db_trns, (-transaction.money.value).into())
-    //             .await
-    //         {
-    //             Ok(_) => {}
-    //             Err(e) => {
-    //                 error!("Failed to upate user money: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to update user!"));
-    //             }
-    //         };
+        users_sender.push(user);
+    }
 
-    //         match user
-    //             .add_money(&mut *db_trns, transaction.money.clone())
-    //             .await
-    //         {
-    //             Ok(_) => {}
-    //             Err(e) => {
-    //                 error!("Failed to upate user money: {}", e);
-    //                 response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //                 return Err(ServerFnError::new("Failed to update user!"));
-    //             }
-    //         };
-    //     }
-    // }
+    for user_db in receiver_group.members.iter() {
+        let user = match User::get(&mut *db_trns, UserId(user_db.id)).await {
+            Ok(val) => val,
+            Err(e) => {
+                error!("Failed to lookup user: '{}'", e);
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find user"));
+            }
+        };
 
-    // match transaction.set_undone(&mut *db_trns, true).await {
-    //     Ok(_) => {}
-    //     Err(e) => {
-    //         error!("Failed to set transaction to undone: {}", e);
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         return Err(ServerFnError::new("Failed to update transaction!"));
-    //     }
-    // }
+        let user = match user {
+            Some(val) => val,
+            None => {
+                error!("Failed to find user with id '{}'", user_db.id);
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to find user"));
+            }
+        };
 
-    // match db_trns.commit().await {
-    //     Ok(_) => {}
-    //     Err(e) => {
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         error!("Failed to apply transaction: {}", e);
-    //         return Err(ServerFnError::new("Failed to apply transaction!"));
-    //     }
-    // }
+        users_receiver.push(user);
+    }
 
-    // Ok(())
-    Err(ServerFnError::new("WIP"))
+    for user_sender in users_sender.iter_mut() {
+        match user_sender
+            .add_money(
+                &mut *db_trns,
+                Money {
+                    value: money_shares_sender as i64,
+                },
+            )
+            .await
+        {
+            Ok(val) => val,
+            Err(e) => {
+                error!(
+                    "Failed to add money to user '{}': {}",
+                    user_sender.nickname, e
+                );
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to subtract money"));
+            }
+        }
+
+        full_money -= money_shares_sender;
+        trace!("full_money: {}", full_money);
+    }
+
+    while full_money > 0 {
+        for user_sender in users_sender.iter_mut() {
+            match user_sender
+                .add_money(&mut *db_trns, Money { value: 1 })
+                .await
+            {
+                Ok(val) => val,
+                Err(e) => {
+                    error!(
+                        "Failed to add money to user (fine-grained) '{}': {}",
+                        user.nickname, e
+                    );
+                    response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Err(ServerFnError::new("Failed to subtract money"));
+                }
+            };
+
+            trace!("full_money: {}", full_money);
+            if full_money == 0 {
+                break;
+            }
+
+            full_money -= 1;
+        }
+    }
+
+    let restore_money_share = transaction_db.money / users_receiver.len() as u64;
+
+    for user_receiver in users_receiver.iter_mut() {
+        match user_receiver
+            .add_money(
+                &mut *db_trns,
+                Money {
+                    value: -(restore_money_share as i64),
+                },
+            )
+            .await
+        {
+            Ok(val) => val,
+            Err(e) => {
+                error!(
+                    "Failed to remove money from user '{}': {}",
+                    user_receiver.nickname, e
+                );
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to subtract money"));
+            }
+        }
+
+        full_money += restore_money_share;
+    }
+
+    while full_money < transaction_db.money {
+        for user_receiver in users_receiver.iter_mut() {
+            match user_receiver
+                .add_money(&mut *db_trns, Money { value: -1 })
+                .await
+            {
+                Ok(val) => val,
+                Err(e) => {
+                    error!(
+                        "Failed to remove money from user (fine-grained) '{}': {}",
+                        user.nickname, e
+                    );
+                    response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Err(ServerFnError::new("Failed to subtract money"));
+                }
+            };
+
+            if full_money == transaction_db.money {
+                break;
+            }
+
+            full_money += 1;
+        }
+    }
+
+    match TransactionDB::set_undone(&mut *db_trns, transaction_db.id, true).await {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Failed to set transaction to undone: {}", e);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to update transaction!"));
+        }
+    }
+
+    match db_trns.commit().await {
+        Ok(_) => {}
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to apply transaction: {}", e);
+            return Err(ServerFnError::new("Failed to apply transaction!"));
+        }
+    }
+
+    Ok(())
 }
 
 #[component]
@@ -330,7 +407,15 @@ pub fn format_transaction(
 
     let undo_signal = transaction.is_undone_signal;
 
-    let money = transaction.money.value;
+    let money = match transaction.t_type {
+        TransactionType::Deposit
+        | TransactionType::Received(_)
+        | TransactionType::SentAndReceived(_) => transaction.money.value,
+
+        TransactionType::Withdraw | TransactionType::Bought(_) | TransactionType::Sent(_) => {
+            -transaction.money.value
+        }
+    };
 
     return view! {
         <div class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
@@ -338,10 +423,15 @@ pub fn format_transaction(
         >
         {
             match transaction.t_type {
-                TransactionType::Deposit | TransactionType::Withdraw => view!{
-                    <p class=""
-                        class=("text-green-500", transaction.money.value >= 0)
-                        class=("text-red-400", transaction.money.value < 0)
+                TransactionType::Withdraw => view!{
+                    <p class="text-red-400"
+                    >"-"{transaction.money.format_eur()}</p>
+                    <p></p>
+
+                }.into_any(),
+
+                TransactionType::Deposit => view!{
+                    <p class="text-green-500"
                     >{transaction.money.format_eur_diff()}</p>
                     <p></p>
 
@@ -349,7 +439,7 @@ pub fn format_transaction(
 
                 TransactionType::Bought(_) => {
                     view!{
-                        <p class="text-red-400">{transaction.money.format_eur_diff()}</p>
+                        <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
                         <p class="text-white"><ArticleBasketIcon class="inline"/>" "{transaction.description.clone().unwrap_or("".to_string())}</p>
                     }.into_any()
                 },
@@ -442,7 +532,7 @@ pub fn format_transaction(
                         match response {
                             Ok(_) => {
                                 undo_signal.set(true);
-                                money_signal.update(|value| (*value).value = value.value - money);
+                                money_signal.update(|value| value.value -= money);
                                 console_log("Set signal to true");
                                 error_write.set(String::new());
                             },

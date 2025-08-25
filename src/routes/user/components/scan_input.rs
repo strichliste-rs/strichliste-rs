@@ -32,20 +32,20 @@ pub fn invisible_scan_input(
             let scan_input = input_signal.read_untracked().clone();
             input_signal.write_only().set(String::new());
 
-            if scan_input.len() == 0 {
+            if scan_input.is_empty() {
                 return;
             }
 
             let money_args_clone = money_args.clone();
 
             spawn_local(async move {
-                console_log(&format!("Input {}", scan_input));
+                console_log(&format!("Input {scan_input}"));
                 let article = get_article_by_barcode(scan_input.clone()).await;
 
                 let article = match article {
                     Ok(value) => value,
                     Err(e) => {
-                        error_signal.set(format!("Failed to fetch article from server: {}", e));
+                        error_signal.set(format!("Failed to fetch article from server: {e}"));
                         return;
                     }
                 };
@@ -53,8 +53,7 @@ pub fn invisible_scan_input(
                 match article {
                     None => {
                         console_log(&format!(
-                            "No article could be found with barcode '{}'",
-                            scan_input
+                            "No article could be found with barcode '{scan_input}'"
                         ));
                     }
 

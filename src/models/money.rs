@@ -1,3 +1,5 @@
+use std::ops::{Neg, Sub};
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -9,8 +11,8 @@ pub enum MoneyParseError {
 impl std::fmt::Display for MoneyParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            MoneyParseError::InvalidEuros(err) => write!(f, "Invalid Euros: {}", err),
-            MoneyParseError::InvalidCents(err) => write!(f, "Invalid Cents: {}", err),
+            MoneyParseError::InvalidEuros(err) => write!(f, "Invalid Euros: {err}"),
+            MoneyParseError::InvalidCents(err) => write!(f, "Invalid Cents: {err}"),
         }
     }
 }
@@ -18,6 +20,24 @@ impl std::fmt::Display for MoneyParseError {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Money {
     pub value: i64,
+}
+
+impl Sub for Money {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Money {
+            value: self.value - rhs.value,
+        }
+    }
+}
+
+impl Neg for Money {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Money { value: -self.value }
+    }
 }
 
 impl Money {
@@ -40,7 +60,7 @@ impl Money {
     pub fn format_eur_diff_value(value: i64) -> String {
         match value > 0 {
             true => format!("+{}", Money::format_eur_value(value)),
-            false => format!("{}", Money::format_eur_value(value)),
+            false => Money::format_eur_value(value).to_string(),
         }
         .to_string()
     }

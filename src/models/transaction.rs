@@ -205,9 +205,9 @@ where
 
         let group_ids = group_ids.iter().map(Into::<GroupId>::into).collect_vec();
 
-        let is_sender = group_ids.iter().find(|group| **group == sender).is_some();
+        let is_sender = group_ids.iter().any(|group| *group == sender);
 
-        let is_receiver = group_ids.iter().find(|group| **group == receiver).is_some();
+        let is_receiver = group_ids.iter().any(|group| *group == receiver);
 
         Ok(Transaction {
             id,
@@ -224,8 +224,8 @@ where
             t_type: {
                 use crate::backend::db::DBGROUP_SNACKBAR_ID;
                 match (sender, receiver) {
-                    (DBGROUP_AUFLADUNG_ID, _) => TransactionType::Withdraw,
-                    (_, DBGROUP_AUFLADUNG_ID) => TransactionType::Deposit,
+                    (DBGROUP_AUFLADUNG_ID, _) => TransactionType::Deposit,
+                    (_, DBGROUP_AUFLADUNG_ID) => TransactionType::Withdraw,
                     (_, DBGROUP_SNACKBAR_ID) => TransactionType::Bought(t_type_data.unwrap()),
                     (a, b) => match (is_sender, is_receiver) {
                                 (true, true) => TransactionType::SentAndReceived(receiver),
@@ -323,8 +323,6 @@ impl TransactionDB {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        use tracing::debug;
-
         let result = sqlx::query_as::<_, Self>(
             "
              select Transactions.* from Transactions
@@ -345,7 +343,6 @@ impl TransactionDB {
             .await
             .map_err(Into::<DBError>::into)?;
 
-        debug!("Database result: {:#?}", result);
         Ok(result)
     }
 
@@ -369,7 +366,7 @@ impl TransactionDB {
         Ok(())
     }
 
-    async fn set_undone<T>(conn: &mut T, id: i64, new_value: bool) -> DatabaseResponse<()>
+    pub async fn set_undone<T>(conn: &mut T, id: i64, new_value: bool) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -474,7 +471,7 @@ impl Transaction {
                     Some(value) => value.clone(),
                 };
 
-                transaction.money = (-price).into();
+                transaction.money = price.into();
                 transaction.description = Some(article_name);
             }
         }
@@ -507,6 +504,10 @@ impl Transaction {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        use tracing::trace;
+
+        use crate::models::User;
+
         let t_type_data = match t_type {
             TransactionType::Bought(id) => Some(id),
             TransactionType::Received(id) | TransactionType::Sent(id) => Some(id.0),
@@ -524,6 +525,93 @@ impl Transaction {
         )
         .await?;
 
-        Ok(t_id)
+        let transaction_db = match TransactionDB::get(&mut *conn, t_id).await? {
+            Some(val) => val,
+            None => return Err(DBError::new("Failed to find newly created transaction")),
+        };
+
+        let (sender_group, receiver_group) = (
+            Group::get(&mut *conn, GroupId(transaction_db.sender)).await?,
+            Group::get(&mut *conn, GroupId(transaction_db.receiver)).await?,
+        );
+
+        let mut senders = Vec::<User>::new();
+        let mut receivers = Vec::<User>::new();
+
+        for sender in sender_group.members.iter() {
+            let user_send = match User::get(&mut *conn, UserId(sender.id)).await? {
+                Some(val) => val,
+                None => return Err(DBError::new("Failed to find User")),
+            };
+
+            senders.push(user_send);
+        }
+
+        for receiver in receiver_group.members.iter() {
+            let user_recv = match User::get(&mut *conn, UserId(receiver.id)).await? {
+                Some(val) => val,
+                None => return Err(DBError::new("Failed to find User")),
+            };
+
+            receivers.push(user_recv);
+        }
+
+        let mut full_cost = transaction_db.money;
+        let cost_share = transaction_db.money / sender_group.members.len() as u64;
+
+        for sender in senders.iter_mut() {
+            sender
+                .add_money(
+                    &mut *conn,
+                    Money {
+                        value: -(cost_share as i64),
+                    },
+                )
+                .await?;
+
+            trace!("full_cost: {full_cost}");
+            full_cost -= cost_share;
+        }
+
+        while full_cost > 0 {
+            for sender in senders.iter_mut() {
+                sender.add_money(&mut *conn, Money { value: -1 }).await?;
+                trace!("full_cost: {full_cost}");
+                if full_cost == 0 {
+                    break;
+                }
+
+                full_cost -= 1;
+            }
+        }
+
+        let cost_share = transaction_db.money / receiver_group.members.len() as u64;
+
+        for receiver in receivers.iter_mut() {
+            receiver
+                .add_money(
+                    &mut *conn,
+                    Money {
+                        value: cost_share as i64,
+                    },
+                )
+                .await?;
+
+            full_cost += cost_share;
+        }
+
+        while full_cost < transaction_db.money {
+            for receiver in receivers.iter_mut() {
+                receiver.add_money(&mut *conn, Money { value: 1 }).await?;
+
+                if full_cost == transaction_db.money {
+                    break;
+                }
+
+                full_cost += 1;
+            }
+        }
+
+        Ok(transaction_db.id)
     }
 }

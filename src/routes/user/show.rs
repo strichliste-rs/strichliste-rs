@@ -2,15 +2,15 @@ use std::rc::Rc;
 
 use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
-use tracing::error;
+use tracing::{error, trace};
 
 use crate::{
-     models::{Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{Money, Transaction,  TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::models::Group,
+    crate::models::{Group, GroupId, TransactionDB,},
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
 };
 
@@ -70,17 +70,23 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
 
     let response_opts: ResponseOptions = expect_context();
 
-    let mut user = match get_user(user_id).await? {
-        None => {
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(ServerFnError::new(&format!(
-                "No user found with id {}",
-                user_id
-            )));
-        },
+    // let user = match get_user(user_id).await? {
+    //     None => {
+    //         response_opts.set_status(StatusCode::BAD_REQUEST);
+    //         return Err(ServerFnError::new(format!(
+    //             "No user found with id {user_id}",
+    //         )));
+    //     },
 
-        Some(value) => value
-    };
+    //     Some(value) => value
+    // };
+
+    // TODO: Implement check if user is allowed to undo transaction
+
+    if money.value < 0 {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new("Money may not be negative"));
+    }
 
     let db = state.db.lock().await;
     let mut db_trans = match db.get_conn_transaction().await {
@@ -92,7 +98,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         }
     };
 
-    let mut user_group = match Group::get_user_group(&mut *db_trans, user_id).await {
+    let user_group = match Group::get_user_group(&mut *db_trans, user_id).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
@@ -100,34 +106,6 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
             return Err(ServerFnError::new("Failed to get user group"));
         }
     };
-
-    let mut aufladung_user = match User::get(&mut *db_trans, DBUSER_AUFLADUNG_ID).await {
-        Ok(Some(value)) => value,
-        _ => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get aufladungs_user");
-            return Err(ServerFnError::new("Failed to get a system user!"));
-        }
-    };
-
-    let mut snackbar_user = match User::get(&mut *db_trans, DBUSER_SNACKBAR_ID).await {
-        Ok(Some(value)) => value,
-        _ => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get kasse_user");
-            return Err(ServerFnError::new("Failed to get a system user!"));
-        }
-    };
-
-
-    
-    // let (sender_id, receiver_id) = match transaction_type {
-    //     TransactionType::DEPOSIT => (DBUSER_AUFLADUNG_ID, user_id),
-    //     TransactionType::WITHDRAW => (user_id, DBUSER_AUFLADUNG_ID),
-    //     TransactionType::BOUGHT(_) => (user_id, DBUSER_KASSE_ID),
-    //     TransactionType::RECEIVED(tx_user) => (tx_user, user_id),
-    //     TransactionType::SENT(rx_user) => (user_id, rx_user),
-    // };
 
     let (sender_group, receiver_group) = match transaction_type {
       TransactionType::Deposit => (DBGROUP_AUFLADUNG_ID, user_group),
@@ -147,60 +125,23 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     };
 
     let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
-        Ok(Some(value)) => value,
-        _ => {
+        Ok(val) => val,
+        Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to find newly created transaction");
-            return Err(ServerFnError::new("Failed to find newly created transaction!"));
-        }
+            error!("Failed to find transaction during DB-lookup: {}", e);
+            return Err(ServerFnError::new("Failed to find transaction!"));
+        },
     };
 
-    let mut new_user_money = user.money.value;
-    let mut new_aufladung_money = aufladung_user.money.value;
-    let mut new_kasse_money = snackbar_user.money.value;
-
-    // let new_value = user.money.value + transaction.money.value;
-    match transaction_type {
-        TransactionType::Deposit | TransactionType::Withdraw => {
-            new_user_money += transaction.money.value;
-            new_aufladung_money -= transaction.money.value;
+    let transaction = match transaction {
+        Some(val) => val,
+        None => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to find transaction");
+            return Err(ServerFnError::new("Failed to find transaction!"));
         },
-
-        TransactionType::Bought(_) => {
-            new_user_money += transaction.money.value;
-            new_kasse_money -= transaction.money.value;
-        }
-
-        _ => return Err(ServerFnError::new("WIP")),
-    }
-
-    match user.set_money(&mut *db_trans, new_user_money).await {
-        Ok(_) => {},
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to update user: {}", e);
-            return Err(ServerFnError::new("Failed to update user!"));
-        }
-    }
-
-    match aufladung_user.set_money(&mut *db_trans, new_aufladung_money).await {
-        Ok(_) => {},
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to update user: {}", e);
-            return Err(ServerFnError::new("Failed to update system user!"));
-        }
-    }
-
-    match snackbar_user.set_money(&mut *db_trans, new_kasse_money).await {
-        Ok(_) => {},
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to update user: {}", e);
-            return Err(ServerFnError::new("Failed to update system user!"));
-        }
-    }
-
+    };
+    
     match db_trans.commit().await {
         Ok(_) => {},
         Err(e) => {
@@ -211,8 +152,6 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     }
 
     Ok(transaction)
-
-    // Err(ServerFnError::new("WIP"))
 }
 
 #[component]
@@ -428,7 +367,7 @@ fn change_money_button(
 }
 
 fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
-    let user_id = args.user_id.clone();
+    let user_id = args.user_id;
     let money_signal = args.money;
     let error = args.error;
     let transactions = args.transactions;
@@ -438,15 +377,19 @@ fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
 
 fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
     spawn_local(async move {
-        let t_type = if money.value > 0 { TransactionType::Deposit } else { TransactionType::Withdraw };
+        let mut fixed_money = money;
+        let t_type = if money.value > 0 { TransactionType::Deposit } else { 
+            fixed_money = -fixed_money;
+            TransactionType::Withdraw
+        };
         
-        let resp = create_transaction(user_id, money.clone(), t_type).await;
+        let resp = create_transaction(user_id, fixed_money, t_type).await;
 
         if resp.is_ok() {
-            money_signal.update(|money_struct| (*money_struct).value = money_struct.value + money.value);
+            money_signal.update(|money_struct| money_struct.value += money.value);
             error_signal.set(String::new());
             let new_transaction = resp.unwrap();
-            transaction_signal.write().insert(0, new_transaction.into());
+            transaction_signal.write().insert(0, new_transaction);
         } else {
             let error = resp.err().unwrap().to_string();
 
@@ -462,7 +405,7 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     let error_signal = args.error;
     error_signal.set(String::new());
 
-    if string.len() == 0 {
+    if string.is_empty() {
         return;
     }
 

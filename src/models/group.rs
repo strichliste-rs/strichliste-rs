@@ -2,14 +2,15 @@ use sqlx::{error::DatabaseError, query, query_as, Executor};
 
 use crate::{
     backend::db::{DBError, DatabaseResponse, DatabaseType},
-    models::DatabaseId,
+    models::{DatabaseId, UserDB},
 };
 
 use super::{GroupId, UserId};
 
+#[derive(Debug)]
 pub struct Group {
-    id: GroupId,
-    members: Vec<String>,
+    pub id: GroupId,
+    pub members: Vec<UserDB>,
 }
 
 impl Group {
@@ -46,13 +47,14 @@ impl From<DatabaseId> for GroupDB {
 }
 
 impl GroupDB {
-    pub async fn get_members<T>(conn: &mut T, gid: DatabaseId) -> DatabaseResponse<Vec<String>>
+    pub async fn get_members<T>(conn: &mut T, gid: DatabaseId) -> DatabaseResponse<Vec<UserDB>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        query!(
+        query_as!(
+            UserDB,
             "
-                select Users.nickname
+                select Users.*
                     from UserGroupMap
                 join Users on Users.id = UserGroupMap.uid 
                     where UserGroupMap.gid = ?
@@ -62,11 +64,6 @@ impl GroupDB {
         .fetch_all(&mut *conn)
         .await
         .map_err(From::from)
-        .map(|vec| {
-            vec.into_iter()
-                .map(|record| record.nickname)
-                .collect::<Vec<String>>()
-        })
     }
     pub async fn _create<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Self>
     where

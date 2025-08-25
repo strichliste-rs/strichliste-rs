@@ -7,12 +7,15 @@ use crate::{
     models::{Article, Money, Transaction, UserId},
     routes::{
         articles::{get_all_articles, get_article},
-        user::{get_user, MoneyArgs},
+        user::{create_transaction, get_user, MoneyArgs},
     },
 };
 
 #[cfg(feature = "ssr")]
-use crate::{backend::db::DBUSER_SNACKBAR_ID, models::Group};
+use crate::{
+    backend::db::{DBGROUP_SNACKBAR_ID, DBUSER_SNACKBAR_ID},
+    models::Group,
+};
 
 #[server]
 pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
@@ -51,17 +54,13 @@ pub async fn buy_article_by_id(
     let article = get_article(article_id).await?;
     let user = get_user(user_id).await?;
 
-    let mut user = match user {
+    let user = match user {
         Some(user) => user,
         None => {
             response_opts.set_status(StatusCode::BAD_REQUEST);
             return Err(ServerFnError::new("Invalid user id given!"));
         }
     };
-
-    // Article costs are positive, but the transaction should subtract money from the user
-    let mut cost = article.cost;
-    cost.value *= -1;
 
     let db = state.db.lock().await;
     let mut db_trans = match db.get_conn_transaction().await {
@@ -84,22 +83,13 @@ pub async fn buy_article_by_id(
         }
     };
 
-    let kasse_group = match Group::get_user_group(&mut *db_trans, DBUSER_SNACKBAR_ID).await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to find kasse group: {}", e);
-            return Err(ServerFnError::new("Failed to fin kasse group"));
-        }
-    };
-
     let transaction_id = match Transaction::create(
         &mut *db_trans,
         user_group,
-        kasse_group,
+        DBGROUP_SNACKBAR_ID,
         crate::models::TransactionType::Bought(article_id),
         Some(article.name.clone()),
-        cost,
+        article.cost,
     )
     .await
     {
@@ -110,24 +100,15 @@ pub async fn buy_article_by_id(
             return Err(ServerFnError::new("Failed to create transaction"));
         }
     };
+
     let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
         Ok(Some(o)) => o,
         _ => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to reaad back db_transaction");
-            return Err(ServerFnError::new("Failed to reaad back db_transaction"));
+            error!("Failed to read back db_transaction");
+            return Err(ServerFnError::new("Failed to read back db_transaction"));
         }
     };
-    let new_value = user.money.value + transaction.money.value;
-
-    match user.set_money(&mut *db_trans, new_value).await {
-        Ok(_) => {}
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to update money for user in db: {e}");
-            return Err(ServerFnError::new("Failed to update money for user in db!"));
-        }
-    }
 
     match db_trans.commit().await {
         Ok(_) => {}
@@ -148,17 +129,17 @@ pub fn buy_article(
     error: RwSignal<String>,
     transactions: RwSignal<Vec<Transaction>>,
 ) {
-    console_log(&format!("Need to buy article with id: {}", article_id));
+    console_log(&format!("Need to buy article with id: {article_id}"));
     spawn_local(async move {
         match buy_article_by_id(user_id, article_id).await {
             Ok(transaction) => {
-                money.update(|money| money.value += transaction.money.value);
+                money.update(|money| money.value -= transaction.money.value);
                 transactions.update(|trns| trns.insert(0, transaction));
                 error.set(String::new());
             }
 
             Err(e) => {
-                error.set(format!("Failed to buy article: {}", e));
+                error.set(format!("Failed to buy article: {e}"));
             }
         }
     });
