@@ -510,7 +510,7 @@ impl Transaction {
 
         let t_type_data = match t_type {
             TransactionType::Bought(id) => Some(id),
-            TransactionType::Received(id) | TransactionType::Sent(id) => Some(id.0),
+            TransactionType::Received(id) => Some(id.0),
 
             _ => None,
         };

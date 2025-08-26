@@ -3,14 +3,17 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-    models::{GroupId, Money, Transaction, User, UserId},
+    models::{Money, Transaction, User, UserId},
     routes::{home::get_all_users, user::get_user},
 };
 
+#[cfg(feature = "ssr")]
+use crate::models::{Group, GroupDB, GroupId};
+
 #[server]
 pub async fn send_money(
-    from_group: GroupId,
-    to_group: GroupId,
+    user_id: UserId,
+    to_user: String,
     amount: String,
 ) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
@@ -27,8 +30,7 @@ pub async fn send_money(
         Err(e) => {
             response_opts.set_status(StatusCode::BAD_REQUEST);
             return Err(ServerFnError::new(format!(
-                "Failed to convert '{}' to internal representation: {}",
-                amount, e
+                "Failed to convert '{amount}' to internal representation: {e}"
             )));
         }
     };
@@ -38,19 +40,19 @@ pub async fn send_money(
         return Err(ServerFnError::new("Amount to be sent must be > 0!"));
     }
 
-    // let mut from_user = match get_user(from_user).await? {
-    //     Some(value) => value,
-    //     None => {
-    //         response_opts.set_status(StatusCode::BAD_REQUEST);
-    //         return Err(ServerFnError::new(
-    //             "The user you are trying to send the money from does not exist!",
-    //         ));
-    //     }
-    // };
+    let sender = match get_user(user_id).await? {
+        Some(value) => value,
+        None => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new(
+                "The user you are trying to send the money from does not exist!",
+            ));
+        }
+    };
 
     let db = state.db.lock().await;
 
-    let mut db_trans = match db.get_conn_transaction().await {
+    let mut db_trns = match db.get_conn_transaction().await {
         Ok(value) => value,
         Err(e) => {
             error!("Failed to get db transaction: {}", e);
@@ -59,79 +61,77 @@ pub async fn send_money(
         }
     };
 
-    // let mut to_user = match User::get_by_nick(&mut *db_trans, to_user.clone()).await {
-    //     Ok(value) => match value {
-    //         Some(value) => value,
-    //         None => {
-    //             response_opts.set_status(StatusCode::BAD_REQUEST);
-    //             return Err(ServerFnError::new(&format!(
-    //                 "There is no such user with the nick '{}'!",
-    //                 to_user
-    //             )));
-    //         }
-    //     },
+    let recipient = match User::get_by_nick(&mut *db_trns, to_user.clone()).await {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to lookup db: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to lookup db"));
+        }
+    };
 
-    //     Err(e) => {
-    //         error!("Failed to get user by nick: {}", e);
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         return Err(ServerFnError::new("Failed to get user by nick!"));
-    //     }
-    // };
+    let recipient = match recipient {
+        Some(val) => val,
+        None => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new(format!(
+                "Recipient '{to_user}' was not found!"
+            )));
+        }
+    };
 
-    // if from_user.id == to_user.id {
-    //     response_opts.set_status(StatusCode::BAD_REQUEST);
-    //     return Err(ServerFnError::new(
-    //         "Sending and receiving user must not be the same!",
-    //     ));
-    // }
+    if sender.id == recipient.id {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::new(
+            "Sending and receiving user must not be the same!",
+        ));
+    }
 
-    // match from_user
-    //     .add_money(&mut *db_trans, (-money.value).into())
-    //     .await
-    // {
-    //     Ok(_) => {}
-    //     Err(e) => {
-    //         error!("Failed to apply new money value: {}", e);
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         return Err(ServerFnError::new("Failed to apply money!"));
-    //     }
-    // }
+    let sender_group = match GroupDB::get_single_group(&mut *db_trns, sender.id).await {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to find single group: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to find single group"));
+        }
+    };
 
-    // match to_user.add_money(&mut *db_trans, money).await {
-    //     Ok(_) => {}
-    //     Err(e) => {
-    //         error!("Failed to apply new money value: {}", e);
-    //         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //         return Err(ServerFnError::new("Failed to apply money!"));
-    //     }
-    // }
+    let recipient_group = match GroupDB::get_single_group(&mut *db_trns, recipient.id).await {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to find single group: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to find single group"));
+        }
+    };
 
-    // if let Err(e) = Transaction::create(
-    //     &mut *db_trans,
-    //     from_user.id,
-    //     to_user.id,
-    //     crate::models::TransactionType::SENT(to_user.id),
-    //     None,
-    //     money,
-    // )
-    // .await
-    // {
-    //     error!("Failed to create transaction: {}", e);
-    //     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //     return Err(ServerFnError::new("Failed to create transaction!"));
-    // };
+    match Transaction::create(
+        &mut *db_trns,
+        GroupId(sender_group),
+        GroupId(recipient_group),
+        crate::models::TransactionType::Sent(GroupId(recipient_group)),
+        None,
+        money,
+    )
+    .await
+    {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Failed to create transaction: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to create Transaction"));
+        }
+    }
 
-    // if let Err(e) = db_trans.commit().await {
-    //     error!("Failed to commit transaction: {}", e);
-    //     response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-    //     return Err(ServerFnError::new("Failed to apply transaction!"));
-    // };
+    if let Err(e) = db_trns.commit().await {
+        error!("Failed to commit transaction: {}", e);
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to apply transaction!"));
+    };
 
-    // redirect(&format!("/user/{}", from_user.id));
+    redirect(&format!("/user/{}", sender.id));
 
-    // Ok(())
-    //
-    Err(ServerFnError::new("WIP"))
+    Ok(())
 }
 
 #[component]
@@ -230,12 +230,12 @@ pub fn Show() -> impl IntoView {
                                 on:click=move |_| {
                                     spawn_local(async move {
                                         console_log("Need to send_money ()");
-                                        // match send_money(user_id, receiver_input.get(), amount_input.get()).await {
-                                        //     Ok(_) => {},
-                                        //     Err(e) => {
-                                        //         error_result.set(e.to_string());
-                                        //     }
-                                        // }
+                                        match send_money(user_id, receiver_input.get(), amount_input.get()).await {
+                                            Ok(_) => {},
+                                            Err(e) => {
+                                                error_result.set(e.to_string());
+                                            }
+                                        }
                                     });
                                 }
                             />
