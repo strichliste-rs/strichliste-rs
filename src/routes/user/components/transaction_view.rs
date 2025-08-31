@@ -543,47 +543,6 @@ pub fn format_transaction(
                         }
                         </Suspense>
                     }.into_any()
-                    // let user = OnceResource::new(get_user(user.clone()));
-                    // view!{
-                    //     {move || user.get().map(|user| match user {
-                    //         Err(e) => {
-                    //             let msg = e.to_string();
-
-                    //             view! {
-                    //                 <p class=""
-                    //                     class=("text-green-500", transaction.money.value >= 0)
-                    //                     class=("text-red-400", transaction.money.value < 0)
-                    //                 >{transaction.money.format_eur_diff()}</p>
-                    //                 <p class="bg-red-400 text-white">"Failed to fetch user: "{msg}</p>
-                    //             }.into_any()
-                    //         },
-
-                    //         Ok(user) => {
-                    //             let user = user.unwrap();
-                    //             view! {
-                    //                 <p class=""
-                    //                     class=("text-green-500", transaction.money.value >= 0)
-                    //                     class=("text-red-400", transaction.money.value < 0)
-                    //                 >{transaction.money.format_eur_diff()}</p>
-                    //                 <p class="text-white flex items-center">
-                    //                     {
-                    //                         match transaction.money.value > 0 {
-                    //                             true => view!{
-                    //                                 // received money
-                    //                                 <RightArrowIcon class="w-[2rem]"/>{user.nickname}
-                    //                             }.into_any(),
-
-                    //                             false => view!{
-                    //                                 // sent money
-                    //                                 {user.nickname}<RightArrowIcon class="w-[2rem]"/>
-                    //                             }.into_any()
-                    //                         }
-                    //                     }
-                    //                 </p>
-                    //             }.into_any()
-                    //         },
-                    //     })}
-                    // }.into_any()
                 },
             }
         }
