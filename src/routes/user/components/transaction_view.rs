@@ -25,7 +25,7 @@ pub async fn get_group_members(gid: i64) -> Result<Vec<String>, ServerFnError> {
 
     let db = state.db.lock().await;
 
-    let conn = match db.get_conn().await {
+    let mut conn = match db.get_conn().await {
         Ok(val) => val,
         Err(e) => {
             error!("Failed to get db handle: {e}");
@@ -486,8 +486,63 @@ pub fn format_transaction(
                 TransactionType::Received(group)
                 | TransactionType::Sent(group) => {
                     let transaction = transaction.clone();
-                    let group_members_action = ServerAction::<GetGroupMembers>::new();
-                    view!{}.into_any()
+                    let group_members_resource = OnceResource::new(get_group_members(group.0));
+                    let money_value = match transaction.t_type {
+                        TransactionType::Received(_) => transaction.money.value,
+                        TransactionType::Sent(_) => -transaction.money.value,
+                        _ => unreachable!()
+                    };
+
+                    view!{
+                        {
+                            if money_value < 0 {
+                                view!{
+                                    <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
+                                }.into_any()
+                            } else {
+                                view!{
+                                    <p class="text-green-500">"+"{transaction.money.format_eur()}</p>
+                                }.into_any()
+                            }
+                        }
+                        <Suspense
+                            fallback=move || view!{<p>"Loading users"</p>}
+                        >
+                        {
+                            move || group_members_resource.get().map(|group_members| {
+                                match group_members {
+                                    Ok(members) => {
+                                        view!{
+                                            <p class="text-white flex items-center">
+                                                {
+                                                    if money_value < 0 {
+                                                        view!{
+                                                            <RightArrowIcon class="w-[2rem]"/> {members.join(", ")}
+                                                        }.into_any()
+                                                    } else {
+                                                        view!{
+                                                            <LeftArrowIcon class="w-[2rem]"/> {members.join(", ")}
+                                                        }.into_any()
+                                                    }
+                                                }
+                                            </p>
+                                        }.into_any()
+                                    },
+                                    Err(error) => {
+                                        let message = match error {
+                                            ServerFnError::ServerError(msg) => msg,
+                                            _ => error.to_string()
+                                        };
+
+                                        view!{
+                                            <p class="text-red-400">"Failed to fetch members: "{message}</p>
+                                        }.into_any()
+                                    },
+                                }
+                            })
+                        }
+                        </Suspense>
+                    }.into_any()
                     // let user = OnceResource::new(get_user(user.clone()));
                     // view!{
                     //     {move || user.get().map(|user| match user {
