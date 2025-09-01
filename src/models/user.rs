@@ -378,7 +378,7 @@ impl User {
     pub async fn get_transactions(
         &self,
         db: &DB,
-        limit: i64,
+        limit: usize,
     ) -> DatabaseResponse<Vec<TransactionDB>> {
         let mut conn = db.get_conn().await?;
         TransactionDB::get_user_transactions(&mut *conn, self.id, limit, 0).await

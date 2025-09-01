@@ -317,8 +317,8 @@ impl TransactionDB {
     pub async fn get_user_transactions<T>(
         conn: &mut T,
         user_id: UserId,
-        limit: i64,
-        offset: i64,
+        limit: usize,
+        offset: usize,
     ) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -335,8 +335,8 @@ impl TransactionDB {
         ",
         )
         .bind(user_id.0)
-        .bind(limit)
-        .bind(offset);
+        .bind(limit as i64)
+        .bind(offset as i64);
 
         let result = result
             .fetch_all(&mut *conn)
@@ -428,8 +428,8 @@ impl Transaction {
     pub async fn get_user_transactions(
         db: &DB,
         user_id: UserId,
-        limit: i64,
-        offset: i64,
+        limit: usize,
+        offset: usize,
     ) -> DatabaseResponse<Vec<Self>> {
         use itertools::Itertools;
         let mut conn = db.get_conn().await?;
