@@ -81,9 +81,9 @@ pub fn Show() -> impl IntoView {
 
 #[component]
 pub fn ShowNavigationButtons(
-    page_count: RwSignal<i64>,
+    page_count: RwSignal<usize>,
     transaction_signal: RwSignal<Vec<Transaction>>,
-    transactions_per_page: i64,
+    transactions_per_page: usize,
 ) -> impl IntoView {
     view! {
         <div class="flex justify-between p-2">
