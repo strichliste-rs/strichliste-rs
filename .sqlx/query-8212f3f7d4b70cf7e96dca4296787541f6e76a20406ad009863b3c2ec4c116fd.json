@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into Transactions\n                    (receiver, sender, is_undone, t_type_data, money, description, timestamp)\n                values\n                    (?, ?, ?, ?, ?, ?, ?)\n                returning id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8212f3f7d4b70cf7e96dca4296787541f6e76a20406ad009863b3c2ec4c116fd"
+}

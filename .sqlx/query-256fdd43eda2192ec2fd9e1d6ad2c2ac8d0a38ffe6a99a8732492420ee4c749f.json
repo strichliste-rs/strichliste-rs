@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    select * from Articles\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "256fdd43eda2192ec2fd9e1d6ad2c2ac8d0a38ffe6a99a8732492420ee4c749f"
+}

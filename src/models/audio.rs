@@ -5,7 +5,9 @@ use leptos::{
     prelude::{GetUntracked, Set},
     task::spawn_local,
 };
+use leptos_use::core::IntoElementMaybeSignalType;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::convert::RefFromWasmAbi;
 
 use crate::{
     models::Money,
@@ -39,6 +41,8 @@ pub fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback) {
                 return;
             }
         };
+
+        audio.set_src_object(Some(sound.into()));
 
         audio.set_src(&sound);
         match audio.play() {

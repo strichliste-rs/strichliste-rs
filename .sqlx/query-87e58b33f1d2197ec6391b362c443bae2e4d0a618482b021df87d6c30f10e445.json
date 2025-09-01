@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            select * from Articles   \n        ",
+  "query": "\n                        select * from Articles\n                        limit ?\n                    ",
   "describe": {
     "columns": [
       {
@@ -15,12 +15,12 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
       false
     ]
   },
-  "hash": "d6e744978367657ef35e88bce2b995a3496b5129e1ef1196050f1b1c18636e4d"
+  "hash": "87e58b33f1d2197ec6391b362c443bae2e4d0a618482b021df87d6c30f10e445"
 }

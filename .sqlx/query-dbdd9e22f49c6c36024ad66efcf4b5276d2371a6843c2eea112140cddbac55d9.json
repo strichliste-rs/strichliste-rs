@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or ignore into Groups\n                (id)\n                values\n                (?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "dbdd9e22f49c6c36024ad66efcf4b5276d2371a6843c2eea112140cddbac55d9"
+}

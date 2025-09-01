@@ -1,6 +1,5 @@
 { rustPlatform, lib, pkgs, name, version, config, ... }:
 let
-  cfg = config.services.strichliste-rs;
   package = rustPlatform.buildRustPackage rec {
     inherit name version;
     pname = name;
@@ -17,7 +16,7 @@ let
       tailwindcss
     ];
 
-    cargoHash = "sha256-SCDmDIUWkCJnrvxEFwQ0k0ohs6+mcA7wSO12mlMGAoA=";
+    cargoHash = "sha256-CscEKhiG6N9CAF9W7eVEkU6etSxTv7SPUCCOoeu0BKM=";
 
     buildPhase = ''
       cargo leptos build --release -vvv
@@ -27,9 +26,6 @@ let
       mkdir -p $out/bin
       cp target/release/${name} $out/bin/
       cp -r target/site $out/bin/
-      wrapProgram $out/bin/${name} \
-        --set LEPTOS_SITE_ROOT $out/bin/site \
-        --set LEPTOS_SITE_ADDR ${cfg.address}:${toString cfg.port}
     '';
 
     meta = with lib; {

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                select *\n                from Users\n                where id = ?\n            ",
+  "query": "\n                select *\n                from Users\n                where nickname = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "def82184e09a953b5818c9b5ef14aaf1b29619c9eef304cd84f30216b28eddc7"
+  "hash": "6ac8654e0e8febfd64ce87a9652eda49800d6dbd280c04732cc2464270ae6de2"
 }

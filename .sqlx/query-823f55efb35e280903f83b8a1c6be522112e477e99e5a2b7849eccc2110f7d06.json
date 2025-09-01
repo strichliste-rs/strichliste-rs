@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select *\n                from Groups\n                where id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "823f55efb35e280903f83b8a1c6be522112e477e99e5a2b7849eccc2110f7d06"
+}

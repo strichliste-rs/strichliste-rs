@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select Groups.id as id\n                from Groups\n                join UserGroupMap on Groups.id = UserGroupMap.gid\n                where UserGroupMap.uid = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e63a7eb7c1f5a1e116916abf3479fd3a6f33d7b5f99d89d2157744498070c2d3"
+}

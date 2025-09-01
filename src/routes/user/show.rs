@@ -1,8 +1,9 @@
-use std::{rc::Rc, str::FromStr};
+use std::{path::PathBuf, rc::Rc, str::FromStr};
 
 use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
+use wasm_bindgen::JsValue;
 
 use crate::{
      models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::{articles::get_article, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
@@ -162,7 +163,7 @@ fn choose_random_item(vec: &[String]) -> Option<&String> {
 }
 
 #[server]
-pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFnError> {
+pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<Vec<u8>, ServerFnError> {
     use crate::backend::ServerState;
     use leptos_axum::ResponseOptions;
     use axum::http::StatusCode;
@@ -171,11 +172,7 @@ pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFn
 
     let state: ServerState = expect_context();
 
-    let base = String::from_str("/sounds/").unwrap();
-
     let sounds = &state.settings.sounds;
-
-    // this does not make sure the file actually exists
 
     let file = match audio {
         AudioPlayback::Failed => choose_random_item(&sounds.failed),
@@ -194,16 +191,43 @@ pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFn
             choose_random_item(sounds)
         }
     };
-        
-    Ok(base + match file {
+
+
+    let path = PathBuf::from_str(match file {
         Some(val) => val,
         None => {
             error!("Failed to choose a random sound file");
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             return Err(ServerFnError::new("Failed to get sound file"));
-
         }
-    })
+    });
+
+    let path = match path {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to create PathBuf: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to get sound file"));
+        }
+    };
+
+    if !path.exists(){
+        error!("Path '{}' does not exists!", path.to_str().unwrap());
+        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ServerFnError::new("Failed to get sound file"));
+    }
+
+    let file = match tokio::fs::read(&path).await {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to read file path '{}': {e}", path.to_str().unwrap());
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to get sound file"));
+        }
+    };
+
+    Ok(file)
+
 }
 
 #[component]
