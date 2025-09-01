@@ -5,13 +5,14 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::{articles::get_article, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
 ;
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     crate::models::Group,
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
+    rand::seq::IndexedRandom,
 };
 
 use super::components::transaction_view::ShowTransactions;
@@ -155,10 +156,39 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     Ok(transaction)
 }
 
+#[cfg(feature = "ssr")]
+fn choose_random_item(vec: &Vec<String>) -> &String {
+    vec.choose(&mut rand::rng()).unwrap()
+}
+
 #[server]
 pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFnError> {
-    let out = String::from_str("/sounds/").unwrap();
-    Ok(out + "kaching.wav")
+    use crate::backend::ServerState;
+
+    let state: ServerState = expect_context();
+
+    let base = String::from_str("/sounds/").unwrap();
+
+    let sounds = &state.settings.sounds;
+        
+    Ok(base + match audio {
+        AudioPlayback::Nothing => "",
+        AudioPlayback::Failed => choose_random_item(&sounds.failed),
+        AudioPlayback::Undo => choose_random_item(&sounds.generic),
+        AudioPlayback::Deposit(_) => choose_random_item(&sounds.generic),
+        AudioPlayback::Sent(_) => choose_random_item(&sounds.generic),
+        AudioPlayback::Withdraw(_) => choose_random_item(&sounds.generic) ,
+        AudioPlayback::Bought(article_id) => {
+            let article = get_article(article_id).await?;
+
+            let sounds = match sounds.articles.get(&article.name) {
+                Some(sounds) => sounds,
+                None => &sounds.generic,
+            };
+
+            choose_random_item(sounds)
+        }
+    })
 }
 
 #[component]

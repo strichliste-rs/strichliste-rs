@@ -25,6 +25,8 @@ leptos-use = { version = "0.15.7", features = ["use_web_notification"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 futures = { version = "0.3.31", optional = true }
 itertools = { version = "0.14.0", optional = true }
+config = { version = "0.15.15", optional = true }
+rand = { version = "0.9.2", optional = true }
 
 [features]
 hydrate = [
@@ -44,12 +46,18 @@ ssr = [
     "dep:tracing-subscriber",
     "dep:futures",
     "dep:itertools",
+    "dep:config",
+    "dep:rand",
 ]
 sqlx = ["dep:sqlx"]
 clap = ["dep:clap"]
 tracing-subscriber = ["dep:tracing-subscriber"]
 futures = ["dep:futures"]
 itertools = ["dep:itertools"]
+config-rs = []
+config = ["dep:config"]
+random = []
+rand = ["dep:rand"]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
