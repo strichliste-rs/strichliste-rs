@@ -15,7 +15,7 @@ impl Settings {
             .add_source(config::File::with_name(
                 config_path.to_str().unwrap().rsplit_once(".").unwrap().0,
             ))
-            .add_source(config::Environment::with_prefix("APP"));
+            .add_source(config::Environment::with_prefix("STRICHLISTE"));
 
         builder.build()?.try_deserialize()
     }
