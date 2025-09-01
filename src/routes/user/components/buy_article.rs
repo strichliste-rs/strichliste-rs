@@ -153,6 +153,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
         money,
         error,
         transactions,
+        audio_ref: _,
     } = *args;
     let personal_articles = OnceResource::new(get_articles_per_user(user_id));
     view! {
@@ -211,6 +212,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
         money,
         error,
         transactions,
+        audio_ref: _,
     } = *money_args;
     let articles_resource = OnceResource::new(get_all_articles(None));
 
@@ -245,7 +247,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                 match value {
                     Ok(value) => {
                         articles_signal.set(value);
-                        view!{}.into_any()
+                        ().into_any()
                     },
 
                     Err(e) => {

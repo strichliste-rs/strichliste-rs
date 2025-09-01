@@ -1,16 +1,16 @@
-use std::rc::Rc;
+use std::{rc::Rc, str::FromStr};
 
-use leptos::{prelude::*, task::spawn_local};
+use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
-use tracing::{error, trace};
+use tracing::error;
 
 use crate::{
-     models::{Money, Transaction,  TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::models::{Group, GroupId, TransactionDB,},
+    crate::models::Group,
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
 };
 
@@ -22,6 +22,7 @@ pub struct MoneyArgs {
     pub money: RwSignal<Money>,
     pub error: RwSignal<String>,
     pub transactions: RwSignal<Vec<Transaction>>,
+    pub audio_ref: NodeRef<leptos::html::Audio>
 }
 
 #[server]
@@ -154,32 +155,42 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     Ok(transaction)
 }
 
+#[server]
+pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFnError> {
+    let out = String::from_str("/sounds/").unwrap();
+    Ok(out + "kaching.wav")
+}
+
 #[component]
 pub fn ShowUser() -> impl IntoView {
     let params = use_params_map();
     let user_id_string = params.read_untracked().get("id").unwrap_or_default();
 
-    let user_id = user_id_string.parse::<i64>();
-
-    if user_id.is_err() {
-        return view! {
-            <p class="text-red-500">"Failed to convert id to a number!"</p>
+    let user_id = match user_id_string.parse::<i64>() {
+        Ok(id) => UserId(id),
+        Err(e) => {
+            return view!{
+                
+            <p class="text-red-500">"Failed to convert id to a number: "{e.to_string()}</p>
+            }.into_any();
         }
-        .into_any();
-    }
+    };
 
-    let user_id = UserId(user_id.unwrap());
 
     let user_resource = OnceResource::new(get_user(user_id));
 
     let error_signal = RwSignal::new(String::new());
 
-    return view! {
+    let audio_ref = NodeRef::<leptos::html::Audio>::new();
+
+    view! {
+        <audio node_ref=audio_ref/>
+
         {
             move || {
                 let error = error_signal.get();
 
-                if error.len() != 0 {
+                if !error.is_empty() {
                     view! {
                         
                         <div>
@@ -187,7 +198,7 @@ pub fn ShowUser() -> impl IntoView {
                         </div>
                     }.into_any()
                 } else {
-                    view! {}.into_any()
+                   ().into_any()
                 }
 
             }
@@ -237,6 +248,7 @@ pub fn ShowUser() -> impl IntoView {
                                 money: money_signal,
                                 error: error_signal,
                                 transactions,
+                                audio_ref,
                             };
 
                             let args1 = m_args.clone();
@@ -341,7 +353,7 @@ pub fn ShowUser() -> impl IntoView {
         }.into_any()
         }
     }
-    .into_any();
+    .into_any()
 }
 
 #[component]
@@ -357,7 +369,7 @@ fn change_money_button(
 ) -> impl IntoView {
     view! {
         <a
-            on:click=move |_| change_money_logic(money.into(), args.clone())
+            on:click=move |_| change_money(money.into(), args.clone())
             href="#"
             class="p-5 text-white rounded-[10px] text-center text-[1.25em]"
             class=("bg-emerald-600", move || money > 0)
@@ -366,16 +378,8 @@ fn change_money_button(
     }
 }
 
-fn change_money_logic(money: Money, args: Rc<MoneyArgs>){
-    let user_id = args.user_id;
-    let money_signal = args.money;
-    let error = args.error;
-    let transactions = args.transactions;
-
-    change_money_logic_raw(money, user_id, money_signal, error, transactions);
-}
-
-fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+// fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
+fn change_money(money: Money, args: Rc<MoneyArgs>){
     spawn_local(async move {
         let mut fixed_money = money;
         let t_type = if money.value > 0 { TransactionType::Deposit } else { 
@@ -383,20 +387,59 @@ fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<
             TransactionType::Withdraw
         };
         
-        let resp = create_transaction(user_id, fixed_money, t_type).await;
-
-        if resp.is_ok() {
-            money_signal.update(|money_struct| money_struct.value += money.value);
-            error_signal.set(String::new());
-            let new_transaction = resp.unwrap();
-            transaction_signal.write().insert(0, new_transaction);
-        } else {
-            let error = resp.err().unwrap().to_string();
-
-            error_signal.set(error);
-
-        }
+        match create_transaction(args.user_id, fixed_money, t_type).await {
+            Ok(transaction) => {
+                args.money.update(|money_struct| money_struct.value += money.value);
+                args.error.set(String::new());
+                args.transactions.write().insert(0, transaction.clone());
+                play_sound(args.clone(), match transaction.t_type {
+                    TransactionType::Bought(id) => AudioPlayback::Bought(id),
+                    TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
+                    TransactionType::Withdraw => AudioPlayback::Withdraw(transaction.money),
+                    TransactionType::Received(_) => AudioPlayback::Nothing,
+                    TransactionType::SentAndReceived(_) => AudioPlayback::Nothing,
+                    TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money)
+                });
+            },
+            Err(e) => {                
+                args.error.set(e.to_string());
+                play_sound(args.clone(), AudioPlayback::Failed);
+            }
+        };
     })
+}
+
+fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback){
+    if let AudioPlayback::Nothing = audio_playback {
+        return;
+    }
+
+    spawn_local(async move {
+        let audio = match args.audio_ref.get_untracked() {
+            Some(val) => val,
+            None => {
+                console_log("Failed to get audio node");
+                return;
+            }
+        };
+
+        let sound = match get_item_sound_url(audio_playback).await {
+            Ok(value) => value,
+            Err(e) => {
+                args.error.set(format!("Failed to fetch sound: {e}"));
+                return;
+            }
+        };
+
+        audio.set_src(&sound);
+        match audio.play() {
+            Ok(_) => {},
+            Err(e) => {
+                console_log(&format!("Failed to play audio: {e:#?}"))
+            }
+        }
+    });
+
 }
 
 fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs){
@@ -412,7 +455,7 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
     let mut money: Money = match string.try_into() {
         Ok(value) => value,
         Err(e) => {
-            error_signal.set(format!("Failed to parse money: {}", e.to_string()));
+            error_signal.set(format!("Failed to parse money: {e}"));
             return;
         }
     };
@@ -425,7 +468,7 @@ fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &Money
         money.value = -money.value;
     }
 
-    change_money_logic_raw(money, args.user_id, args.money, args.error, args.transactions);
+    change_money(money, Rc::new(args.clone()));
 
     value.set(String::new());    
 }
