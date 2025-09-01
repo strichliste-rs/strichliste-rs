@@ -1,4 +1,7 @@
 #[cfg(feature = "ssr")]
+use std::path::PathBuf;
+
+#[cfg(feature = "ssr")]
 use clap::Parser;
 
 #[cfg(feature = "ssr")]
@@ -8,6 +11,9 @@ struct Args {
     data_dir: std::path::PathBuf,
     #[arg(short='v', long, action = clap::ArgAction::Count, help="Sets the verbose level. More v's more output")]
     verbose: u8,
+
+    #[arg(short = 'c', long = "config", help = "The config file to use")]
+    config: PathBuf,
 }
 
 #[cfg(feature = "ssr")]
@@ -22,7 +28,7 @@ async fn main() {
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use strichliste_rs::app::*;
 
-    use strichliste_rs::backend::{db, ServerState, State};
+    use strichliste_rs::backend::{db, ServerState, Settings, State};
 
     use tokio::sync::Mutex;
     use tracing::{error, Level};
@@ -39,6 +45,14 @@ async fn main() {
 
     logger.init();
 
+    let settings = match Settings::new(args.config) {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Failed to parse config: {e}");
+            exit(1);
+        }
+    };
+
     let path = args.data_dir.join("db.sqlite");
 
     let db = db::DB::new(path.to_str().unwrap()).await;
@@ -50,7 +64,10 @@ async fn main() {
 
     let db = db.unwrap();
 
-    let server_state: ServerState = Arc::new(State { db: Mutex::new(db) });
+    let server_state: ServerState = Arc::new(State {
+        db: Mutex::new(db),
+        settings,
+    });
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;

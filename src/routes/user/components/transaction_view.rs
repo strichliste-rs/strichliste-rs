@@ -392,7 +392,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 transactions.sort_by(|a, b| {
                     b.timestamp.cmp(&a.timestamp)
                 });
-                transaction_signal.write_untracked().append(&mut transactions.into_iter().map(|e| -> Transaction { e.into()}).collect::<Vec<Transaction>>());
+                transaction_signal.write_untracked().append(&mut transactions);
                 return view! {
                     <div class="pl-4 text-[1.25em]">
                         <For

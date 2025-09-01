@@ -1,0 +1,8 @@
+sounds:
+  failed:
+    - wobble.wav
+  generic:
+    - kaching.wav
+  articles:
+    Spezi:
+      - spezi_1.wav
