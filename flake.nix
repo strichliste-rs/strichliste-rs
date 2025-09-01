@@ -18,17 +18,11 @@
         toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
         name = toml.package.name;
         version = toml.package.version;
-
-        config.services.strichliste-rs = {
-          port = 3200;
-          address = "localhost";
-        };
       in {
         nixosModules = rec {
-          default = import ./module.nix self;
+          default = import ./module.nix self system;
           strichliste = default;
         };
-
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             rustc
@@ -57,6 +51,6 @@
         };
 
         packages.default =
-          (pkgs.callPackage ./pkg.nix { inherit name version config; });
+          (pkgs.callPackage ./pkg.nix { inherit name version; });
       });
 }

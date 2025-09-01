@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    t_type_data as article_id, count(id) as amount\n                from\n                    Transactions\n                where\n                    sender = ? and is_undone = 0 and receiver = ?\n                group by t_type_data\n                order by timestamp desc\n                limit 50\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "article_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "amount",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "add9e91a216fd6e4ce1bc0bb535c57f19f90eae8389f0be47cf8fb20d4a2f46d"
+}

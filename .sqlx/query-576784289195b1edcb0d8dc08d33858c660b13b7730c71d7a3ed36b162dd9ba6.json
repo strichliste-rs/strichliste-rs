@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select gid\n                from UserGroupMap\n                group by gid\n                having count(uid) = 1 AND MAX(uid) = ?;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "gid",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "576784289195b1edcb0d8dc08d33858c660b13b7730c71d7a3ed36b162dd9ba6"
+}

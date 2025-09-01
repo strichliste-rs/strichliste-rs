@@ -1,5 +1,5 @@
-self:
-{ lib, config, pkgs, }:
+self: system:
+{ lib, config, pkgs, ... }:
 let
   inherit (lib) mkOption types mkEnableOption mkIf;
 
@@ -10,13 +10,21 @@ let
       default = { };
       type = types.submodule { options = sub-cfg; };
     };
+
+  mkSoundListOption = description: default:
+    mkOption {
+      inherit description default;
+      type = types.listOf types.path;
+    };
+
+  statedirDefaultDir = "/var/lib/strichliste-rs";
 in {
   options.services.strichliste-rs = {
     enable = mkEnableOption "enable strichliste-rs service";
 
     package = mkOption {
       type = types.package;
-      default = self.packages.${config.pkgs.system}.default;
+      default = self.packages.${system}.default;
     };
 
     address = mkOption {
@@ -29,21 +37,73 @@ in {
       description = "The port that strichliste-rs is going to listen on";
     };
 
-    dataDir = mkOption { type = types.path; };
-  };
+    dataDir = mkOption {
+      type = types.path;
+      default = statedirDefaultDir;
+      description =
+        "The data directory. If not default, permissions must be granted manually.";
+    };
 
-  config = mkIf cfg.enable {
-    systemd.services."strichliste-rs" = {
-      description = "Strichliste-rs: A digital tally sheet";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        ExecStart = "${cfg.package}/bin/strichliste-rs -d ${cfg.dataDir}";
-        Restart = "on-failure";
+    settings = mkSubmoduleOption {
+      sounds = mkSubmoduleOption {
+        failed = mkSoundListOption "Sounds that play when a transaction fails"
+          [ ./public/sounds/wobble.wav ];
 
-        # might need to explicitely add the users
-        User = "strichliste-rs";
-        Group = "strichliste-rs";
+        generic =
+          mkSoundListOption "Sounds that play when a transaction succeeds"
+          [ ./public/sounds/kaching.wav ];
+
+        articles = mkOption {
+          description = "Sounds that play when a specific article is bought";
+          type = types.attrsOf (types.listOf types.path);
+          default = { };
+          example = ''
+            {
+              Spezi = [
+                ./public/sounds/spezi_1.wav
+              ];
+
+              Bier = [
+                ./public/sounds/bier.wav
+                ./public/sounds/bier_1.wav
+                ./public/sounds/bier_2.wav
+                ./public/sounds/bier_3.wav
+                ./public/sounds/bier_4.wav
+                ./public/sounds/bier_5.wav
+              ];
+            }
+          '';
+        };
       };
     };
+  };
+
+  config = let config-file = pkgs.writers.writeYAML "config.yaml" cfg.settings;
+  in mkIf cfg.enable {
+    systemd.services."strichliste-rs" = lib.mkMerge [
+      {
+        description = "Strichliste-rs: A digital tally sheet";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          # Environment = {
+          #   LEPTOS_SITE_ROOT = "${cfg.package}/bin/site";
+          #   LEPTOS_SITE_ADDR = "${cfg.address}:${toString cfg.port}";
+          # };
+          Environment = [
+            "LEPTOS_SITE_ROOT=${cfg.package}/bin/site"
+            "LEPTOS_SITE_ADDR=${cfg.address}:${toString cfg.port}"
+          ];
+          ExecStart =
+            "${cfg.package}/bin/strichliste-rs -d ${cfg.dataDir} -c ${config-file}";
+          Restart = "on-failure";
+
+          User = "strichliste-rs";
+          DynamicUser = true;
+        };
+      }
+      (lib.mkIf (cfg.dataDir == statedirDefaultDir) {
+        serviceConfig.StateDirectory = "strichliste-rs";
+      })
+    ];
   };
 }

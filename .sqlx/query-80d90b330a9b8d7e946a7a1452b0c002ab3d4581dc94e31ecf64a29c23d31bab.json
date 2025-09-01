@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                select\n                    id as \"id: i64\",\n                    user_id as \"user_id: i64\",\n                    is_undone,\n                    t_type as \"t_type: TransactionTypeDB\",\n                    t_type_data,\n                    money,\n                    description,\n                    timestamp as \"timestamp: DateTime<Utc>\"\n                from Transactions\n                where id = ?\n            ",
+  "query": "\n                select\n                    id as \"id: i64\",\n                    sender as \"sender: i64\",\n                    receiver as \"receiver: i64\",\n                    is_undone,\n                    t_type_data,\n                    money as \"money: u64\",\n                    description,\n                    timestamp as \"timestamp: DateTime<Utc>\"\n                from Transactions\n                where id = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -9,19 +9,19 @@
         "type_info": "Integer"
       },
       {
-        "name": "user_id: i64",
+        "name": "sender: i64",
         "ordinal": 1,
         "type_info": "Null"
       },
       {
-        "name": "is_undone",
+        "name": "receiver: i64",
         "ordinal": 2,
-        "type_info": "Bool"
+        "type_info": "Null"
       },
       {
-        "name": "t_type: TransactionTypeDB",
+        "name": "is_undone",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Bool"
       },
       {
         "name": "t_type_data",
@@ -29,7 +29,7 @@
         "type_info": "Integer"
       },
       {
-        "name": "money",
+        "name": "money: u64",
         "ordinal": 5,
         "type_info": "Integer"
       },
@@ -58,5 +58,5 @@
       false
     ]
   },
-  "hash": "f51429f5afcd2590198f85d3398a27667ccd040c26d7a98c4bd50ba1892025cb"
+  "hash": "80d90b330a9b8d7e946a7a1452b0c002ab3d4581dc94e31ecf64a29c23d31bab"
 }

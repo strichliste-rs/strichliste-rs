@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into UserGroupMap\n                (gid, uid)\n                values\n                (?, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "72faa0ce4e3a9760b6990ebf708ff0f39e9f47d4374d266a92f863d9b12d758e"
+}

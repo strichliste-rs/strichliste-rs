@@ -1,8 +1,8 @@
 sounds:
   failed:
-    - wobble.wav
+    - /home/ole/github/rest/strichliste-rs/public/sounds/wobble.wav
   generic:
-    - kaching.wav
+    - /home/ole/github/rest/strichliste-rs/public/sounds/kaching.wav
   articles:
     Spezi:
-      - spezi_1.wav
+      - /home/ole/github/rest/strichliste-rs/public/sounds/spezi_1.wav
