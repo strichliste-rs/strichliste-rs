@@ -75,7 +75,10 @@ pub fn Create() -> impl IntoView {
 
                             view! { <p class="text-red-900">"Failed to create article: "{msg}</p>}.into_any()
                         },
-                        _ => view! {}.into_any(),
+                        _ => {
+
+                            ().into_any()
+                        },
                     }}
                 </div>
             </div>

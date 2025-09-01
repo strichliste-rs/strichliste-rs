@@ -37,7 +37,7 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
 
     debug!("Attempting to fetch a user by barcode '{}'", barcode_string);
 
-    if barcode_string.len() == 0 {
+    if barcode_string.is_empty() {
         return Ok(None);
     }
 
@@ -86,7 +86,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
             let scan_input = input_signal.read_untracked().clone();
             input_signal.write_only().set(String::new());
 
-            if scan_input.len() == 0 {
+            if scan_input.is_empty() {
                 return;
             }
 
@@ -102,7 +102,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
 
                 let user = user.unwrap();
                 if user.is_none() {
-                    console_log(&format!("There is no user with barcode \"{}\"", scan_input));
+                    console_log(&format!("There is no user with barcode \"{scan_input}\""));
                     return;
                 }
 
@@ -122,8 +122,6 @@ pub fn InvisibleScanInput() -> impl IntoView {
     on_cleanup(move || {
         handle.remove();
     });
-
-    view! {}
 }
 
 #[component]

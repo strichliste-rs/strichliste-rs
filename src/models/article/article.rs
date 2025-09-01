@@ -119,7 +119,7 @@ impl Article {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        _ = ArticleDB::set_name(conn, self.id, name.clone()).await?;
+        ArticleDB::set_name(conn, self.id, name.clone()).await?;
 
         self.name = name;
 
@@ -130,7 +130,7 @@ impl Article {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        _ = ArticleDB::set_price(conn, self.id, cost.value).await?;
+        ArticleDB::set_price(conn, self.id, cost.value).await?;
 
         self.cost = cost;
 
@@ -148,11 +148,11 @@ impl Article {
         for diff in barcode_diff.into_iter() {
             match diff {
                 BarcodeDiff::Removed(barcode) => {
-                    _ = ArticleDB::remove_barcode(&mut *conn, self.id, barcode).await?;
+                    ArticleDB::remove_barcode(&mut *conn, self.id, barcode).await?;
                 }
 
                 BarcodeDiff::Added(barcode) => {
-                    _ = ArticleDB::add_barcode(&mut *conn, self.id, barcode).await?;
+                    ArticleDB::add_barcode(&mut *conn, self.id, barcode).await?;
                 }
             }
         }

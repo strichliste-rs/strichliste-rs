@@ -16,9 +16,7 @@ pub struct DBError(String);
 
 impl DBError {
     pub fn new(error: impl ToString) -> Self {
-        DBError {
-            0: error.to_string(),
-        }
+        DBError(error.to_string())
     }
 }
 

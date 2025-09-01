@@ -1,4 +1,4 @@
-use sqlx::{error::DatabaseError, query, query_as, Executor};
+use sqlx::{query, query_as, Executor};
 
 use crate::{
     backend::db::{DBError, DatabaseResponse, DatabaseType},
