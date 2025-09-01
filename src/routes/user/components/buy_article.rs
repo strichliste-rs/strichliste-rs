@@ -4,7 +4,7 @@ use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn
 use tracing::error;
 
 use crate::{
-    models::{Article, Money, Transaction, UserId},
+    models::{play_sound, Article, Money, Transaction, UserId},
     routes::{
         articles::{get_all_articles, get_article},
         user::{create_transaction, get_user, MoneyArgs},
@@ -128,14 +128,26 @@ pub fn buy_article(
     money: RwSignal<Money>,
     error: RwSignal<String>,
     transactions: RwSignal<Vec<Transaction>>,
+    audio_ref: NodeRef<leptos::html::Audio>,
 ) {
     console_log(&format!("Need to buy article with id: {article_id}"));
+    let args = MoneyArgs {
+        user_id,
+        money,
+        error,
+        transactions,
+        audio_ref,
+    };
     spawn_local(async move {
         match buy_article_by_id(user_id, article_id).await {
             Ok(transaction) => {
                 money.update(|money| money.value -= transaction.money.value);
                 transactions.update(|trns| trns.insert(0, transaction));
                 error.set(String::new());
+                play_sound(
+                    Rc::new(args),
+                    crate::models::AudioPlayback::Bought(article_id),
+                );
             }
 
             Err(e) => {
@@ -153,7 +165,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
         money,
         error,
         transactions,
-        audio_ref: _,
+        audio_ref,
     } = *args;
     let personal_articles = OnceResource::new(get_articles_per_user(user_id));
     view! {
@@ -185,7 +197,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                             view!{
                                     <button class="bg-gray-700 rounded p-2"
                                         on:click=move |_| {
-                                            buy_article(user_id, id, money, error, transactions);
+                                            buy_article(user_id, id, money, error, transactions, audio_ref);
                                         }
                                     >
                                         <div>
@@ -212,7 +224,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
         money,
         error,
         transactions,
-        audio_ref: _,
+        audio_ref,
     } = *money_args;
     let articles_resource = OnceResource::new(get_all_articles(None));
 
@@ -291,7 +303,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                     view!{
                         <button
                             on:click=move |_| {
-                                buy_article(user_id, elem.id, money, error, transactions);
+                                buy_article(user_id, elem.id, money, error, transactions, audio_ref);
                                 search_term.set(String::new());
                             }
                         >

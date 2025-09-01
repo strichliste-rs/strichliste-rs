@@ -60,11 +60,12 @@ pub fn invisible_scan_input(
                     Some(value) => {
                         console_log(&format!("Need to buy article: {}", value.name));
                         buy_article(
-                            user_id,
+                            money_args_clone.user_id,
                             value.id,
                             money_args_clone.money,
                             money_args_clone.error,
                             money_args_clone.transactions,
+                            money_args_clone.audio_ref,
                         );
                     }
                 }

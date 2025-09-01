@@ -5,7 +5,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::error;
 
 use crate::{
-     models::{AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
+     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}
 ;
 #[cfg(feature = "ssr")]
 use {
@@ -409,38 +409,6 @@ fn change_money(money: Money, args: Rc<MoneyArgs>){
     })
 }
 
-fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback){
-    if let AudioPlayback::Nothing = audio_playback {
-        return;
-    }
-
-    spawn_local(async move {
-        let audio = match args.audio_ref.get_untracked() {
-            Some(val) => val,
-            None => {
-                console_log("Failed to get audio node");
-                return;
-            }
-        };
-
-        let sound = match get_item_sound_url(audio_playback).await {
-            Ok(value) => value,
-            Err(e) => {
-                args.error.set(format!("Failed to fetch sound: {e}"));
-                return;
-            }
-        };
-
-        audio.set_src(&sound);
-        match audio.play() {
-            Ok(_) => {},
-            Err(e) => {
-                console_log(&format!("Failed to play audio: {e:#?}"))
-            }
-        }
-    });
-
-}
 
 fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs){
     let string = value.get_untracked();
