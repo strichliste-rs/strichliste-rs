@@ -157,22 +157,27 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
 }
 
 #[cfg(feature = "ssr")]
-fn choose_random_item(vec: &Vec<String>) -> &String {
-    vec.choose(&mut rand::rng()).unwrap()
+fn choose_random_item(vec: &[String]) -> Option<&String> {
+    vec.choose(&mut rand::rng())
 }
 
 #[server]
 pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFnError> {
     use crate::backend::ServerState;
+    use leptos_axum::ResponseOptions;
+    use axum::http::StatusCode;
+
+    let response_opts: ResponseOptions = expect_context();
 
     let state: ServerState = expect_context();
 
     let base = String::from_str("/sounds/").unwrap();
 
     let sounds = &state.settings.sounds;
-        
-    Ok(base + match audio {
-        AudioPlayback::Nothing => "",
+
+    // this does not make sure the file actually exists
+
+    let file = match audio {
         AudioPlayback::Failed => choose_random_item(&sounds.failed),
         AudioPlayback::Undo => choose_random_item(&sounds.generic),
         AudioPlayback::Deposit(_) => choose_random_item(&sounds.generic),
@@ -187,6 +192,16 @@ pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<String, ServerFn
             };
 
             choose_random_item(sounds)
+        }
+    };
+        
+    Ok(base + match file {
+        Some(val) => val,
+        None => {
+            error!("Failed to choose a random sound file");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to get sound file"));
+
         }
     })
 }
@@ -426,8 +441,8 @@ fn change_money(money: Money, args: Rc<MoneyArgs>){
                     TransactionType::Bought(id) => AudioPlayback::Bought(id),
                     TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
                     TransactionType::Withdraw => AudioPlayback::Withdraw(transaction.money),
-                    TransactionType::Received(_) => AudioPlayback::Nothing,
-                    TransactionType::SentAndReceived(_) => AudioPlayback::Nothing,
+                    TransactionType::Received(_) => return,
+                    TransactionType::SentAndReceived(_) => return,
                     TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money)
                 });
             },
