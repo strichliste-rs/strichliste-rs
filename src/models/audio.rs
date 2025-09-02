@@ -16,7 +16,6 @@ use crate::{
 pub enum AudioPlayback {
     Failed,
     Undo,
-    Nothing,
     Deposit(Money),
     Sent(Money),
     Withdraw(Money),
@@ -24,10 +23,6 @@ pub enum AudioPlayback {
 }
 
 pub fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback) {
-    if let AudioPlayback::Nothing = audio_playback {
-        return;
-    }
-
     spawn_local(async move {
         let audio = match args.audio_ref.get_untracked() {
             Some(val) => val,
