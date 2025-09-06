@@ -1,7 +1,9 @@
-use std::{path::PathBuf, rc::Rc, str::FromStr};
+use std::{fmt::Display, path::PathBuf, rc::Rc, str::FromStr};
 
-use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
+use leptos::{leptos_dom::logging::console_log, prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
 use leptos_router::hooks::use_params_map;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use tracing::error;
 
 use crate::{
@@ -10,7 +12,7 @@ use crate::{
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::models::Group,
+    crate::models::{Group, UserDB},
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
     rand::seq::IndexedRandom,
 };
@@ -62,8 +64,45 @@ pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
     Ok(user)
 }
 
+#[derive(Error, Debug, Clone, Deserialize, Serialize)]
+pub enum CreateTransactionError {
+    #[error("the following users have too little money: {}", .0.join(", "))]
+    TooLittleMoneyError(Vec<String>),
+
+    #[error("the following users have too much money: {}", .0.join(", "))]
+    TooMuchMoneyError(Vec<String>),
+
+    #[error("{0}")]
+    StringMessage(String),
+
+    #[error("server fn error: {0}")]
+    ServerFn(ServerFnErrorErr),
+}
+
+impl CreateTransactionError {
+    pub fn new(value: &str) -> Self {
+        Self::StringMessage(value.to_string())
+    }
+}
+
+impl FromServerFnError for CreateTransactionError {
+    type Encoder = server_fn::codec::JsonEncoding;
+    fn from_server_fn_error(value: ServerFnErrorErr) -> Self {
+        Self::ServerFn(value)
+    }
+
+}
+
+impl From<ServerFnError> for CreateTransactionError {
+    fn from(value: ServerFnError) -> Self {
+        Self::StringMessage(value.to_string())
+    }
+}
+
+
 #[server]
-pub async fn create_transaction(user_id: UserId, money: Money, transaction_type: TransactionType) -> Result<Transaction, ServerFnError> {
+pub async fn create_transaction(user_id: UserId, money: Money, transaction_type: TransactionType) -> Result<Transaction, CreateTransactionError> {
+    type Error = CreateTransactionError;
     use crate::backend::ServerState;
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
@@ -72,22 +111,21 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
 
     let response_opts: ResponseOptions = expect_context();
 
-    // let user = match get_user(user_id).await? {
-    //     None => {
-    //         response_opts.set_status(StatusCode::BAD_REQUEST);
-    //         return Err(ServerFnError::new(format!(
-    //             "No user found with id {user_id}",
-    //         )));
-    //     },
+    let user = match get_user(user_id).await? {
+        None => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(Error::StringMessage(format!(
+                "No user found with id {user_id}",
+            )));
+        },
 
-    //     Some(value) => value
-    // };
+        Some(value) => value
+    };
 
-    // TODO: Implement check if user is allowed to undo transaction
 
     if money.value < 0 {
         response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new("Money may not be negative"));
+        return Err(Error::new("Money may not be negative"));
     }
 
     let db = state.db.lock().await;
@@ -96,33 +134,33 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to get database handle: {}", e);
-            return Err(ServerFnError::new("Failed to get database handle!"));
+            return Err(Error::new("Failed to get database handle!"));
         }
     };
 
-    let user_group = match Group::get_user_group(&mut *db_trans, user_id).await {
+    let user_group = match Group::get_user_group_id(&mut *db_trans, user_id).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to get user group: {}", e);
-            return Err(ServerFnError::new("Failed to get user group"));
+            return Err(Error::new("Failed to get user group"));
         }
     };
 
-    let (sender_group, receiver_group) = match transaction_type {
+    let (sender_group_id, receiver_group_id) = match transaction_type {
       TransactionType::Deposit => (DBGROUP_AUFLADUNG_ID, user_group),
       TransactionType::Withdraw => (user_group, DBGROUP_AUFLADUNG_ID),
       TransactionType::Bought(_) => (user_group, DBGROUP_SNACKBAR_ID),
 
-      _ => return Err(ServerFnError::new("WIP")),
+      _ => return Err(Error::new("Invalid state")),
     };
 
-    let transaction_id = match Transaction::create(&mut *db_trans, sender_group, receiver_group, transaction_type, None, money).await {
+    let transaction_id = match Transaction::create(&mut *db_trans, sender_group_id, receiver_group_id, transaction_type, None, money).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to create transaction: {}", e);
-            return Err(ServerFnError::new("Failed to create transaction!"));
+            return Err(Error::new("Failed to create transaction!"));
         }
     };
 
@@ -131,7 +169,7 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to find transaction during DB-lookup: {}", e);
-            return Err(ServerFnError::new("Failed to find transaction!"));
+            return Err(Error::new("Failed to find transaction!"));
         },
     };
 
@@ -140,16 +178,72 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
         None => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to find transaction");
-            return Err(ServerFnError::new("Failed to find transaction!"));
+            return Err(Error::new("Failed to find transaction!"));
         },
     };
+
+    // fetch all Users which are involved in the transaction and have invalid account limits
+    let users = match sqlx::query_as!(
+        UserDB,
+        "
+            select
+                distinct Users.*
+            from
+                UserGroupMap
+            join
+                Users on Users.id = UserGroupMap.uid
+            join
+                Transactions
+            where
+                (UserGroupMap.gid = Transactions.sender or UserGroupMap.gid = Transactions.receiver)
+                and Transactions.id = ?
+                and Users.id != ?
+                and Users.id != ?
+        ",
+        transaction.id,
+        DBUSER_AUFLADUNG_ID.0,
+        DBUSER_SNACKBAR_ID.0,
+    ).fetch_all(&mut *db_trans).await {
+        Ok(val) => {
+            val
+        },
+
+        Err(e) => {
+            error!("Failed to find users: {e}");
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(Error::new("Failed to check users!"));
+        }
+    };
+
+    let mut users_too_low = Vec::<String>::new();
+    let mut users_too_high = Vec::<String>::new();
+
+    for user in users {
+        if user.money as usize > state.settings.accounts.upper_limit {
+            users_too_high.push(user.nickname.clone())
+        }
+
+        if user.money < state.settings.accounts.lower_limit {
+            users_too_low.push(user.nickname.clone())
+        }
+    }
+
+    if !users_too_low.is_empty() {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(CreateTransactionError::TooLittleMoneyError(users_too_low));
+    }
+
+    if !users_too_high.is_empty() {
+        response_opts.set_status(StatusCode::BAD_REQUEST);
+        return Err(CreateTransactionError::TooMuchMoneyError(users_too_high));
+    }
     
     match db_trans.commit().await {
         Ok(_) => {},
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
             error!("Failed to commit transaction: {}", e);
-            return Err(ServerFnError::new("Failed to commit transaction!"));
+            return Err(Error::new("Failed to commit transaction!"));
         }
     }
 
@@ -440,6 +534,7 @@ fn change_money_button(
 
 // fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
 fn change_money(money: Money, args: Rc<MoneyArgs>){
+    // this only runs in the main user view
     spawn_local(async move {
         let mut fixed_money = money;
         let t_type = if money.value > 0 { TransactionType::Deposit } else { 
@@ -461,8 +556,14 @@ fn change_money(money: Money, args: Rc<MoneyArgs>){
                     TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money)
                 });
             },
-            Err(e) => {                
-                args.error.set(e.to_string());
+            Err(e) => {
+                let msg = match e {
+                    CreateTransactionError::TooLittleMoneyError(_) => "You have too little money!".to_string(),
+                    CreateTransactionError::TooMuchMoneyError(_) => "You have too much money!".to_string(),
+                    CreateTransactionError::StringMessage(msg) => msg,
+                    CreateTransactionError::ServerFn(server_fn) => server_fn.to_string()
+                };
+                args.error.set(msg);
                 play_sound(args.clone(), AudioPlayback::Failed);
             }
         };

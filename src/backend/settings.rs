@@ -5,6 +5,20 @@ use std::{collections::HashMap, path::PathBuf};
 #[derive(Deserialize, Debug)]
 pub struct Settings {
     pub sounds: SoundSettings,
+    pub accounts: AccountsSettings,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SoundSettings {
+    pub articles: HashMap<String, Vec<String>>,
+    pub generic: Vec<String>,
+    pub failed: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AccountsSettings {
+    pub upper_limit: usize,
+    pub lower_limit: i64,
 }
 
 impl Settings {
@@ -19,11 +33,4 @@ impl Settings {
 
         builder.build()?.try_deserialize()
     }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct SoundSettings {
-    pub articles: HashMap<String, Vec<String>>,
-    pub generic: Vec<String>,
-    pub failed: Vec<String>,
 }
