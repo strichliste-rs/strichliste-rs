@@ -124,7 +124,6 @@ pub fn format_transaction(
     error_write: RwSignal<String>,
     money_signal: RwSignal<Money>,
 ) -> impl IntoView {
-    // <svg width="50px" height="50px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.5" d="M4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75V11.25ZM4 12.75H20V11.25H4V12.75Z" fill="#a5a4a8" style="--darkreader-inline-fill: var(--darkreader-background-a5a4a8, #161f3d);" data-darkreader-inline-fill=""></path> <path d="M14 6L20 12L14 18" stroke="#a5a4a8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="--darkreader-inline-stroke: var(--darkreader-text-a5a4a8, #acc4e0);" data-darkreader-inline-stroke=""></path> </g></svg>
     let now: DateTime<Utc> = Utc::now();
     let diff = now - transaction.timestamp;
 
@@ -248,7 +247,6 @@ pub fn format_transaction(
         {
             move || match undo_signal.get() {
                 true => {
-                    // console_log("Re-rendering date");
                     view!{
                         <p class="text-white">{date_string.clone()}</p>
                     }.into_any()

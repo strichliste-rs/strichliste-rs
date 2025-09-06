@@ -11,11 +11,8 @@ let
       type = types.submodule { options = sub-cfg; };
     };
 
-  mkSoundListOption = description: default:
-    mkOption {
-      inherit description default;
-      type = types.listOf types.path;
-    };
+  mkSoundListOption = options:
+    mkOption { type = types.listOf types.path; } // options;
 
   statedirDefaultDir = "/var/lib/strichliste-rs";
 in {
@@ -46,12 +43,15 @@ in {
 
     settings = mkSubmoduleOption {
       sounds = mkSubmoduleOption {
-        failed = mkSoundListOption "Sounds that play when a transaction fails"
-          [ ./public/sounds/wobble.wav ];
+        failed = mkSoundListOption {
+          description = "Sounds that play when a transaction fails";
+          default = [ ./public/sounds/wobble.wav ];
+        };
 
-        generic =
-          mkSoundListOption "Sounds that play when a transaction succeeds"
-          [ ./public/sounds/kaching.wav ];
+        generic = mkSoundListOption {
+          description = "Sounds that play when a transaction succeeds";
+          default = [ ./public/sounds/kaching.wav ];
+        };
 
         articles = mkOption {
           description = "Sounds that play when a specific article is bought";
@@ -85,10 +85,6 @@ in {
         description = "Strichliste-rs: A digital tally sheet";
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
-          # Environment = {
-          #   LEPTOS_SITE_ROOT = "${cfg.package}/bin/site";
-          #   LEPTOS_SITE_ADDR = "${cfg.address}:${toString cfg.port}";
-          # };
           Environment = [
             "LEPTOS_SITE_ROOT=${cfg.package}/bin/site"
             "LEPTOS_SITE_ADDR=${cfg.address}:${toString cfg.port}"
