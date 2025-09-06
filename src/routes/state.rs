@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use reactive_stores::Store;
 
-use crate::models::User;
+use crate::models::AudioPlayback;
 
 #[derive(Clone, Debug, Default, Store)]
 pub struct FrontendStore {
     // #[store(key: i64 = |user| user.id.unwrap())]
-    pub cached_users: Vec<User>,
+    pub cached_sounds: HashMap<AudioPlayback, String>,
 }

@@ -3,7 +3,6 @@ use std::{path::PathBuf, rc::Rc, str::FromStr};
 use leptos::{leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use tracing::error;
-use wasm_bindgen::JsValue;
 
 use crate::{
      models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::{articles::get_article, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
