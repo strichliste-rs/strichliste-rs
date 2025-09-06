@@ -1,3 +1,6 @@
+accounts:
+  upper_limit: 0 # cents, 0 = disabled, but only here
+  lower_limit: -2000
 sounds:
   failed:
     - /home/ole/github/rest/strichliste-rs/public/sounds/wobble.wav

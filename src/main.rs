@@ -46,7 +46,18 @@ async fn main() {
     logger.init();
 
     let settings = match Settings::new(args.config) {
-        Ok(val) => val,
+        Ok(mut settings) => {
+            if settings.accounts.lower_limit > 0 {
+                error!("Failed to parse config: accounts.lower_limit may not be positive!");
+                exit(1);
+            }
+
+            if settings.accounts.upper_limit == 0 {
+                settings.accounts.upper_limit = usize::MAX;
+            }
+
+            settings
+        }
         Err(e) => {
             error!("Failed to parse config: {e}");
             exit(1);

@@ -7,7 +7,7 @@ use crate::{
     models::{play_sound, Article, Money, Transaction, UserId},
     routes::{
         articles::{get_all_articles, get_article},
-        user::{create_transaction, get_user, MoneyArgs},
+        user::{get_user, MoneyArgs},
     },
 };
 
@@ -72,7 +72,7 @@ pub async fn buy_article_by_id(
         }
     };
 
-    let user_group = match Group::get_user_group(&mut *db_trans, user_id).await {
+    let user_group = match Group::get_user_group_id(&mut *db_trans, user_id).await {
         Ok(value) => value,
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
