@@ -15,7 +15,7 @@ pub async fn create_user(username: String) -> Result<(), ServerFnError> {
     let response_opts: ResponseOptions = expect_context();
     debug!("Creating account!");
 
-    if username.len() == 0 {
+    if username.is_empty() {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Name cannot be empty!"));
     }
@@ -60,7 +60,8 @@ pub fn Create() -> impl IntoView {
 
                             view! { <p class="text-red-900">"Failed to create user: "{msg}</p>}.into_any()
                         },
-                        _ => view! {}.into_any(),
+                        _ =>  ().into_any()
+                        ,
                     }}
                 </div>
             </div>

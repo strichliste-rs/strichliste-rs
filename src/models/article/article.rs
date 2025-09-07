@@ -188,10 +188,7 @@ impl Article {
         let mut articles = Self::get_all(db, None).await?;
 
         for article in full_articles.iter() {
-            articles = articles
-                .into_iter()
-                .filter(|value| value.id != article.id)
-                .collect();
+            articles.retain(|value| value.id != article.id);
         }
 
         full_articles.reverse();
@@ -240,12 +237,9 @@ impl ArticleDB {
         conn: &mut Transaction<'a, DatabaseType>,
         name: String,
         cost: i64,
-    ) -> DatabaseResponse<DatabaseId>
-// where
-    //     for<'a> &'a mut T: Executor<'a, Database = Sqlite>,
-    {
+    ) -> DatabaseResponse<DatabaseId> {
         let id = Self::_insert_name(conn, name).await?;
-        _ = Self::set_price(&mut **conn, id, cost).await?;
+        Self::set_price(&mut **conn, id, cost).await?;
 
         Ok(id)
     }
@@ -327,7 +321,7 @@ impl ArticleDB {
             .map_err(DBError::new),
         };
 
-        Ok(result?)
+        result
     }
 
     pub async fn get_sounds<T>(

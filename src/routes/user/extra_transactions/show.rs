@@ -41,7 +41,7 @@ pub fn Show() -> impl IntoView {
 
     let error = RwSignal::new(String::new());
 
-    let money_signal = RwSignal::new(Money::new());
+    let money_signal = RwSignal::new(Money::default());
 
     let go_back_padding = "p-5";
 
@@ -57,23 +57,23 @@ pub fn Show() -> impl IntoView {
                     fallback=move || view!{<h1 class="text-white text-center">"Loading transactions!"</h1>}
                 >
                     {move || match trans_resource.get() {
-                        None => view!{}.into_any(),
+                        None => ().into_any(),
                         Some(value) => match value {
                             Err(e) => {
-                                return view! {
+                                view! {
                                     <p class="text-red-400">"Failed to fetch transactions: "{e.to_string()}</p>
-                                }.into_any();
+                                }.into_any()
                             }
 
                             Ok(value) => {
                                 transaction_signal.update(|transactions| *transactions = value.items);
-                                return view!{
+                                view!{
                                 {
                                      transaction_signal.get().iter().map(|transaction| {
                                         format_transaction(transaction, user_id, error, money_signal)
                                     }).collect_view()
                                 }
-                                }.into_any();
+                                }.into_any()
                             }
                         },
                     }}
@@ -121,8 +121,8 @@ pub fn ShowNavigationButtons(
                         }
                     >"Previous page"</button>
                     <button class="rounded p-5"
-                        class=(["bg-gray-400", "text-white"], move || transaction_signal.get().len() == transactions_per_page as usize)
-                        class=(["bg-white", "text-black"], move || transaction_signal.get().len() != transactions_per_page as usize)
+                        class=(["bg-gray-400", "text-white"], move || transaction_signal.get().len() == transactions_per_page)
+                        class=(["bg-white", "text-black"], move || transaction_signal.get().len() != transactions_per_page)
                         on:click=move |_| {
                             let transaction_count = transaction_signal.get_untracked().len();
 
@@ -131,7 +131,7 @@ pub fn ShowNavigationButtons(
                             }
 
                             // if we dont get enough data back, there cannot be a next page
-                            if transaction_count < transactions_per_page as usize {
+                            if transaction_count < transactions_per_page {
                                 return;
                             }
 

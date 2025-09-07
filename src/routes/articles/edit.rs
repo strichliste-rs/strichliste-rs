@@ -60,7 +60,7 @@ pub async fn update_article(id: i64, name: String, cost: String, barcodes: Optio
       Ok(value) => value,
       Err(e) => {
           response_opts.set_status(StatusCode::BAD_REQUEST);
-          return Err(ServerFnError::new(&format!("Failed to convert '{}' to internal money representation: {}", cost, e)))
+          return Err(ServerFnError::new(format!("Failed to convert '{}' to internal money representation: {}", cost, e)))
       }
     };
 
@@ -106,14 +106,10 @@ pub async fn update_article(id: i64, name: String, cost: String, barcodes: Optio
         Some(barcodes) => {
             let result = article.set_barcodes(&mut *db_transaction, barcodes).await;
 
-            match result {
-                Err(e) => {
-                    response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-                    error!("Failed to set barcodes: {}", e);
-                    return Err(ServerFnError::new(&format!("Failed to set barcodes: {}", e)));
-                },
-
-                Ok(_) => {},
+            if let Err(e) = result {
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                error!("Failed to set barcodes: {}", e);
+                return Err(ServerFnError::new(format!("Failed to set barcodes: {}", e)));
             }
         },
     }
@@ -157,9 +153,9 @@ pub fn Edit() -> impl IntoView {
     view! {
         {move || match article_resource.get() {
             None => {
-                return view! {
+                view! {
                     <p class="text-white text-center">"Loading article..."</p>
-                }.into_any();
+                }.into_any()
             },
 
             Some(value) => {
@@ -176,7 +172,7 @@ pub fn Edit() -> impl IntoView {
                   }
                 };
 
-                return view!{
+                view!{
                     <SingleArticleView article/>
                 }.into_any()
             }
@@ -214,17 +210,13 @@ fn SingleArticleView(article: Article) -> impl IntoView {
             let cost = cost_node.get_untracked().expect("name input should be mounted").value();
 
             let barcodes = barcodes_diff_signal.get_untracked();
-            match update_article(id, name, cost, Some(barcodes)).await {
-                Err(e) => {
-                    let msg = match e {
-                        ServerFnError::ServerError(msg) => msg,
-                        _ => e.to_string(),
-                    };
+            if let Err(e) = update_article(id, name, cost, Some(barcodes)).await {
+                let msg = match e {
+                    ServerFnError::ServerError(msg) => msg,
+                    _ => e.to_string(),
+                };
 
-                    error_signal.set(msg);
-                },
-
-                Ok(_) => {},
+                error_signal.set(msg);
             }
         });
     };
@@ -234,7 +226,7 @@ fn SingleArticleView(article: Article) -> impl IntoView {
                 let msg = error_signal.get();
 
                 match msg.len() {
-                    0 => view! {}.into_any(),
+                    0 =>().into_any(),
                     _ => view! {
                         <div class="bg-red-400 p-5">
                             <p class="text-white text-center">"Failed to update article: "{msg}</p>
@@ -288,7 +280,7 @@ fn SingleArticleView(article: Article) -> impl IntoView {
                         on:click=move |_| {
                             let node = new_barcode_node.get().expect("new_barcode_input should be mounted!");
                             let new_barcode = node.value();
-                            if new_barcode.len() == 0 {
+                            if new_barcode.is_empty() {
                                 return;
                             }
                             // console_log(&format!("Pushing value: {}", new_barcode));

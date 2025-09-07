@@ -15,12 +15,12 @@ pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnEr
     let response_opts: ResponseOptions = expect_context();
     debug!("Creating article!");
 
-    if name.len() == 0 {
+    if name.is_empty() {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Name cannot be empty!"));
     }
 
-    if cost.len() == 0 {
+    if cost.is_empty() {
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Cost cannot be empty!"));
     }

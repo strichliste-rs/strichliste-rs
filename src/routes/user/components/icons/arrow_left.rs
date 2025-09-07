@@ -1,4 +1,4 @@
-use leptos::{leptos_dom::logging::console_log, prelude::*};
+use leptos::prelude::*;
 
 #[component]
 pub fn LeftArrowIcon(class: &'static str) -> impl IntoView {

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use chrono::{DateTime, Local, Utc};
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
-use leptos_use::{use_infinite_scroll, use_infinite_scroll_with_options, UseInfiniteScrollOptions};
+use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
     models::{Money, Page, PageRequestParams, PageResponseParams, Transaction, TransactionType, User, UserId},
@@ -12,14 +12,11 @@ use crate::{
             icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
             transaction_view::{get_group_members, server::get_user_transactions, UndoTransaction},
         },
-        get_user,
     },
 };
 
 use crate::routes::user::MoneyArgs;
 
-#[cfg(feature = "ssr")]
-use crate::models::{Group, GroupId, TransactionDB};
 
 #[component]
 pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
@@ -164,7 +161,7 @@ pub fn format_transaction(
         }
     };
 
-    return view! {
+    view! {
         <div class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
             class=("line-through", undo_signal.get())
         >
@@ -191,7 +188,8 @@ pub fn format_transaction(
                     }.into_any()
                 },
 
-                TransactionType::SentAndReceived(received_group) => {
+                
+                TransactionType::SentAndReceived(_received_group) => {
                     todo!()
                 }
 
@@ -310,5 +308,5 @@ pub fn format_transaction(
                 }
         }
         </div>
-    };
+    }
 }

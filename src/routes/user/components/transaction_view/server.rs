@@ -1,16 +1,10 @@
-use std::rc::Rc;
-
-use chrono::{DateTime, Local, Utc};
-use leptos::{leptos_dom::logging::console_log, prelude::*};
-use leptos_router::hooks::use_params_map;
+use leptos::prelude::*;
 use tracing::{debug, error, trace, warn};
 
 use crate::{
     models::{Money, Page, PageRequestParams, Transaction, TransactionType, User, UserId},
     routes::user::get_user,
 };
-
-use crate::routes::user::MoneyArgs;
 
 #[cfg(feature = "ssr")]
 use crate::models::{Group, GroupId, TransactionDB};
@@ -99,7 +93,7 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Invalid user!"));
     }
-    let mut user = user.unwrap();
+    let user = user.unwrap();
 
     let db = state.db.lock().await;
 

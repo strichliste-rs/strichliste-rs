@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
-#[cfg(feature = "ssr")]
-use leptos::{prelude::ServerFnError, server_fn::error::ServerFnErrorErr};
 
 #[cfg(feature = "ssr")]
 use crate::models::{Page, PageRequestParams};
@@ -208,9 +206,9 @@ where
 
         let group_ids = group_ids.iter().map(Into::<GroupId>::into).collect_vec();
 
-        let is_sender = group_ids.iter().any(|group| *group == sender);
+        let is_sender = group_ids.contains(&sender);
 
-        let is_receiver = group_ids.iter().any(|group| *group == receiver);
+        let is_receiver = group_ids.contains(&receiver);
 
         Ok(Transaction {
             id,
@@ -230,7 +228,7 @@ where
                     (DBGROUP_AUFLADUNG_ID, _) => TransactionType::Deposit,
                     (_, DBGROUP_AUFLADUNG_ID) => TransactionType::Withdraw,
                     (_, DBGROUP_SNACKBAR_ID) => TransactionType::Bought(t_type_data.unwrap()),
-                    (a, b) => match (is_sender, is_receiver) {
+                    (_, _) => match (is_sender, is_receiver) {
                                 (true, true) => TransactionType::SentAndReceived(receiver),
                                 (true, false) => TransactionType::Sent(receiver),
                                 (false, true) => TransactionType::Received(sender),

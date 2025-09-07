@@ -169,7 +169,7 @@ pub fn ShowUsers() -> impl IntoView {
                         {
                             users.into_iter().map(|user| {
 
-                                let id = user.id.clone();
+                                let id = user.id;
 
                                 view!{
                                     <a href=format!("/user/{}", id)>
