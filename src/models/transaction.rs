@@ -5,6 +5,9 @@ use leptos::prelude::RwSignal;
 #[cfg(feature = "ssr")]
 use leptos::{prelude::ServerFnError, server_fn::error::ServerFnErrorErr};
 
+#[cfg(feature = "ssr")]
+use crate::models::{Page, PageRequestParams};
+
 use super::{DatabaseId, GroupId, Money, UserId};
 
 #[cfg(feature = "ssr")]
@@ -317,9 +320,8 @@ impl TransactionDB {
     pub async fn get_user_transactions<T>(
         conn: &mut T,
         user_id: UserId,
-        limit: usize,
-        offset: usize,
-    ) -> DatabaseResponse<Vec<Self>>
+        page_request_params: PageRequestParams,
+    ) -> DatabaseResponse<Page<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -335,15 +337,28 @@ impl TransactionDB {
         ",
         )
         .bind(user_id.0)
-        .bind(limit as i64)
-        .bind(offset as i64);
+        .bind(page_request_params.limit as i64)
+        .bind(page_request_params.offset as i64);
 
         let result = result
             .fetch_all(&mut *conn)
             .await
             .map_err(Into::<DBError>::into)?;
 
-        Ok(result)
+        let count = sqlx::query_as::<_, (u64,)>(
+            r#"
+                select count(*) from Transactions
+            join Users on Users.id=?
+            join UserGroupMap as UGM on UGM.uid = Users.id
+            where Transactions.receiver = UGM.gid or Transactions.sender = UGM.gid
+            "#,
+        )
+        .bind(user_id.0)
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(Into::<DBError>::into)?;
+
+        Ok(Page::new(page_request_params, count.0 as usize, result))
     }
 
     pub async fn set_money<T>(conn: &mut T, id: DatabaseId, new_value: i64) -> DatabaseResponse<()>
@@ -428,20 +443,23 @@ impl Transaction {
     pub async fn get_user_transactions(
         db: &DB,
         user_id: UserId,
-        limit: usize,
-        offset: usize,
-    ) -> DatabaseResponse<Vec<Self>> {
+        page_request_params: PageRequestParams,
+    ) -> DatabaseResponse<Page<Self>> {
         use itertools::Itertools;
+
+        use crate::models::PageResponseParams;
         let mut conn = db.get_conn().await?;
 
         let user_groups = GroupDB::get_groups(&mut *conn, user_id).await?;
 
-        let mut transactions =
-            TransactionDB::get_user_transactions(&mut *conn, user_id, limit, offset)
-                .await?
-                .into_iter()
-                .map(|elem| (elem, user_groups.as_ref()).try_into())
-                .process_results(|e| e.collect::<Vec<Transaction>>())?;
+        let Page {
+            items,
+            params: PageResponseParams { total, .. },
+        } = TransactionDB::get_user_transactions(&mut *conn, user_id, page_request_params).await?;
+        let mut transactions = items
+            .into_iter()
+            .map(|elem| (elem, user_groups.as_ref()).try_into())
+            .process_results(|e| e.collect::<Vec<Transaction>>())?;
 
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
 
@@ -476,7 +494,7 @@ impl Transaction {
             }
         }
 
-        Ok(transactions)
+        Ok(Page::new(page_request_params, total, transactions))
     }
 
     pub async fn set_money<T>(&mut self, conn: &mut T, new_value: i64) -> DatabaseResponse<()>

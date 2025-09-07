@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use tracing::{debug, error, trace, warn};
 
 use crate::{
-    models::{Money, Transaction, TransactionType, User, UserId},
+    models::{Money, Page, PageRequestParams, Transaction, TransactionType, User, UserId},
     routes::user::get_user,
 };
 
@@ -53,9 +53,8 @@ pub async fn get_group_members(gid: i64) -> Result<Vec<String>, ServerFnError> {
 #[server]
 pub async fn get_user_transactions(
     user_id: UserId,
-    limit: usize,
-    offset: usize,
-) -> Result<Vec<Transaction>, ServerFnError> {
+    page_request_params: PageRequestParams,
+) -> Result<Page<Transaction>, ServerFnError> {
     use crate::backend::ServerState;
     let state: ServerState = expect_context();
     use axum::http::StatusCode;
@@ -63,7 +62,8 @@ pub async fn get_user_transactions(
     let response_opts: ResponseOptions = expect_context();
 
     let transactions =
-        Transaction::get_user_transactions(&*state.db.lock().await, user_id, limit, offset).await;
+        Transaction::get_user_transactions(&*state.db.lock().await, user_id, page_request_params)
+            .await;
 
     if transactions.is_err() {
         error!(

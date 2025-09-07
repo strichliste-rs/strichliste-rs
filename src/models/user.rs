@@ -1,5 +1,8 @@
 use std::fmt;
 
+#[cfg(feature = "ssr")]
+use crate::models::Page;
+
 use super::{DatabaseId, Money};
 
 #[cfg(feature = "ssr")]
@@ -379,9 +382,12 @@ impl User {
         &self,
         db: &DB,
         limit: usize,
-    ) -> DatabaseResponse<Vec<TransactionDB>> {
+    ) -> DatabaseResponse<Page<TransactionDB>> {
+        use crate::models::PageRequestParams;
+
         let mut conn = db.get_conn().await?;
-        TransactionDB::get_user_transactions(&mut *conn, self.id, limit, 0).await
+        TransactionDB::get_user_transactions(&mut *conn, self.id, PageRequestParams::new(limit))
+            .await
     }
 
     pub async fn get_by_card_number(

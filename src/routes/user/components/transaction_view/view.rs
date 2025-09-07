@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use leptos_use::{use_infinite_scroll, use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
-    models::{Money, Transaction, TransactionType, User, UserId},
+    models::{Money, Page, PageRequestParams, PageResponseParams, Transaction, TransactionType, User, UserId},
     routes::user::{
         components::{
             icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
@@ -45,7 +45,8 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
     let user_id = UserId(user_id.unwrap());
 
-    let transaction_data = OnceResource::new(get_user_transactions(user_id, 10, 0));
+    let previous_transactions_presonse_params: RwSignal<Option<PageResponseParams>> = RwSignal::new(None); 
+    let transaction_data = OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
 
     let transaction_signal = arguments.transactions;
     let error_signal = arguments.error;
@@ -78,20 +79,33 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     }.into_any();
                 }
 
-                let mut transactions = transactions.unwrap();
+                let mut transactions = transactions.unwrap().items;
                 transactions.sort_by(|a, b| {
                     b.timestamp.cmp(&a.timestamp)
                 });
+
 
                 let el = NodeRef::<leptos::html::Div>::new();
                 transaction_signal.write().append(&mut transactions.into_iter().collect::<Vec<Transaction>>());
                 Effect::new(move |_| {
                     
                 let _ = use_infinite_scroll_with_options(el, move |_| async move {
-                    let offset = transaction_signal.with_untracked(|d| d.len());
-                    let next_data = get_user_transactions(user_id, 100, offset).await;
+                    let next_params = previous_transactions_presonse_params.with_untracked(|p| PageResponseParams::next_params(p.clone(), 100));
+                    if let Some(params) = next_params{
+                        
+                    let mut data = get_user_transactions(user_id, params).await;
+                    match data{
+                        Ok(mut data) => {
+                    transaction_signal.update(|d| d.append(&mut data.items));
+                    previous_transactions_presonse_params.set(Some(data.params));
+                    }
 
-                    transaction_signal.update(|data| data.append(&mut next_data.unwrap_or_default()));
+                      ,
+                        Err(e) => console_log(&e.to_string()),
+                    }
+
+                    }
+
 
                 },
                     UseInfiniteScrollOptions::default().distance(20.0).interval(1.0)

@@ -1,8 +1,10 @@
+use std::marker::PhantomData;
+
 use leptos::{html, prelude::*};
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    models::{Money, Transaction, UserId},
+    models::{Money, PageRequestParams, Transaction, UserId},
     routes::user::components::transaction_view::{format_transaction, get_user_transactions},
 };
 
@@ -29,8 +31,10 @@ pub fn Show() -> impl IntoView {
         |(page_count, user_id, transactions_per_page)| {
             get_user_transactions(
                 user_id,
-                transactions_per_page,
-                page_count * transactions_per_page,
+                PageRequestParams {
+                    offset: page_count * transactions_per_page,
+                    limit: transactions_per_page,
+                },
             )
         },
     );
@@ -62,7 +66,7 @@ pub fn Show() -> impl IntoView {
                             }
 
                             Ok(value) => {
-                                transaction_signal.update(|transactions| *transactions = value);
+                                transaction_signal.update(|transactions| *transactions = value.items);
                                 return view!{
                                 {
                                      transaction_signal.get().iter().map(|transaction| {
