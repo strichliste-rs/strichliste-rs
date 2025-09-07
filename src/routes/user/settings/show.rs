@@ -14,23 +14,23 @@ pub async fn update_user(id: UserId, nickname: String, card_number: String) -> R
 
     let response_opts: ResponseOptions = expect_context();
 
-    let user = get_user(id).await;
-
-    if user.is_err(){
-        error!("Failed to fetch user: {}", user.err().unwrap());
+    let user = match get_user(id).await{
+        Ok(user) => user,
+        Err(err) =>{
+            error!("Failed to fetch user: {}", err.to_string());
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new("Failed to fetch user!"));
-    }
+        }
+    };
 
-    let user = user.unwrap();
-
-    if user.is_none() {
+    let mut user = match user{
+        Some(user) => user,
+        None => {
         warn!("No such user with id '{}' exists!", id);
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("No such user exists!"));
-    }
-
-    let mut user = user.unwrap();
+        }
+    };
 
     match User::get_by_card_number(&*state.db.lock().await, card_number.clone()).await {
         Ok(value) => {
@@ -108,16 +108,16 @@ pub fn Show() -> impl IntoView {
     let params = use_params_map();
     let user_id_string = params.read_untracked().get("id").unwrap_or_default();
 
-    let user_id = user_id_string.parse::<i64>();
-
-    if user_id.is_err() {
-        return view! {
+    let user_id = match user_id_string.parse::<i64>(){
+        Ok(user_id) => UserId(user_id),
+        Err(_err) => {
+            return view! {
             <p class="text-red-500">"Failed to convert id to a number!"</p>
         }
         .into_any();
-    }
+        }
+    };
 
-    let user_id = UserId(user_id.unwrap());
     let user_resource = OnceResource::new(get_user(user_id));
 
     let update_action = ServerAction::<UpdateUser>::new();
@@ -127,32 +127,33 @@ pub fn Show() -> impl IntoView {
         >
         {
             move || {
-                let user = user_resource.get();
-
-                if user.is_none() {
+                let user = match user_resource.get(){
+                    Some(user) => user,
+                    None => {
                     return view!{
                         <p class="text-red-500">"Failed to fetch user"</p>
                     }.into_any();
-                }
+                    }
+                };
 
-                let user = user.unwrap();
-
-                if user.is_err(){
-                    let err = user.err().unwrap().to_string();
+                let user = match user{
+                    Ok(user) => user,
+                    Err(err) => {
+                        let err = err.to_string();
                     return view!{
                         <p class="text-red-500">"Failed to fetch user because: "{err}</p>
                     }.into_any();
-                }
+                    }
+                };
 
-                let user = user.unwrap();
-
-                if user.is_none(){
+                let user = match user{
+                    Some(user) => user,
+                    None => {
                     return view! {
                         <p class="text-red-500">"No user with the id "{user_id.0}" has been found!"</p>
                     }.into_any();
-                }
-
-                let user = user.unwrap();
+                    }
+                };
 
                 view!{
                     {
