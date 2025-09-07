@@ -61,20 +61,17 @@ pub async fn get_user_transactions(
     use leptos_axum::ResponseOptions;
     let response_opts: ResponseOptions = expect_context();
 
-    let transactions =
-        Transaction::get_user_transactions(&*state.db.lock().await, user_id, page_request_params)
-            .await;
-
-    if transactions.is_err() {
+    let transactions = match Transaction::get_user_transactions(&*state.db.lock().await, user_id, page_request_params).await{
+        Ok(transactions) => transactions,
+        Err(err) =>{
         error!(
             "Failed to fetch transactions: {}",
-            transactions.err().unwrap()
+            err.to_string()
         );
         response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
         return Err(ServerFnError::new("Failed to fetch transactions!"));
-    }
-
-    let transactions = transactions.unwrap();
+        }
+            };
 
     Ok(transactions)
 }
@@ -94,12 +91,15 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
     );
 
     let user = get_user(user_id).await?;
-    if user.is_none() {
+
+    let mut user = match user{
+        Some(user) => user,
+        None => {
         warn!("A user with id '{}' does not exist!", user_id);
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::new("Invalid user!"));
     }
-    let mut user = user.unwrap();
+    };
 
     let db = state.db.lock().await;
 

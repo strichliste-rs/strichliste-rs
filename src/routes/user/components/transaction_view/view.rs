@@ -34,16 +34,15 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
         }
     };
 
-    let user_id = user_id_string.parse::<i64>();
-
-    if user_id.is_err() {
-        return view! {
+    let user_id = match user_id_string.parse::<i64>(){
+        Ok(user_id) => UserId(user_id),
+        Err(_err) => {
+            return view! {
             <p class="text-red-500">"Failed to convert id to a number!"</p>
         }
         .into_any();
-    }
-
-    let user_id = UserId(user_id.unwrap());
+        }
+    };
 
     let previous_transactions_presonse_params: RwSignal<Option<PageResponseParams>> = RwSignal::new(None); 
     let transaction_data = OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
@@ -58,18 +57,19 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
         >
         {
             move || {
-                let transactions = transaction_data.get();
-
-                if transactions.is_none() {
-                    return view!{
+                let transactions = match transaction_data.get(){
+                    Some(transactions) => transactions,
+                    None{
+                        return view!{
                         <p class="text-white bg-red-400 text-center">"Failed to fetch transactions"</p>
                     }.into_any();
-                }
+                    }
+                };
 
-                let transactions = transactions.unwrap();
-
-                if transactions.is_err() {
-                    let msg = match transactions.err().unwrap() {
+                let transactions = match transactions{
+                    Ok(transactions) => transactions.items,
+                    Err(err) => {
+                        let msg = match err {
                         ServerFnError::ServerError(msg) => msg,
                         _ => "Failed to fetch transactions".to_string()
                     };
@@ -77,9 +77,10 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                     return view! {
                         <p class="text-white text-center bg-red-400">"Failed to fetch users because: "{msg}</p>
                     }.into_any();
-                }
+                    }
+                    
+                };
 
-                let mut transactions = transactions.unwrap().items;
                 transactions.sort_by(|a, b| {
                     b.timestamp.cmp(&a.timestamp)
                 });

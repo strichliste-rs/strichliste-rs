@@ -374,32 +374,33 @@ pub fn ShowUser() -> impl IntoView {
                 <div>
                     {
                         move || {
-                            let user = user_resource.get();
-
-                            if user.is_none() {
-                                return view!{
+                            let user = match user_resource.get(){
+                                Some(user) => user,
+                                None => {
+                                    return view!{
                                     <p class="text-red-500">"Failed to fetch user"</p>
                                 }.into_any();
-                            }
+                                }
+                            };
 
-                            let user = user.unwrap();
-
-                            if user.is_err(){
-                                let err = user.err().unwrap().to_string();
+                            let user = match user{
+                                Ok(user) => user,
+                                Err(err) => {
+                                    let err = err.to_string();
                                 return view!{
                                     <p class="text-red-500">"Failed to fetch user because: "{err}</p>
                                 }.into_any();
-                            }
+                                }
+                            };
 
-                            let user = user.unwrap();
-
-                            if user.is_none(){
+                            let user = match user{
+                                Some(user) => user,
+                                None => {
                                 return view! {
                                     <p class="text-red-500">"No user with the id "{user_id.0}" has been found!"</p>
                                 }.into_any();
-                            }
-
-                            let user = user.unwrap();
+                                }
+                            };
 
                             let money_signal = RwSignal::new(user.money);
 

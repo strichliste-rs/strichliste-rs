@@ -68,12 +68,13 @@ async fn main() {
 
     let db = db::DB::new(path.to_str().unwrap()).await;
 
-    if db.is_err() {
-        error!("Failed to create database: {},", db.err().unwrap());
-        exit(1);
-    }
-
-    let db = db.unwrap();
+    let db = match db{
+        Ok(db) => db,
+        Err(err) =>{
+            error!("Failed to create database: {},", err.to_string());
+            exit(1);
+        }
+    };
 
     let server_state: ServerState = Arc::new(State {
         db: Mutex::new(db),

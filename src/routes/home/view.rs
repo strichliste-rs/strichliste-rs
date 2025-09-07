@@ -13,15 +13,15 @@ pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let users = User::get_all(&*state.db.lock().await).await;
-    if users.is_err() {
-        let err = users.err().unwrap();
-        error!("Could not fetch users: {}", err);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new(err));
+    let users = match User::get_all(&*state.db.lock().await).await{
+        Ok(users) => users,
+        Err(err) =>{
+            let err = err.to_string();
+            error!("Could not fetch users: {}", err);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new(err));
+        }
     };
-
-    let users = users.unwrap();
 
     Ok(users)
 }
@@ -41,16 +41,15 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
         return Ok(None);
     }
 
-    let user = User::get_by_card_number(&*state.db.lock().await, barcode_string).await;
-
-    if user.is_err() {
-        let err = user.err().unwrap();
-        error!("Could not fetch user: {}", err);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to fetch user"));
-    }
-
-    let user = user.unwrap();
+    let user = match User::get_by_card_number(&*state.db.lock().await, barcode_string).await{
+        Ok(user) => user,
+        Err(err) =>{
+            let err = err.to_string();
+            error!("Could not fetch user: {}", err);
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to fetch user"));
+        }
+    };
 
     Ok(user)
 }
@@ -91,22 +90,25 @@ pub fn InvisibleScanInput() -> impl IntoView {
             }
 
             spawn_local(async move {
-                let user = get_user_by_barcode(scan_input.clone()).await;
-                if user.is_err() {
-                    console_log(&format!(
+                let user = match get_user_by_barcode(scan_input.clone()).await{
+                    Ok(user) => user,
+                    Err(err) =>{
+                        console_log(&format!(
                         "Failed to fetch user by barcode: {}",
-                        user.err().unwrap()
-                    ));
-                    return;
-                }
+                        err.to_string()
+                        ));
+                        return;
+                    }
+                };
 
-                let user = user.unwrap();
-                if user.is_none() {
-                    console_log(&format!("There is no user with barcode \"{scan_input}\""));
-                    return;
-                }
+                let user = match user{
+                    Some(user) => user,
+                    None => {
+                        console_log(&format!("There is no user with barcode \"{scan_input}\""));
+                        return;
+                    }
+                };
 
-                let user = user.unwrap();
                 let navigate = use_navigate();
                 navigate(&format!("/user/{}", user.id), Default::default());
             });
@@ -139,24 +141,24 @@ pub fn ShowUsers() -> impl IntoView {
         >
             { move || {
 
-                let users = user_data.get();
-
-                if users.is_none() {
-                    return view!{
+                let users = match user_data.get(){
+                    Some(users) => users,
+                    None => {
+                        return view!{
                         <p class="bg-red-400 text-white text-center">"Failed to fetch users"</p>
                     }.into_any();
-                }
+                    }
+                };
 
-                let users = users.unwrap();
-
-                if users.is_err() {
-                    let error = users.err().unwrap().to_string();
+                let users = match users{
+                    Ok(users) => users,
+                    Err(err) => {
+                        let error = err.to_string();
                     return view!{
                         <p class="text-red-900">"Failed to fetch users: "{error}</p>
                     }.into_any();
-                }
-
-                let users = users.unwrap();
+                    }
+                };
 
                 // store.cached_users().writer().unwrap().clear();
 
