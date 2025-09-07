@@ -1,18 +1,29 @@
-{ rustPlatform, lib, pkgs, name, version, inputs, ... }:
+{ rustPlatform, lib, pkgs, toml, inputs, ... }:
 
 let
-  craneLib = inputs.crane.mkLib pkgs;
-  src = lib.cleanSourceWith {
-    src = ./.; # The original, unfiltered source
-    filter = path: type:
-      (lib.hasSuffix ".html" path) || (lib.hasSuffix "tailwind.config.js" path)
-      ||
-      # Example of a folder for images, icons, etc
-      (lib.hasInfix "/assets/" path) || (lib.hasInfix "/css/" path) ||
-      # Default filter from crane (allow .rs files)
-      (craneLib.filterCargoSources path type);
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = (lib.fileset.unions [
+      ./Cargo.toml
+      ./Cargo.lock
+      ./src
+      ./public
+      ./migrations
+      ./.sqlx
+      ./style
+    ]);
   };
-  commonArgs = {
+
+  name = toml.package.name;
+  version = toml.package.version;
+
+  rustTarget = pkgs.rust-bin.stable.latest.minimal.override {
+    extensions = [ "rust-src" ];
+    targets = [ "wasm32-unknown-unknown" ];
+  };
+
+  craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustTarget;
+  commonArgs = rec {
     inherit src version;
     strictDeps = true;
     pname = name;
@@ -25,33 +36,63 @@ let
       makeWrapper
       tailwindcss
     ];
+
+    nativeBuildInputs = buildInputs;
   };
 
-  artifacts = craneLib.buildDepsOnly commonArgs;
-  package = craneLib.buildPackage (commonArgs // {
-    cargoArtifacts = artifacts;
+  frontendArtifacts = craneLib.buildDepsOnly (commonArgs // {
+    CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+    pname = "${name}-frontend";
+    doCheck = false;
+  });
 
-    buildPhaseCommand = "cargo leptos build --release -vvv";
+  frontend = craneLib.buildPackage (commonArgs // {
+    cargoArtifacts = frontendArtifacts;
+    pname = "${name}-frontend";
+
+    doNotPostBuildInstallCargoBinaries = true;
+    buildPhaseCargoCommand = ''
+      cargo leptos build --release -vvv --frontend-only
+    '';
+
+    installPhaseCommand = ''
+      mkdir -p $out/site
+      cp -r target/site/* $out/site
+    '';
+  });
+
+  serverArtifacts = craneLib.buildDepsOnly (commonArgs // {
+    pname = "${name}-server";
+    doCheck = false;
+  });
+
+  server = craneLib.buildPackage (commonArgs // {
+    pname = "${name}-server";
+    cargoArtifacts = serverArtifacts;
+
+    doNotPostBuildInstallCargoBinaries = true;
+    buildPhaseCargoCommand = ''
+      cargo leptos build --release -vvv --server-only
+    '';
 
     nativeBuildInputs = commonArgs.buildInputs;
 
     installPhaseCommand = ''
-      # mkdir -p $out/bin
-      # cp target/server/release/${name} $out/bin/
-      # cp -r target/site $out/bin/
-      # wrapProgram $out/bin/${name} \
-      #   --set LEPTOS_SITE_ROOT $out/bin/site
-
-
-      # WHERE IS MY site/ DIR?
       mkdir -p $out/bin
       cp target/release/${name} $out/bin
-      echo LS target/
-      ls target/
     '';
   });
 
-in {
-  packages = { crane = package; };
-  apps.default = inputs.flake-utils.lib.mkApp { drv = package; };
-}
+  package = pkgs.stdenv.mkDerivation {
+    inherit name version;
+
+    src = server; # some what arbitrarily, but has to be set to something
+    installPhase = ''
+      mkdir -p $out/bin/site
+
+      cp ${server}/bin/* $out/bin
+      cp -r ${frontend}/site $out/bin/
+    '';
+  };
+
+in package
