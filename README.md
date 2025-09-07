@@ -10,4 +10,6 @@ prepare-sqlx
 
 nix build
 
+# me and you stupid
+
 ```
