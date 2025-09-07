@@ -93,16 +93,10 @@ impl TryFrom<String> for Money {
 
         let string = value.replace(",", ".");
 
-        let split = string.rsplit_once(".");
-
-        match split {
-            Some(split) => {
-                (euros, cents) = (split.0.to_string(), split.1.to_string());
-            }
-            None => {
-                euros = string;
-            }
-        }
+        let (euros, cents) = match string.rsplit_once("."){
+            Some((euros, cents)) => (euros, cents),
+            None => string
+        };
 
         if euros.is_empty() {
             return Err(MoneyParseError::InvalidEuros(
@@ -124,25 +118,25 @@ impl TryFrom<String> for Money {
             cents.push('0');
         }
 
-        let real_euros = euros.parse::<i64>();
-        if real_euros.is_err() {
-            return Err(MoneyParseError::InvalidEuros(format!(
+        let real_euros = match euros.parse::<i64>(){
+            Ok(real_euros) => real_euros,
+            Err(err)=>{
+                return Err(MoneyParseError::InvalidEuros(format!(
                 "Failed to parse euros: {}",
                 euros
             )));
-        }
+            }
+        };
 
-        let real_cents = cents.parse::<i64>();
-
-        if real_cents.is_err() {
-            return Err(MoneyParseError::InvalidCents(format!(
+        let real_cents = match cents.parse::<i64>(){
+            Ok(real_cents) => real_cents,
+            Err(err) =>{
+                return Err(MoneyParseError::InvalidCents(format!(
                 "Failed to parse cents: {}",
                 cents
             )));
-        }
-
-        let real_euros = real_euros.unwrap();
-        let real_cents = real_cents.unwrap();
+            }
+        };
 
         let final_cents = real_euros * 100 + real_cents;
 
