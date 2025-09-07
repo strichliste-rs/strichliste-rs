@@ -1,0 +1,20 @@
+---
+name: "Build"
+on:  # yamllint disable-line rule:truthy
+  push:
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Fetch Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build package
+        run: |
+          nix build
+      - name: Show log if build failed
+        if: failure()
+        run: |
+          nix log
+        
