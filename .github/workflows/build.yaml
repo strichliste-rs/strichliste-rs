@@ -12,7 +12,7 @@ jobs:
           fetch-depth: 0
       - name: Build package
         run: |
-          nix build
+          nix build # me am stupid
       - name: Show log if build failed
         if: failure()
         run: |
