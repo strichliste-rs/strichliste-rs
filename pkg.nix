@@ -16,7 +16,7 @@ let
       tailwindcss
     ];
 
-    cargoHash = "sha256-CscEKhiG6N9CAF9W7eVEkU6etSxTv7SPUCCOoeu0BKM=";
+    cargoHash = "sha256-l29KtcjU6B/OIXo+OZuXp6r8eSOshvsOBuNz65Uq+mM=";
 
     buildPhase = ''
       cargo leptos build --release -vvv
