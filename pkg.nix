@@ -1,10 +1,21 @@
-{ rustPlatform, lib, pkgs, name, version, config, ... }:
+{ rustPlatform, lib, pkgs, name, version, inputs, ... }:
 let
   package = rustPlatform.buildRustPackage rec {
     inherit name version;
     pname = name;
 
-    src = ./.;
+    src = lib.fileset.toSource {
+      root = ./.;
+      fileset = (lib.fileset.unions [
+        ./Cargo.toml
+        ./Cargo.lock
+        ./src
+        ./public
+        ./migrations
+        ./.sqlx
+        ./style
+      ]);
+    };
 
     nativeBuildInputs = with pkgs; [
       cargo-leptos

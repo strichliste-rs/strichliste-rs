@@ -51,6 +51,6 @@
         };
 
         packages.default =
-          (pkgs.callPackage ./pkg.nix { inherit name version; });
+          (pkgs.callPackage ./pkg.nix { inherit name version inputs; });
       });
 }

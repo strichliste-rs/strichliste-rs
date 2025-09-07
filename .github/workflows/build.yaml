@@ -2,6 +2,7 @@
 name: "Build"
 on:  # yamllint disable-line rule:truthy
   push:
+  workflow_dispatch:
 jobs:
   build:
     runs-on: self-hosted
