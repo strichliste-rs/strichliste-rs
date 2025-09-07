@@ -1,6 +1,6 @@
-use std::{fmt::Display, path::PathBuf, rc::Rc, str::FromStr};
+use std::{path::PathBuf, rc::Rc, str::FromStr};
 
-use leptos::{leptos_dom::logging::console_log, prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
+use leptos::{prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -110,18 +110,6 @@ pub async fn create_transaction(user_id: UserId, money: Money, transaction_type:
     let state: ServerState = expect_context();
 
     let response_opts: ResponseOptions = expect_context();
-
-    let user = match get_user(user_id).await? {
-        None => {
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(Error::StringMessage(format!(
-                "No user found with id {user_id}",
-            )));
-        },
-
-        Some(value) => value
-    };
-
 
     if money.value < 0 {
         response_opts.set_status(StatusCode::BAD_REQUEST);
@@ -423,7 +411,7 @@ pub fn ShowUser() -> impl IntoView {
                             let custom_money_is_focused = RwSignal::new(false);
 
                             view!{
-                                {invisible_scan_input(custom_money_is_focused, error_signal, args.clone(), user_id)}
+                                {invisible_scan_input(custom_money_is_focused, error_signal, args.clone())}
                                 <div class="grid grid-cols-2">
                                     <div class="pt-5">
                                         // left side (show user statistics)

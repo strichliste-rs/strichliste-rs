@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "ssr")]
-use crate::models::{Group, GroupDB, GroupId};
+use crate::models::{GroupDB, GroupId};
 
 #[server]
 pub async fn send_money(
@@ -190,7 +190,7 @@ pub fn Show() -> impl IntoView {
                     }.into_any(),
                 };
 
-                return view!{
+                view!{
                 <div class="flex h-screen bg-gray-900">
                     <div class="w-full max-w-xs m-auto bg-indigo-100 rounded p-5">
                         <p class="text-indigo-500 text-center">"Hello "{user.nickname}", who do you want to send money to?"</p>
@@ -199,7 +199,7 @@ pub fn Show() -> impl IntoView {
                           <input bind:value=receiver_input autocomplete="off" class="w-full p-2 mb-6 text-indigo-700 border-b-2 border-indigo-500 outline-none focus:bg-gray-300" type="text" name="to_user"/>
                         </div>
                         <div class="flex flex-col items-center"
-                            class=("hidden", move || receiver_input.get().len() == 0)
+                            class=("hidden", move || receiver_input.get().is_empty())
                             node_ref=hidden_div_node_ref
                         >
                         {move || {
@@ -242,7 +242,7 @@ pub fn Show() -> impl IntoView {
                         </div>
                         <div>
                             {move || match error_result.get().len() {
-                                0 => view! {}.into_any(),
+                                0 => ().into_any(),
                                 _ => {
                                     let msg = error_result.get();
                                     view! { <p class="text-red-900">"Failed to send money:  "{msg}</p>}.into_any()
@@ -251,7 +251,7 @@ pub fn Show() -> impl IntoView {
                         </div>
                     </div>
                 </div>
-            }.into_any();
+            }.into_any()
         })}
         </Suspense>
     }.into_any()

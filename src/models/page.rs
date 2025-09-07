@@ -34,7 +34,7 @@ impl PageResponseParams {
         }
     }
     pub fn has_next(&self) -> bool {
-        return self.offset + self.len < self.total;
+        self.offset + self.len < self.total
     }
 }
 

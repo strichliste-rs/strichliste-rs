@@ -9,6 +9,7 @@ use super::{GroupId, UserId};
 
 #[derive(Debug)]
 pub struct Group {
+    #[allow(dead_code)]
     pub id: GroupId,
     pub members: Vec<UserDB>,
 }
@@ -35,6 +36,7 @@ impl Group {
         Ok(GroupDB::get_single_group(conn, uid).await?.into())
     }
 
+    #[allow(dead_code)]
     pub async fn get_groups<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
@@ -200,15 +202,15 @@ impl GroupDB {
         .map_err(DBError::new)?;
 
         match group {
-            None => Err(DBError::new(&format!("Failed to find group: {}", gid.0))),
+            None => Err(DBError::new(format!("Failed to find group: {}", gid.0))),
             Some(value) => Ok(value),
         }
     }
 }
 
-impl Into<GroupId> for GroupDB {
-    fn into(self) -> GroupId {
-        GroupId(self.id)
+impl From<GroupDB> for GroupId {
+    fn from(val: GroupDB) -> Self {
+        GroupId(val.id)
     }
 }
 

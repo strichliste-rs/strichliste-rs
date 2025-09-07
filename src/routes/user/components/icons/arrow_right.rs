@@ -1,4 +1,4 @@
-use leptos::{leptos_dom::logging::console_log, prelude::*};
+use leptos::prelude::*;
 #[component]
 pub fn RightArrowIcon(class: &'static str) -> impl IntoView {
     view! {
@@ -7,4 +7,3 @@ pub fn RightArrowIcon(class: &'static str) -> impl IntoView {
         </div>
     }
 }
-

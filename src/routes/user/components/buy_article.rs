@@ -7,15 +7,12 @@ use crate::{
     models::{play_sound, Article, Money, Transaction, UserId},
     routes::{
         articles::{get_all_articles, get_article},
-        user::{get_user, MoneyArgs},
+        user::MoneyArgs,
     },
 };
 
 #[cfg(feature = "ssr")]
-use crate::{
-    backend::db::{DBGROUP_SNACKBAR_ID, DBUSER_SNACKBAR_ID},
-    models::Group,
-};
+use crate::{backend::db::DBGROUP_SNACKBAR_ID, models::Group};
 
 #[server]
 pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
@@ -28,7 +25,7 @@ pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, Serv
 
     let db = state.db.lock().await;
 
-    match Article::get_articles_for_user(&*db, user_id).await {
+    match Article::get_articles_for_user(&db, user_id).await {
         Ok(value) => Ok(value),
 
         Err(e) => {
@@ -52,15 +49,6 @@ pub async fn buy_article_by_id(
     let response_opts: ResponseOptions = expect_context();
 
     let article = get_article(article_id).await?;
-    let user = get_user(user_id).await?;
-
-    let user = match user {
-        Some(user) => user,
-        None => {
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            return Err(ServerFnError::new("Invalid user id given!"));
-        }
-    };
 
     let db = state.db.lock().await;
     let mut db_trans = match db.get_conn_transaction().await {
@@ -247,7 +235,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                             .contains(&search_term.get().to_lowercase())
                     })
                     .take(5)
-                    .map(|elem| elem.clone())
+                    .cloned()
                     .collect::<Vec<Article>>();
             }),
         };
@@ -267,9 +255,9 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                           ServerFnError::ServerError(msg) => msg,
                           _ => e.to_string(),
                         };
-                        return view!{
+                        view!{
                             <p class="bg-red-400 text-white text-center">{format!("Failed to fetch articles: {}", msg)}</p>
-                        }.into_any();
+                        }.into_any()
                     }
                 }
             })
@@ -296,7 +284,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
             </div>
             <div
                 node_ref=dropdown_div
-                class=("hidden", move || search_term.get().len() == 0)
+                class=("hidden", move || search_term.get().is_empty())
             >
             {move || {
                 filtered_articles.get().into_iter().map(|elem| {

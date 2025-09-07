@@ -14,13 +14,13 @@ pub async fn get_article_by_barcode(barcode: String) -> Result<Option<Article>, 
 
     let db = state.db.lock().await;
 
-    match Article::get_by_barcode(&*db, barcode).await {
+    match Article::get_by_barcode(&db, barcode).await {
         Err(e) => {
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new(format!(
+            Err(ServerFnError::new(format!(
                 "Failed to get article from db: {}",
                 e
-            )));
+            )))
         }
 
         Ok(value) => Ok(value),

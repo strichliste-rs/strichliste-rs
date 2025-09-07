@@ -121,7 +121,7 @@ pub fn Show() -> impl IntoView {
     let user_resource = OnceResource::new(get_user(user_id));
 
     let update_action = ServerAction::<UpdateUser>::new();
-    return view! {
+    view! {
         <Suspense
             fallback=move ||view!{<p class="text-white text-center pt-5">"Loading User..."</p>}
         >
@@ -154,7 +154,7 @@ pub fn Show() -> impl IntoView {
 
                 let user = user.unwrap();
 
-                return view!{
+                view!{
                     {
                         move || match update_action.value().get() {
                              Some(Err(e)) => {
@@ -164,12 +164,10 @@ pub fn Show() -> impl IntoView {
                                 };
 
                                 
-                                return view! {<p class="p-3 bg-red-400 text-white text-center">"Failed to update user: "{msg}</p>}.into_any();
+                                view! {<p class="p-3 bg-red-400 text-white text-center">"Failed to update user: "{msg}</p>}.into_any()
                             },
 
-                             _ => {
-                                 view!{}.into_any()
-                             },
+                             _ => ().into_any(),
                         }
                     }
                     <ActionForm action=update_action>
@@ -186,12 +184,12 @@ pub fn Show() -> impl IntoView {
                             <input class="text-white hover:bg-pink-700 bg-emerald-700 rounded-full text-[1.25em] p-2" type="submit" value="Update user"/>
                         </div>
                         </ActionForm>
-                }.into_any();
+                }.into_any()
 
             }
         }
         </Suspense>
     
     }
-    .into_any();
+    .into_any()
 }

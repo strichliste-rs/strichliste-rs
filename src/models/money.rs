@@ -17,7 +17,9 @@ impl std::fmt::Display for MoneyParseError {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default,
+)]
 pub struct Money {
     pub value: i64,
 }
@@ -41,10 +43,6 @@ impl Neg for Money {
 }
 
 impl Money {
-    pub fn new() -> Self {
-        Self { value: 0 }
-    }
-
     pub fn format_value(value: i64) -> String {
         format!("{:.2}", value as f64 / 100.0)
     }
@@ -97,20 +95,22 @@ impl TryFrom<String> for Money {
 
         let split = string.rsplit_once(".");
 
-        if split.is_none() {
-            euros = string;
-        } else {
-            let split = split.unwrap();
-            (euros, cents) = (split.0.to_string(), split.1.to_string());
+        match split {
+            Some(split) => {
+                (euros, cents) = (split.0.to_string(), split.1.to_string());
+            }
+            None => {
+                euros = string;
+            }
         }
 
-        if euros.len() == 0 {
+        if euros.is_empty() {
             return Err(MoneyParseError::InvalidEuros(
                 "Euros are empty!".to_string(),
             ));
         }
 
-        if cents.len() == 0 {
+        if cents.is_empty() {
             return Err(MoneyParseError::InvalidCents(
                 "Cents are empty!".to_string(),
             ));
@@ -121,7 +121,7 @@ impl TryFrom<String> for Money {
         }
 
         if cents.len() < 2 {
-            cents.push_str("0");
+            cents.push('0');
         }
 
         let real_euros = euros.parse::<i64>();

@@ -316,7 +316,7 @@ impl User {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        _ = UserDB::set_name(&mut *conn, self.id, new_value.clone()).await?;
+        UserDB::set_name(&mut *conn, self.id, new_value.clone()).await?;
 
         self.nickname = new_value;
 
@@ -331,7 +331,7 @@ impl User {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        _ = UserDB::set_card_number(&mut *conn, self.id, new_value.clone()).await?;
+        UserDB::set_card_number(&mut *conn, self.id, new_value.clone()).await?;
 
         self.card_number = new_value;
 
@@ -398,7 +398,7 @@ impl User {
         let user_id = UserDB::get_id_by_card_number(&mut *conn, card_number).await?;
 
         match user_id {
-            None => return Ok(None),
+            None => Ok(None),
             Some(user_id) => {
                 let user = Self::get(&mut *conn, user_id).await?;
 
