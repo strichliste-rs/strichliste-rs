@@ -110,7 +110,7 @@ pub fn Show() -> impl IntoView {
 
     let user_id = match user_id_string.parse::<i64>(){
         Ok(user_id) => UserId(user_id),
-        Err(_err) => {
+        Err(_) => {
             return view! {
             <p class="text-red-500">"Failed to convert id to a number!"</p>
         }
