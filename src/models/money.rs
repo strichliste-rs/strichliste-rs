@@ -93,9 +93,9 @@ impl TryFrom<String> for Money {
 
         let string = value.replace(",", ".");
 
-        let (euros, cents) = match string.rsplit_once("."){
-            Some((euros, cents)) => (euros, cents),
-            None => string
+        let _ = match string.rsplit_once("."){
+            Some(string) => {euros = string.0.to_string() ; cents = string.1.to_string();},
+            None => euros = string
         };
 
         if euros.is_empty() {

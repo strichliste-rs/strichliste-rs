@@ -66,9 +66,7 @@ async fn main() {
 
     let path = args.data_dir.join("db.sqlite");
 
-    let db = db::DB::new(path.to_str().unwrap()).await;
-
-    let db = match db{
+    let db = match db::DB::new(path.to_str().unwrap()).await {
         Ok(db) => db,
         Err(err) =>{
             error!("Failed to create database: {},", err.to_string());
