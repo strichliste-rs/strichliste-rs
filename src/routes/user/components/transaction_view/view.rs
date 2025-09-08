@@ -33,7 +33,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
     let user_id = match user_id_string.parse::<i64>(){
         Ok(user_id) => UserId(user_id),
-        Err(_err) => {
+        Err(_) => {
             return view! {
             <p class="text-red-500">"Failed to convert id to a number!"</p>
         }
@@ -56,7 +56,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
             move || {
                 let transactions = match transaction_data.get(){
                     Some(transactions) => transactions,
-                    None{
+                    None => {
                         return view!{
                         <p class="text-white bg-red-400 text-center">"Failed to fetch transactions"</p>
                     }.into_any();
