@@ -1,6 +1,6 @@
 ---
 name: "Check"
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   check_suite:
   workflow_dispatch:
   pull_request:
@@ -17,4 +17,3 @@ jobs:
       - name: check package
         run: |
           nix flake check
-        

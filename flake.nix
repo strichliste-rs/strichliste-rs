@@ -11,16 +11,17 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  } @ inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system: let
-      overlays = [(import inputs.rust-overlay)];
-      pkgs = import nixpkgs {inherit system overlays;};
+  outputs =
+    { self, nixpkgs, ... }@inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        overlays = [ (import inputs.rust-overlay) ];
+        pkgs = import nixpkgs { inherit system overlays; };
 
-      inherit (pkgs) lib;
+        toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+        name = toml.package.name;
+        version = toml.package.version;
 
         formattingConfig =
           { ... }:
@@ -50,11 +51,8 @@
             };
           };
 
-        programs.rustfmt.enable = true;
-      };
-
-      treeFmtEval = inputs.treefmt-nix.lib.evalModule pkgs formattingConfig;
-    in
+        treeFmtEval = inputs.treefmt-nix.lib.evalModule pkgs formattingConfig;
+      in
       {
         nixosModules = rec {
           default = import ./module.nix self system;
@@ -63,7 +61,7 @@
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             (rust-bin.stable.latest.default.override {
-              targets = ["wasm32-unknown-unknown"];
+              targets = [ "wasm32-unknown-unknown" ];
             })
             # openssl
             # pkg-config
@@ -91,6 +89,14 @@
         formatter = treeFmtEval.config.build.wrapper;
       }
       // (pkgs.callPackage ./pkg_crane.nix {
-        inherit name version inputs toml treeFmtEval self;
-      }));
+        inherit
+          name
+          version
+          inputs
+          toml
+          treeFmtEval
+          self
+          ;
+      })
+    );
 }

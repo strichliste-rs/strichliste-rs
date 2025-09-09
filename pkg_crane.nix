@@ -6,7 +6,8 @@
   treeFmtEval,
   self,
   ...
-}: let
+}:
+let
   src = lib.fileset.toSource {
     root = ./.;
     fileset = lib.fileset.unions [
@@ -24,8 +25,11 @@
   version = toml.package.version;
 
   rustTarget = pkgs.rust-bin.stable.latest.minimal.override {
-    extensions = ["rust-src" "clippy"];
-    targets = ["wasm32-unknown-unknown"];
+    extensions = [
+      "rust-src"
+      "clippy"
+    ];
+    targets = [ "wasm32-unknown-unknown" ];
   };
 
   craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustTarget;
@@ -46,14 +50,17 @@
     nativeBuildInputs = buildInputs;
   };
 
-  frontendArtifacts = craneLib.buildDepsOnly (commonArgs
+  frontendArtifacts = craneLib.buildDepsOnly (
+    commonArgs
     // {
       CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
       pname = "${name}-frontend";
       doCheck = false;
-    });
+    }
+  );
 
-  frontend = craneLib.buildPackage (commonArgs
+  frontend = craneLib.buildPackage (
+    commonArgs
     // {
       cargoArtifacts = frontendArtifacts;
       pname = "${name}-frontend";
@@ -67,15 +74,19 @@
         mkdir -p $out/site
         cp -r target/site/* $out/site
       '';
-    });
+    }
+  );
 
-  serverArtifacts = craneLib.buildDepsOnly (commonArgs
+  serverArtifacts = craneLib.buildDepsOnly (
+    commonArgs
     // {
       pname = "${name}-server";
       doCheck = false;
-    });
+    }
+  );
 
-  server = craneLib.buildPackage (commonArgs
+  server = craneLib.buildPackage (
+    commonArgs
     // {
       pname = "${name}-server";
       cargoArtifacts = serverArtifacts;
@@ -91,7 +102,8 @@
         mkdir -p $out/bin
         cp target/release/${name} $out/bin
       '';
-    });
+    }
+  );
 
   package = pkgs.stdenv.mkDerivation {
     inherit name version;
@@ -105,17 +117,22 @@
     '';
   };
   cargoClippyExtraArgsCommon = "--all-targets -- --deny warnings";
-  clippyFrontend = craneLib.cargoClippy (commonArgs
+  clippyFrontend = craneLib.cargoClippy (
+    commonArgs
     // {
       cargoArtifacts = frontendArtifacts;
       cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
-    });
-  clippyServer = craneLib.cargoClippy (commonArgs
+    }
+  );
+  clippyServer = craneLib.cargoClippy (
+    commonArgs
     // {
       cargoArtifacts = serverArtifacts;
       cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
-    });
-in {
+    }
+  );
+in
+{
   packages.default = package;
   checks = {
     inherit clippyFrontend clippyServer;
