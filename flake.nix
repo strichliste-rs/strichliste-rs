@@ -7,20 +7,55 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
+
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = { self, nixpkgs, ... }@inputs:
-    inputs.flake-utils.lib.eachDefaultSystem (system:
-      let
-        overlays = [ (import inputs.rust-overlay) ];
-        pkgs = import nixpkgs { inherit system overlays; };
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  } @ inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system: let
+      overlays = [(import inputs.rust-overlay)];
+      pkgs = import nixpkgs {inherit system overlays;};
 
-        inherit (pkgs) lib;
+      inherit (pkgs) lib;
 
-        toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        name = toml.package.name;
-        version = toml.package.version;
-      in {
+        formattingConfig =
+          { ... }:
+          {
+            projectRootFile = "flake.nix";
+            programs = {
+              nixfmt.enable = true;
+              rustfmt = {
+                enable = true;
+                edition = toml.package.edition;
+              };
+              sql-formatter = {
+                enable = true;
+                dialect = "sqlite";
+              };
+
+              mdformat.enable = true;
+              jsonfmt.enable = true;
+
+              # js / ts / css / scss
+              prettier.enable = true;
+
+              leptosfmt.enable = true;
+
+              toml-sort.enable = true;
+
+            };
+          };
+
+        programs.rustfmt.enable = true;
+      };
+
+      treeFmtEval = inputs.treefmt-nix.lib.evalModule pkgs formattingConfig;
+    in
+      {
         nixosModules = rec {
           default = import ./module.nix self system;
           strichliste = default;
@@ -28,7 +63,7 @@
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             (rust-bin.stable.latest.default.override {
-              targets = [ "wasm32-unknown-unknown" ];
+              targets = ["wasm32-unknown-unknown"];
             })
             # openssl
             # pkg-config
@@ -53,9 +88,9 @@
           DATABASE_URL = "sqlite:tmp/db.sqlite";
         };
 
-      } //
-         (pkgs.callPackage ./pkg_crane.nix {
-          inherit name version inputs toml;
-        })
-  );
+        formatter = treeFmtEval.config.build.wrapper;
+      }
+      // (pkgs.callPackage ./pkg_crane.nix {
+        inherit name version inputs toml treeFmtEval self;
+      }));
 }

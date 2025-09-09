@@ -1,9 +1,15 @@
-{ rustPlatform, lib, pkgs, toml, inputs, ... }:
-
-let
+{
+  lib,
+  pkgs,
+  toml,
+  inputs,
+  treeFmtEval,
+  self,
+  ...
+}: let
   src = lib.fileset.toSource {
     root = ./.;
-    fileset = (lib.fileset.unions [
+    fileset = lib.fileset.unions [
       ./Cargo.toml
       ./Cargo.lock
       ./src
@@ -11,15 +17,15 @@ let
       ./migrations
       ./.sqlx
       ./style
-    ]);
+    ];
   };
 
   name = toml.package.name;
   version = toml.package.version;
 
   rustTarget = pkgs.rust-bin.stable.latest.minimal.override {
-    extensions = [ "rust-src" "clippy" ];
-    targets = [ "wasm32-unknown-unknown" ];
+    extensions = ["rust-src" "clippy"];
+    targets = ["wasm32-unknown-unknown"];
   };
 
   craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustTarget;
@@ -40,48 +46,52 @@ let
     nativeBuildInputs = buildInputs;
   };
 
-  frontendArtifacts = craneLib.buildDepsOnly (commonArgs // {
-    CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-    pname = "${name}-frontend";
-    doCheck = false;
-  });
+  frontendArtifacts = craneLib.buildDepsOnly (commonArgs
+    // {
+      CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+      pname = "${name}-frontend";
+      doCheck = false;
+    });
 
-  frontend = craneLib.buildPackage (commonArgs // {
-    cargoArtifacts = frontendArtifacts;
-    pname = "${name}-frontend";
+  frontend = craneLib.buildPackage (commonArgs
+    // {
+      cargoArtifacts = frontendArtifacts;
+      pname = "${name}-frontend";
 
-    doNotPostBuildInstallCargoBinaries = true;
-    buildPhaseCargoCommand = ''
-      cargo leptos build --release -vvv --frontend-only
-    '';
+      doNotPostBuildInstallCargoBinaries = true;
+      buildPhaseCargoCommand = ''
+        cargo leptos build --release -vvv --frontend-only
+      '';
 
-    installPhaseCommand = ''
-      mkdir -p $out/site
-      cp -r target/site/* $out/site
-    '';
-  });
+      installPhaseCommand = ''
+        mkdir -p $out/site
+        cp -r target/site/* $out/site
+      '';
+    });
 
-  serverArtifacts = craneLib.buildDepsOnly (commonArgs // {
-    pname = "${name}-server";
-    doCheck = false;
-  });
+  serverArtifacts = craneLib.buildDepsOnly (commonArgs
+    // {
+      pname = "${name}-server";
+      doCheck = false;
+    });
 
-  server = craneLib.buildPackage (commonArgs // {
-    pname = "${name}-server";
-    cargoArtifacts = serverArtifacts;
+  server = craneLib.buildPackage (commonArgs
+    // {
+      pname = "${name}-server";
+      cargoArtifacts = serverArtifacts;
 
-    doNotPostBuildInstallCargoBinaries = true;
-    buildPhaseCargoCommand = ''
-      cargo leptos build --release -vvv --server-only
-    '';
+      doNotPostBuildInstallCargoBinaries = true;
+      buildPhaseCargoCommand = ''
+        cargo leptos build --release -vvv --server-only
+      '';
 
-    nativeBuildInputs = commonArgs.buildInputs;
+      nativeBuildInputs = commonArgs.buildInputs;
 
-    installPhaseCommand = ''
-      mkdir -p $out/bin
-      cp target/release/${name} $out/bin
-    '';
-  });
+      installPhaseCommand = ''
+        mkdir -p $out/bin
+        cp target/release/${name} $out/bin
+      '';
+    });
 
   package = pkgs.stdenv.mkDerivation {
     inherit name version;
@@ -95,19 +105,20 @@ let
     '';
   };
   cargoClippyExtraArgsCommon = "--all-targets -- --deny warnings";
-  clippyFrontend = craneLib.cargoClippy (commonArgs // {
-    cargoArtifacts =  frontendArtifacts;
-          cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
-  });
-  clippyServer = craneLib.cargoClippy (commonArgs // {
-    cargoArtifacts = serverArtifacts;
-              cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
-  });
-
-in
-{
+  clippyFrontend = craneLib.cargoClippy (commonArgs
+    // {
+      cargoArtifacts = frontendArtifacts;
+      cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
+    });
+  clippyServer = craneLib.cargoClippy (commonArgs
+    // {
+      cargoArtifacts = serverArtifacts;
+      cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
+    });
+in {
   packages.default = package;
   checks = {
     inherit clippyFrontend clippyServer;
+    formatting = treeFmtEval.config.build.check self;
   };
 }
