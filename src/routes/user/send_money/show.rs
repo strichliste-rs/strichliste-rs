@@ -108,23 +108,16 @@ pub async fn send_money(
         }
     };
 
-    match Transaction::create(
+    Transaction::create(
         &mut *db_trns,
         GroupId(sender_group),
         GroupId(recipient_group),
         crate::models::TransactionType::Sent(GroupId(recipient_group)),
         None,
         money,
+        &state.settings,
     )
-    .await
-    {
-        Ok(_) => {}
-        Err(e) => {
-            error!("Failed to create transaction: {e}");
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to create Transaction"));
-        }
-    }
+    .await?;
 
     if let Err(e) = db_trns.commit().await {
         error!("Failed to commit transaction: {}", e);

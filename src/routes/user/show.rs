@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::error;
 
+#[cfg(feature = "ssr")]
+use crate::backend::db::DBError;
 use crate::{
     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId},
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
@@ -15,7 +17,7 @@ use crate::{
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
-    crate::models::{Group, UserDB},
+    crate::models::Group,
     crate::routes::articles::get_article,
     rand::seq::IndexedRandom,
     std::{path::PathBuf, str::FromStr},
@@ -76,7 +78,7 @@ pub enum CreateTransactionError {
     #[error("the following users have too much money: {}", .0.join(", "))]
     TooMuchMoneyError(Vec<String>),
 
-    #[error("{0}")]
+    #[error("Failed to create transaction: {0}")]
     StringMessage(String),
 
     #[error("server fn error: {0}")]
@@ -98,6 +100,13 @@ impl FromServerFnError for CreateTransactionError {
 
 impl From<ServerFnError> for CreateTransactionError {
     fn from(value: ServerFnError) -> Self {
+        Self::StringMessage(value.to_string())
+    }
+}
+
+#[cfg(feature = "ssr")]
+impl From<DBError> for CreateTransactionError {
+    fn from(value: DBError) -> Self {
         Self::StringMessage(value.to_string())
     }
 }
@@ -149,23 +158,16 @@ pub async fn create_transaction(
         _ => return Err(Error::new("Invalid state")),
     };
 
-    let transaction_id = match Transaction::create(
+    let transaction_id = Transaction::create(
         &mut *db_trans,
         sender_group_id,
         receiver_group_id,
         transaction_type,
         None,
         money,
+        &state.settings,
     )
-    .await
-    {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to create transaction: {}", e);
-            return Err(Error::new("Failed to create transaction!"));
-        }
-    };
+    .await?;
 
     let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
         Ok(val) => val,
@@ -184,63 +186,6 @@ pub async fn create_transaction(
             return Err(Error::new("Failed to find transaction!"));
         }
     };
-
-    // fetch all Users which are involved in the transaction and have invalid account limits
-    let users = match sqlx::query_as!(
-        UserDB,
-        "
-            select
-                distinct Users.*
-            from
-                UserGroupMap
-            join
-                Users on Users.id = UserGroupMap.uid
-            join
-                Transactions
-            where
-                (UserGroupMap.gid = Transactions.sender or UserGroupMap.gid = Transactions.receiver)
-                and Transactions.id = ?
-                and Users.id != ?
-                and Users.id != ?
-        ",
-        transaction.id,
-        DBUSER_AUFLADUNG_ID.0,
-        DBUSER_SNACKBAR_ID.0,
-    )
-    .fetch_all(&mut *db_trans)
-    .await
-    {
-        Ok(val) => val,
-
-        Err(e) => {
-            error!("Failed to find users: {e}");
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(Error::new("Failed to check users!"));
-        }
-    };
-
-    let mut users_too_low = Vec::<String>::new();
-    let mut users_too_high = Vec::<String>::new();
-
-    for user in users {
-        if user.money as usize > state.settings.accounts.upper_limit {
-            users_too_high.push(user.nickname.clone())
-        }
-
-        if user.money < state.settings.accounts.lower_limit {
-            users_too_low.push(user.nickname.clone())
-        }
-    }
-
-    if !users_too_low.is_empty() {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(CreateTransactionError::TooLittleMoneyError(users_too_low));
-    }
-
-    if !users_too_high.is_empty() {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(CreateTransactionError::TooMuchMoneyError(users_too_high));
-    }
 
     match db_trans.commit().await {
         Ok(_) => {}
