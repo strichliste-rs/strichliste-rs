@@ -70,9 +70,7 @@ pub fn View() -> impl IntoView {
                 </a>
             </div>
             {InvisibleScanInput()}
-            <div class="col-span-9 pr-7">
-                {ShowUsers()}
-            </div>
+            <div class="col-span-9 pr-7">{ShowUsers()}</div>
         </div>
     }
 }
@@ -134,27 +132,27 @@ pub fn ShowUsers() -> impl IntoView {
     let user_data = Resource::new(move || {}, |_| get_all_users());
 
     view! {
-        <Suspense
-            fallback=move ||view! { <h1>"Loading users..."</h1>}
-        >
-            { move || {
-
-                let users = match user_data.get(){
+        <Suspense fallback=move || {
+            view! { <h1>"Loading users..."</h1> }
+        }>
+            {move || {
+                let users = match user_data.get() {
                     Some(users) => users,
                     None => {
-                        return view!{
-                        <p class="bg-red-400 text-white text-center">"Failed to fetch users"</p>
-                    }.into_any();
+                        return view! {
+                            <p class="bg-red-400 text-white text-center">"Failed to fetch users"</p>
+                        }
+                            .into_any();
                     }
                 };
-
-                let users = match users{
+                let users = match users {
                     Ok(users) => users,
                     Err(err) => {
                         let error = err.to_string();
-                    return view!{
-                        <p class="text-red-900">"Failed to fetch users: "{error}</p>
-                    }.into_any();
+                        return view! {
+                            <p class="text-red-900">"Failed to fetch users: "{error}</p>
+                        }
+                            .into_any();
                     }
                 };
 
@@ -162,28 +160,31 @@ pub fn ShowUsers() -> impl IntoView {
 
                 // store.cached_users().writer().unwrap().append(&mut users.clone());
 
-                view!{
+                view! {
                     <div class="grid">
-                    // manual fix, idk why tailwind does not take grid-cols-[repeat(auto-fill, minmax(8rem, 1fr))]
-                    <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));">
-                        {
-                            users.into_iter().map(|user| {
+                        // manual fix, idk why tailwind does not take grid-cols-[repeat(auto-fill, minmax(8rem, 1fr))]
+                        <div
+                            class="grid gap-5"
+                            style="grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));"
+                        >
+                            {users
+                                .into_iter()
+                                .map(|user| {
+                                    let id = user.id;
 
-                                let id = user.id;
-
-                                view!{
-                                    <a href=format!("/user/{}", id)>
-                                        <UserPreview user/>
-                                    </a>
-                                }
-                            }).collect_view().into_any()
-                        }
+                                    view! {
+                                        <a href=format!("/user/{}", id)>
+                                            <UserPreview user />
+                                        </a>
+                                    }
+                                })
+                                .collect_view()
+                                .into_any()}
+                        </div>
                     </div>
-                    </div>
-                }.into_any()
-
-            }
-        }
+                }
+                    .into_any()
+            }}
         </Suspense>
     }
 }
@@ -193,10 +194,13 @@ pub fn UserPreview(user: User) -> impl IntoView {
     view! {
         <div class="flex flex-col bg-[#2e3d4d] gap-2 rounded-[10px] py-2">
             <p class="text-center text-white">{user.nickname.clone()}</p>
-            <p class="text-center"
-                class=("text-red-500", move || {user.money.value < 0})
-                class=("text-green-500", move ||{user.money.value >= 0})
-            >{Money::format_eur_diff_value(user.money.value)}</p>
+            <p
+                class="text-center"
+                class=("text-red-500", move || { user.money.value < 0 })
+                class=("text-green-500", move || { user.money.value >= 0 })
+            >
+                {Money::format_eur_diff_value(user.money.value)}
+            </p>
         </div>
     }
 }

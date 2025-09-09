@@ -68,7 +68,7 @@ async fn main() {
 
     let db = match db::DB::new(path.to_str().unwrap()).await {
         Ok(db) => db,
-        Err(err) =>{
+        Err(err) => {
             error!("Failed to create database: {},", err.to_string());
             exit(1);
         }

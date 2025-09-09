@@ -7,16 +7,13 @@ use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
     models::{Money, PageRequestParams, PageResponseParams, Transaction, TransactionType, UserId},
-    routes::user::{
-        components::{
-            icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
-            transaction_view::{get_group_members, server::get_user_transactions, UndoTransaction},
-        },
+    routes::user::components::{
+        icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
+        transaction_view::{get_group_members, server::get_user_transactions, UndoTransaction},
     },
 };
 
 use crate::routes::user::MoneyArgs;
-
 
 #[component]
 pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
@@ -24,96 +21,94 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     let user_id_string = match params.read_untracked().get("id") {
         Some(s) => s,
         None => {
-            return view! {
-                <p class="text-red-500">"Failed to obtain id from url"</p>
-            }
-            .into_any();
+            return view! { <p class="text-red-500">"Failed to obtain id from url"</p> }.into_any();
         }
     };
 
-    let user_id = match user_id_string.parse::<i64>(){
+    let user_id = match user_id_string.parse::<i64>() {
         Ok(user_id) => UserId(user_id),
         Err(_) => {
-            return view! {
-            <p class="text-red-500">"Failed to convert id to a number!"</p>
-        }
-        .into_any();
+            return view! { <p class="text-red-500">"Failed to convert id to a number!"</p> }
+                .into_any();
         }
     };
 
-    let previous_transactions_presonse_params: RwSignal<Option<PageResponseParams>> = RwSignal::new(None); 
-    let transaction_data = OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
+    let previous_transactions_presonse_params: RwSignal<Option<PageResponseParams>> =
+        RwSignal::new(None);
+    let transaction_data =
+        OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
 
     let transaction_signal = arguments.transactions;
     let error_signal = arguments.error;
     let money_signal = arguments.money;
 
     view! {
-        <Suspense
-            fallback=move || view!{<p class="text-white text-center p-5">"Loading transactions"</p>}
-        >
-        {
-            move || {
-                let transactions = match transaction_data.get(){
+        <Suspense fallback=move || {
+            view! { <p class="text-white text-center p-5">"Loading transactions"</p> }
+        }>
+            {move || {
+                let transactions = match transaction_data.get() {
                     Some(transactions) => transactions,
                     None => {
-                        return view!{
-                        <p class="text-white bg-red-400 text-center">"Failed to fetch transactions"</p>
-                    }.into_any();
+                        return view! {
+                            <p class="text-white bg-red-400 text-center">
+                                "Failed to fetch transactions"
+                            </p>
+                        }
+                            .into_any();
                     }
                 };
-
-                let mut transactions = match transactions{
+                let mut transactions = match transactions {
                     Ok(transactions) => transactions.items,
                     Err(err) => {
                         let msg = match err {
-                        ServerFnError::ServerError(msg) => msg,
-                        _ => "Failed to fetch transactions".to_string()
-                    };
-
-                    return view! {
-                        <p class="text-white text-center bg-red-400">"Failed to fetch users because: "{msg}</p>
-                    }.into_any();
+                            ServerFnError::ServerError(msg) => msg,
+                            _ => "Failed to fetch transactions".to_string(),
+                        };
+                        return view! {
+                            <p class="text-white text-center bg-red-400">
+                                "Failed to fetch users because: "{msg}
+                            </p>
+                        }
+                            .into_any();
                     }
-                    
                 };
-
-                transactions.sort_by(|a, b| {
-                    b.timestamp.cmp(&a.timestamp)
-                });
-
-
+                transactions.sort_by(|a, b| { b.timestamp.cmp(&a.timestamp) });
                 let el = NodeRef::<leptos::html::Div>::new();
-                transaction_signal.write().append(&mut transactions.into_iter().collect::<Vec<Transaction>>());
+                transaction_signal
+                    .write()
+                    .append(&mut transactions.into_iter().collect::<Vec<Transaction>>());
                 Effect::new(move |_| {
-                    
-                let _ = use_infinite_scroll_with_options(el, move |_| async move {
-                    let next_params = previous_transactions_presonse_params.with_untracked(|p| PageResponseParams::next_params(*p, 100));
-                    if let Some(params) = next_params{
-                        
-                    let mut data = get_user_transactions(user_id, params).await;
-                    match data{
-                        Ok(mut data) => {
-                    transaction_signal.update(|d| d.append(&mut data.items));
-                    previous_transactions_presonse_params.set(Some(data.params));
-                    }
-
-                      ,
-                        Err(e) => console_log(&e.to_string()),
-                    }
-
-                    }
-
-
-                },
-                    UseInfiniteScrollOptions::default().distance(20.0).interval(1.0)
-                );
+                    let _ = use_infinite_scroll_with_options(
+                        el,
+                        move |_| async move {
+                            let next_params = previous_transactions_presonse_params
+                                .with_untracked(|p| PageResponseParams::next_params(*p, 100));
+                            if let Some(params) = next_params {
+                                let mut data = get_user_transactions(user_id, params).await;
+                                match data {
+                                    Ok(mut data) => {
+                                        transaction_signal.update(|d| d.append(&mut data.items));
+                                        previous_transactions_presonse_params
+                                            .set(Some(data.params));
+                                    }
+                                    Err(e) => console_log(&e.to_string()),
+                                }
+                            }
+                        },
+                        UseInfiniteScrollOptions::default().distance(20.0).interval(1.0),
+                    );
                 });
+
                 view! {
                     <div class="pl-4 text-[1.25em] h-[800px] w-full overflow-y-scroll" node_ref=el>
                         <For
                             each=move || transaction_signal.get()
-                            key=|transaction| (transaction.id, transaction.is_undone_signal.get(), transaction.timestamp)
+                            key=|transaction| (
+                                transaction.id,
+                                transaction.is_undone_signal.get(),
+                                transaction.timestamp,
+                            )
                             let:child
                         >
                             {format_transaction(&child, user_id, error_signal, money_signal)}
@@ -121,9 +116,8 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
 
                     </div>
                 }
-                .into_any()
-            }
-        }
+                    .into_any()
+            }}
 
         </Suspense>
     }
@@ -163,151 +157,150 @@ pub fn format_transaction(
     };
 
     view! {
-        <div class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
+        <div
+            class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
             class=("line-through", undo_signal.get())
         >
-        {
-            match transaction.t_type {
-                TransactionType::Withdraw => view!{
-                    <p class="text-red-400"
-                    >"-"{transaction.money.format_eur()}</p>
-                    <p></p>
-
-                }.into_any(),
-
-                TransactionType::Deposit => view!{
-                    <p class="text-green-500"
-                    >{transaction.money.format_eur_diff()}</p>
-                    <p></p>
-
-                }.into_any(),
-
-                TransactionType::Bought(_) => {
-                    view!{
+            {match transaction.t_type {
+                TransactionType::Withdraw => {
+                    view! {
                         <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
-                        <p class="text-white"><ArticleBasketIcon class="inline"/>" "{transaction.description.clone().unwrap_or("".to_string())}</p>
-                    }.into_any()
-                },
-
-                
-                TransactionType::SentAndReceived(_received_group) => {
-                    todo!()
+                        <p></p>
+                    }
+                        .into_any()
                 }
+                TransactionType::Deposit => {
 
-                TransactionType::Received(group)
-                | TransactionType::Sent(group) => {
+                    view! {
+                        <p class="text-green-500">{transaction.money.format_eur_diff()}</p>
+                        <p></p>
+                    }
+                        .into_any()
+                }
+                TransactionType::Bought(_) => {
+
+                    view! {
+                        <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
+                        <p class="text-white">
+                            <ArticleBasketIcon class="inline" />
+                            " "
+                            {transaction.description.clone().unwrap_or("".to_string())}
+                        </p>
+                    }
+                        .into_any()
+                }
+                TransactionType::SentAndReceived(_received_group) => todo!(),
+                TransactionType::Received(group) | TransactionType::Sent(group) => {
                     let transaction = transaction.clone();
                     let group_members_resource = OnceResource::new(get_group_members(group.0));
                     let money_value = match transaction.t_type {
                         TransactionType::Received(_) => transaction.money.value,
                         TransactionType::Sent(_) => -transaction.money.value,
-                        _ => unreachable!()
+                        _ => unreachable!(),
                     };
 
-                    view!{
-                        {
-                            if money_value < 0 {
-                                view!{
-                                    <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
-                                }.into_any()
-                            } else {
-                                view!{
-                                    <p class="text-green-500">"+"{transaction.money.format_eur()}</p>
-                                }.into_any()
+                    view! {
+                        {if money_value < 0 {
+                            view! {
+                                <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
                             }
-                        }
-                        <Suspense
-                            fallback=move || view!{<p>"Loading users"</p>}
-                        >
-                        {
-                            move || group_members_resource.get().map(|group_members| {
-                                match group_members {
-                                    Ok(members) => {
-                                        view!{
-                                            <p class="text-white flex items-center">
-                                                {
-                                                    if money_value < 0 {
-                                                        view!{
-                                                            <RightArrowIcon class="w-[2rem]"/> {members.join(", ")}
-                                                        }.into_any()
-                                                    } else {
-                                                        view!{
-                                                            <LeftArrowIcon class="w-[2rem]"/> {members.join(", ")}
-                                                        }.into_any()
-                                                    }
+                                .into_any()
+                        } else {
+                            view! {
+                                <p class="text-green-500">"+"{transaction.money.format_eur()}</p>
+                            }
+                                .into_any()
+                        }}
+                        <Suspense fallback=move || {
+                            view! { <p>"Loading users"</p> }
+                        }>
+                            {move || {
+                                group_members_resource
+                                    .get()
+                                    .map(|group_members| {
+                                        match group_members {
+                                            Ok(members) => {
+                                                view! {
+                                                    <p class="text-white flex items-center">
+                                                        {if money_value < 0 {
+                                                            view! {
+                                                                <RightArrowIcon class="w-[2rem]" />
+                                                                {members.join(", ")}
+                                                            }
+                                                                .into_any()
+                                                        } else {
+                                                            view! {
+                                                                <LeftArrowIcon class="w-[2rem]" />
+                                                                {members.join(", ")}
+                                                            }
+                                                                .into_any()
+                                                        }}
+                                                    </p>
                                                 }
-                                            </p>
-                                        }.into_any()
-                                    },
-                                    Err(error) => {
-                                        let message = match error {
-                                            ServerFnError::ServerError(msg) => msg,
-                                            _ => error.to_string()
-                                        };
+                                                    .into_any()
+                                            }
+                                            Err(error) => {
+                                                let message = match error {
+                                                    ServerFnError::ServerError(msg) => msg,
+                                                    _ => error.to_string(),
+                                                };
 
-                                        view!{
-                                            <p class="text-red-400">"Failed to fetch members: "{message}</p>
-                                        }.into_any()
-                                    },
-                                }
-                            })
-                        }
+                                                view! {
+                                                    <p class="text-red-400">
+                                                        "Failed to fetch members: "{message}
+                                                    </p>
+                                                }
+                                                    .into_any()
+                                            }
+                                        }
+                                    })
+                            }}
                         </Suspense>
-                    }.into_any()
-                },
-            }
-        }
-        {
-            move || match undo_signal.get() {
-                true => {
-                    view!{
-                        <p class="text-white">{date_string.clone()}</p>
-                    }.into_any()
-                },
+                    }
+                        .into_any()
+                }
+            }}
+            {move || match undo_signal.get() {
+                true => view! { <p class="text-white">{date_string.clone()}</p> }.into_any(),
                 false => {
-
-                    // grace period for undoing transactions
-                    // if transaction is already undone, only show the date regardless of grace period
                     if diff.num_minutes() > 2 {
-                        view!{
-                            <p class="text-white">{date_string.clone()}</p>
-                        }.into_any()
+
+                        // grace period for undoing transactions
+                        // if transaction is already undone, only show the date regardless of grace period
+                        view! { <p class="text-white">{date_string.clone()}</p> }
+                            .into_any()
                     } else {
                         view! {
                             <ActionForm action=undo_action>
-                                <input type="hidden" name="user_id" value={user_id.0}/>
-                                <input type="hidden" name="transaction_id" value={transaction_id}/>
-                                <input type="submit" class="text-white" value="Undo"/>
+                                <input type="hidden" name="user_id" value=user_id.0 />
+                                <input type="hidden" name="transaction_id" value=transaction_id />
+                                <input type="submit" class="text-white" value="Undo" />
                             </ActionForm>
-                        }.into_any()
+                        }
+                            .into_any()
                     }
                 }
-            }
-        }
-        {
-
-            move || match undo_action.value().get() {
-                    None => {},
-                    Some(response) => {
-                        match response {
-                            Ok(_) => {
-                                undo_signal.set(true);
-                                money_signal.update(|value| value.value -= money);
-                                console_log("Set signal to true");
-                                error_write.set(String::new());
-                            },
-                            Err(e) => {
-                                let msg = match e {
-                                    ServerFnError::ServerError(msg) => msg,
-                                    _ => e.to_string(),
-                                };
-
-                                error_write.set(msg);
-                            }
+            }}
+            {move || match undo_action.value().get() {
+                None => {}
+                Some(response) => {
+                    match response {
+                        Ok(_) => {
+                            undo_signal.set(true);
+                            money_signal.update(|value| value.value -= money);
+                            console_log("Set signal to true");
+                            error_write.set(String::new());
+                        }
+                        Err(e) => {
+                            let msg = match e {
+                                ServerFnError::ServerError(msg) => msg,
+                                _ => e.to_string(),
+                            };
+                            error_write.set(msg);
                         }
                     }
                 }
-        }
+            }}
         </div>
     }
 }

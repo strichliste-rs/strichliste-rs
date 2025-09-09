@@ -1,24 +1,32 @@
-self: system: {
+self: system:
+{
   lib,
   config,
   pkgs,
   ...
-}: let
-  inherit (lib) mkOption types mkEnableOption mkIf;
+}:
+let
+  inherit (lib)
+    mkOption
+    types
+    mkEnableOption
+    mkIf
+    ;
 
   cfg = config.services.strichliste-rs;
 
-  mkSubmoduleOption = sub-cfg:
+  mkSubmoduleOption =
+    sub-cfg:
     mkOption {
-      default = {};
-      type = types.submodule {options = sub-cfg;};
+      default = { };
+      type = types.submodule { options = sub-cfg; };
     };
 
-  mkSoundListOption = options:
-    mkOption {type = types.listOf types.path;} // options;
+  mkSoundListOption = options: mkOption { type = types.listOf types.path; } // options;
 
   statedirDefaultDir = "/var/lib/strichliste-rs";
-in {
+in
+{
   options.services.strichliste-rs = {
     enable = mkEnableOption "enable strichliste-rs service";
 
@@ -51,7 +59,9 @@ in {
         };
 
         lower_limit = mkOption {
-          type = types.int // {check = value: value <= 0;};
+          type = types.int // {
+            check = value: value <= 0;
+          };
           description = "The lower account limit in cents. Must be <= 0.";
         };
       };
@@ -59,18 +69,18 @@ in {
       sounds = mkSubmoduleOption {
         failed = mkSoundListOption {
           description = "Sounds that play when a transaction fails";
-          default = [./public/sounds/wobble.wav];
+          default = [ ./public/sounds/wobble.wav ];
         };
 
         generic = mkSoundListOption {
           description = "Sounds that play when a transaction succeeds";
-          default = [./public/sounds/kaching.wav];
+          default = [ ./public/sounds/kaching.wav ];
         };
 
         articles = mkOption {
           description = "Sounds that play when a specific article is bought";
           type = types.attrsOf (types.listOf types.path);
-          default = {};
+          default = { };
           example = ''
             {
               Spezi = [
@@ -92,14 +102,15 @@ in {
     };
   };
 
-  config = let
-    config-file = pkgs.writers.writeYAML "config.yaml" cfg.settings;
-  in
+  config =
+    let
+      config-file = pkgs.writers.writeYAML "config.yaml" cfg.settings;
+    in
     mkIf cfg.enable {
       systemd.services."strichliste-rs" = lib.mkMerge [
         {
           description = "Strichliste-rs: A digital tally sheet";
-          wantedBy = ["multi-user.target"];
+          wantedBy = [ "multi-user.target" ];
           serviceConfig = {
             Environment = [
               "LEPTOS_SITE_ROOT=${cfg.package}/bin/site"

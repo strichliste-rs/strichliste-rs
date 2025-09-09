@@ -16,4 +16,3 @@ jobs:
       - name: Build package
         run: |
           nix build -L
-        

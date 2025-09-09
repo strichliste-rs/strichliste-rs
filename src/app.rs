@@ -12,14 +12,14 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <AutoReload options=options.clone() />
-                <HydrationScripts options/>
-                <MetaTags/>
+                <HydrationScripts options />
+                <MetaTags />
             </head>
             <body class="bg-[#25333f]">
-                <App/>
+                <App />
             </body>
         </html>
     }
@@ -36,25 +36,30 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/strichliste-rs.css"/>
+        <Stylesheet id="leptos" href="/pkg/strichliste-rs.css" />
 
         // sets the document title
-        <Title text="Strichliste-rs"/>
+        <Title text="Strichliste-rs" />
 
         {routes::navbar::View()}
 
         // content for this welcome page
         <Router>
-            <Routes fallback=|| view!{ <h1 class="text-white text-center bg-red-400">"Page not found!"</h1>}>
-                <Route path=path!("/") view=routes::home::View/>
-                <Route path=path!("/user/create") view=routes::user::Create/>
-                <Route path=path!("/user/:id") view=routes::user::ShowUser/>
-                <Route path=path!("/user/:id/settings") view=routes::user::settings::Show/>
-                <Route path=path!("/user/:id/transactions") view=routes::user::extra_transactions::Show/>
-                <Route path=path!("/user/:id/send_money") view=routes::user::send_money::Show/>
-                <Route path=path!("/articles") view=routes::articles::View/>
-                <Route path=path!("/articles/create") view=routes::articles::Create/>
-                <Route path=path!("/articles/:article_id") view=routes::articles::Edit/>
+            <Routes fallback=|| {
+                view! { <h1 class="text-white text-center bg-red-400">"Page not found!"</h1> }
+            }>
+                <Route path=path!("/") view=routes::home::View />
+                <Route path=path!("/user/create") view=routes::user::Create />
+                <Route path=path!("/user/:id") view=routes::user::ShowUser />
+                <Route path=path!("/user/:id/settings") view=routes::user::settings::Show />
+                <Route
+                    path=path!("/user/:id/transactions")
+                    view=routes::user::extra_transactions::Show
+                />
+                <Route path=path!("/user/:id/send_money") view=routes::user::send_money::Show />
+                <Route path=path!("/articles") view=routes::articles::View />
+                <Route path=path!("/articles/create") view=routes::articles::Create />
+                <Route path=path!("/articles/:article_id") view=routes::articles::Edit />
             </Routes>
         </Router>
     }

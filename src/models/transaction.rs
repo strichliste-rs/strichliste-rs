@@ -217,10 +217,11 @@ where
                 (true, true) => sender,
                 (true, false) => sender,
                 (false, true) => receiver,
-                (false, false) => return Err(DBError::new(
-                    "invalid state when converting TransactionDB to Transaction either sender or reciever must be group id",
-                )),
-
+                (false, false) => {
+                    return Err(DBError::new(
+                        "invalid state when converting TransactionDB to Transaction either sender or reciever must be group id",
+                    ));
+                }
             },
             is_undone,
             t_type: {
@@ -230,13 +231,15 @@ where
                     (_, DBGROUP_AUFLADUNG_ID) => TransactionType::Withdraw,
                     (_, DBGROUP_SNACKBAR_ID) => TransactionType::Bought(t_type_data.unwrap()),
                     (_, _) => match (is_sender, is_receiver) {
-                                (true, true) => TransactionType::SentAndReceived(receiver),
-                                (true, false) => TransactionType::Sent(receiver),
-                                (false, true) => TransactionType::Received(sender),
-                                (false, false) => return Err(DBError::new(
-                                    "invalid state when converting TransactionDB to Transaction either sender or reciever must be group id",
-                                )),
-                                }
+                        (true, true) => TransactionType::SentAndReceived(receiver),
+                        (true, false) => TransactionType::Sent(receiver),
+                        (false, true) => TransactionType::Received(sender),
+                        (false, false) => {
+                            return Err(DBError::new(
+                                "invalid state when converting TransactionDB to Transaction either sender or reciever must be group id",
+                            ));
+                        }
+                    },
                 }
             },
             money: money.into(),
