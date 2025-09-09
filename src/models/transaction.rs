@@ -2,7 +2,11 @@ use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
 #[cfg(feature = "ssr")]
-use crate::models::{Page, PageRequestParams};
+use crate::{
+    backend::Settings,
+    models::{Page, PageRequestParams},
+    routes::user::CreateTransactionError,
+};
 
 #[cfg(feature = "ssr")]
 use super::UserId;
@@ -521,13 +525,18 @@ impl Transaction {
         t_type: TransactionType,
         description: Option<String>,
         money: Money,
-    ) -> DatabaseResponse<DatabaseId>
+        settings: &Settings,
+    ) -> Result<DatabaseId, CreateTransactionError>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        type Error = CreateTransactionError;
         use tracing::trace;
 
-        use crate::models::User;
+        use crate::{
+            backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
+            models::{User, UserDB},
+        };
 
         let t_type_data = match t_type {
             TransactionType::Bought(id) => Some(id),
@@ -548,7 +557,7 @@ impl Transaction {
 
         let transaction_db = match TransactionDB::get(&mut *conn, t_id).await? {
             Some(val) => val,
-            None => return Err(DBError::new("Failed to find newly created transaction")),
+            None => return Err(Error::new("Failed to find newly created transaction")),
         };
 
         let (sender_group, receiver_group) = (
@@ -562,7 +571,7 @@ impl Transaction {
         for sender in sender_group.members.iter() {
             let user_send = match User::get(&mut *conn, UserId(sender.id)).await? {
                 Some(val) => val,
-                None => return Err(DBError::new("Failed to find User")),
+                None => return Err(Error::new("Failed to find User")),
             };
 
             senders.push(user_send);
@@ -571,7 +580,7 @@ impl Transaction {
         for receiver in receiver_group.members.iter() {
             let user_recv = match User::get(&mut *conn, UserId(receiver.id)).await? {
                 Some(val) => val,
-                None => return Err(DBError::new("Failed to find User")),
+                None => return Err(Error::new("Failed to find User")),
             };
 
             receivers.push(user_recv);
@@ -631,6 +640,73 @@ impl Transaction {
 
                 full_cost += 1;
             }
+        }
+
+        // fetch all Users which are involved in the transaction and have invalid account limits
+        let users = sqlx::query_as!(
+            UserDB,
+            "
+                select
+                    distinct Users.*
+                from
+                    UserGroupMap
+                join
+                    Users on Users.id = UserGroupMap.uid
+                join
+                    Transactions
+                where
+                    (UserGroupMap.gid = Transactions.sender or UserGroupMap.gid = Transactions.receiver)
+                    and Transactions.id = ?
+                    and Users.id != ?
+                    and Users.id != ?
+            ",
+            transaction_db.id,
+            DBUSER_AUFLADUNG_ID.0,
+            DBUSER_SNACKBAR_ID.0,
+        ).fetch_all(&mut *conn).await.map_err(DBError::new)?;
+
+        let mut users_too_low = Vec::<String>::new();
+        let mut users_too_high = Vec::<String>::new();
+
+        let transaction_will_add_money = match t_type {
+            TransactionType::Deposit => true,
+            TransactionType::Withdraw => false,
+            TransactionType::Bought(_) => false,
+            TransactionType::Received(_) => true,
+            TransactionType::Sent(_) => false,
+            TransactionType::SentAndReceived(_) => {
+                // we'd have to actually do math here to figure this out
+                // 'false' is probably good enough
+                // this will only be a problem, if you have too much money, send and receive money and you profit from that transaction
+                false
+            }
+        };
+
+        for user in users {
+            if user.money as usize > settings.accounts.upper_limit {
+                if !transaction_will_add_money {
+                    // allow users to loose money
+                    continue;
+                }
+                users_too_high.push(user.nickname.clone())
+            }
+
+            if user.money < settings.accounts.lower_limit {
+                if transaction_will_add_money {
+                    // allow users to get out of debt
+                    continue;
+                }
+
+                users_too_low.push(user.nickname.clone())
+            }
+        }
+
+        if !users_too_low.is_empty() {
+            return Err(CreateTransactionError::TooLittleMoneyError(users_too_low));
+        }
+
+        if !users_too_high.is_empty() {
+            return Err(CreateTransactionError::TooMuchMoneyError(users_too_high));
         }
 
         Ok(transaction_db.id)

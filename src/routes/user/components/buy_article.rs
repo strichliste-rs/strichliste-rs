@@ -70,23 +70,16 @@ pub async fn buy_article_by_id(
         }
     };
 
-    let transaction_id = match Transaction::create(
+    let transaction_id = Transaction::create(
         &mut *db_trans,
         user_group,
         DBGROUP_SNACKBAR_ID,
         crate::models::TransactionType::Bought(article_id),
         Some(article.name.clone()),
         article.cost,
+        &state.settings,
     )
-    .await
-    {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to create transaction: {}", e);
-            return Err(ServerFnError::new("Failed to create transaction"));
-        }
-    };
+    .await?;
 
     let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
         Ok(Some(o)) => o,
