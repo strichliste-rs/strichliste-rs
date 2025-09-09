@@ -42,6 +42,19 @@ in {
     };
 
     settings = mkSubmoduleOption {
+      accounts = mkSubmoduleOption {
+        upper_limit = mkOption {
+          type = types.ints.unsigned;
+          description =
+            "The upper account limit in cents. If set to 0, it will be disabled.";
+        };
+
+        lower_limit = mkOption {
+          type = types.int // { check = (value: value <= 0); };
+          description = "The lower account limit in cents. Must be <= 0.";
+        };
+      };
+
       sounds = mkSubmoduleOption {
         failed = mkSoundListOption {
           description = "Sounds that play when a transaction fails";
