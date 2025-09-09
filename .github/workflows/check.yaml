@@ -17,3 +17,14 @@ jobs:
       - name: check package
         run: |
           nix flake check
+      - name: Generate format diff
+        if: failure()
+        run: |
+          nix fmt
+          git diff --exit-code > patch.diff
+      - name: Upload format patch diff
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: format-patch-diff
+          path: patch.diff
