@@ -1,7 +1,7 @@
-mod article;
+mod article_core;
 mod article_cost;
 mod article_sounds;
 mod barcode;
-pub use article::*;
+pub use article_core::*;
 pub use article_sounds::*;
 pub use barcode::*;

@@ -1,8 +1,13 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use tracing::{debug, error, warn};
 
-use crate::{models::{User, UserId}, routes::user::get_user};
+use crate::{models::{UserId}, routes::user::get_user};
+
+#[cfg(feature = "ssr")]
+use {
+tracing::{debug, error, warn},
+    crate::models::User
+};
 
 #[server]
 pub async fn update_user(id: UserId, nickname: String, card_number: String) -> Result<(), ServerFnError> {

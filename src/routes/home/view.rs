@@ -1,5 +1,6 @@
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
+#[cfg(feature = "ssr")]
 use tracing::{debug, error};
 
 use crate::models::{Money, User};
@@ -13,9 +14,9 @@ pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {
 
     let response_opts: ResponseOptions = expect_context();
 
-    let users = match User::get_all(&*state.db.lock().await).await{
+    let users = match User::get_all(&*state.db.lock().await).await {
         Ok(users) => users,
-        Err(err) =>{
+        Err(err) => {
             let err = err.to_string();
             error!("Could not fetch users: {}", err);
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
@@ -41,9 +42,9 @@ pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>,
         return Ok(None);
     }
 
-    let user = match User::get_by_card_number(&*state.db.lock().await, barcode_string).await{
+    let user = match User::get_by_card_number(&*state.db.lock().await, barcode_string).await {
         Ok(user) => user,
-        Err(err) =>{
+        Err(err) => {
             let err = err.to_string();
             error!("Could not fetch user: {}", err);
             response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
@@ -90,18 +91,15 @@ pub fn InvisibleScanInput() -> impl IntoView {
             }
 
             spawn_local(async move {
-                let user = match get_user_by_barcode(scan_input.clone()).await{
+                let user = match get_user_by_barcode(scan_input.clone()).await {
                     Ok(user) => user,
-                    Err(err) =>{
-                        console_log(&format!(
-                        "Failed to fetch user by barcode: {}",
-                        err.to_string()
-                        ));
+                    Err(err) => {
+                        console_log(&format!("Failed to fetch user by barcode: {}", err));
                         return;
                     }
                 };
 
-                let user = match user{
+                let user = match user {
                     Some(user) => user,
                     None => {
                         console_log(&format!("There is no user with barcode \"{scan_input}\""));

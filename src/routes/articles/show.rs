@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+#[cfg(feature = "ssr")]
 use tracing::error;
 
 use crate::models::Article;

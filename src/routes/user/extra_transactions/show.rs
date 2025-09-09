@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use leptos::{html, prelude::*};
 use leptos_router::hooks::use_params_map;
 
