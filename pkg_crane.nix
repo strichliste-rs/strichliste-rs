@@ -18,7 +18,7 @@ let
   version = toml.package.version;
 
   rustTarget = pkgs.rust-bin.stable.latest.minimal.override {
-    extensions = [ "rust-src" ];
+    extensions = [ "rust-src" "clippy" ];
     targets = [ "wasm32-unknown-unknown" ];
   };
 
@@ -94,5 +94,20 @@ let
       cp -r ${frontend}/site $out/bin/
     '';
   };
+  cargoClippyExtraArgsCommon = "--all-targets -- --deny warnings";
+  clippyFrontend = craneLib.cargoClippy (commonArgs // {
+    cargoArtifacts =  frontendArtifacts;
+          cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
+  });
+  clippyServer = craneLib.cargoClippy (commonArgs // {
+    cargoArtifacts = serverArtifacts;
+              cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
+  });
 
-in package
+in
+{
+  packages.default = package;
+  checks = {
+    inherit clippyFrontend clippyServer;
+  };
+}

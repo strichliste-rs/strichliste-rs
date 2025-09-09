@@ -53,8 +53,9 @@
           DATABASE_URL = "sqlite:tmp/db.sqlite";
         };
 
-        packages.default = (pkgs.callPackage ./pkg_crane.nix {
+      } //
+         (pkgs.callPackage ./pkg_crane.nix {
           inherit name version inputs toml;
-        });
-      });
+        })
+  );
 }
