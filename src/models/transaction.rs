@@ -1,12 +1,13 @@
-use std::collections::HashMap;
-
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
 #[cfg(feature = "ssr")]
 use crate::models::{Page, PageRequestParams};
 
-use super::{DatabaseId, GroupId, Money, UserId};
+#[cfg(feature = "ssr")]
+use super::UserId;
+
+use super::{DatabaseId, GroupId, Money};
 
 #[cfg(feature = "ssr")]
 use {
@@ -444,6 +445,7 @@ impl Transaction {
         page_request_params: PageRequestParams,
     ) -> DatabaseResponse<Page<Self>> {
         use itertools::Itertools;
+        use std::collections::HashMap;
 
         use crate::models::PageResponseParams;
         let mut conn = db.get_conn().await?;

@@ -15,7 +15,7 @@ pub fn invisible_scan_input(
     let input_signal = RwSignal::new(String::new());
     let last_input = RwSignal::new(Utc::now());
 
-    let timediff = move || ((Utc::now() - last_input.get()).num_seconds() > 30);
+    let timediff = move || (Utc::now() - last_input.get()).num_seconds() > 30;
 
     let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
         "Enter" => {

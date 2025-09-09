@@ -1,4 +1,4 @@
-use std::{path::PathBuf, rc::Rc, str::FromStr};
+use std::{rc::Rc};
 
 use leptos::{prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
 use leptos_router::hooks::use_params_map;
@@ -7,14 +7,18 @@ use thiserror::Error;
 use tracing::error;
 
 use crate::{
-     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId}, routes::{articles::get_article, user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
+     models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId},
+     routes::{user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input}}}
 ;
+
 #[cfg(feature = "ssr")]
 use {
     crate::backend::db::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     crate::models::{Group, UserDB},
     crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
     rand::seq::IndexedRandom,
+    crate::routes::articles::get_article,
+    std::{path::PathBuf, str::FromStr}
 };
 
 use super::components::transaction_view::ShowTransactions;

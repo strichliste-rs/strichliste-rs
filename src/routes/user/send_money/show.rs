@@ -1,14 +1,17 @@
 use leptos::{html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
-use tracing::error;
 
 use crate::{
-    models::{Money, Transaction, User, UserId},
+    models::UserId,
     routes::{home::get_all_users, user::get_user},
 };
 
 #[cfg(feature = "ssr")]
-use crate::models::{GroupDB, GroupId};
+use {
+    crate::models::{GroupDB, GroupId},
+    crate::models::{Money, Transaction, User},
+    tracing::error,
+};
 
 #[server]
 pub async fn send_money(

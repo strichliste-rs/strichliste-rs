@@ -89,13 +89,11 @@ impl TryFrom<String> for Money {
     type Error = MoneyParseError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         #[allow(unused_assignments)] // euros is never read
-        let (euros, cents): (String, String) = (0.to_string(), 0.to_string());
-
         let string = value.replace(",", ".");
 
-        let (euros, mut cents) = match string.rsplit_once("."){
+        let (euros, mut cents) = match string.rsplit_once(".") {
             Some(split) => (split.0.to_string(), split.1.to_string()),
-            None => (string, cents)
+            None => (string, 0.to_string()),
         };
 
         if euros.is_empty() {
@@ -118,23 +116,23 @@ impl TryFrom<String> for Money {
             cents.push('0');
         }
 
-        let real_euros = match euros.parse::<i64>(){
+        let real_euros = match euros.parse::<i64>() {
             Ok(real_euros) => real_euros,
-            Err(_)=>{
+            Err(_) => {
                 return Err(MoneyParseError::InvalidEuros(format!(
-                "Failed to parse euros: {}",
-                euros
-            )));
+                    "Failed to parse euros: {}",
+                    euros
+                )));
             }
         };
 
-        let real_cents = match cents.parse::<i64>(){
+        let real_cents = match cents.parse::<i64>() {
             Ok(real_cents) => real_cents,
-            Err(_) =>{
+            Err(_) => {
                 return Err(MoneyParseError::InvalidCents(format!(
-                "Failed to parse cents: {}",
-                cents
-            )));
+                    "Failed to parse cents: {}",
+                    cents
+                )));
             }
         };
 

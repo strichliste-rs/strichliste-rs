@@ -1,7 +1,10 @@
 use leptos::prelude::*;
-use tracing::{debug, error};
 
-use crate::models::User;
+#[cfg(feature = "ssr")]
+use {
+    crate::models::User,
+    tracing::{debug, error},
+};
 
 #[server]
 pub async fn create_user(username: String) -> Result<(), ServerFnError> {

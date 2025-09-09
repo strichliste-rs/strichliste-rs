@@ -1,16 +1,14 @@
 use leptos::prelude::*;
-use tracing::{debug, error};
-
-use crate::models::{Article, Money};
 
 #[server]
 pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnError> {
     use crate::backend::ServerState;
-    let state: ServerState = expect_context();
-
+    use crate::models::{Article, Money};
     use axum::http::StatusCode;
     use leptos_axum::redirect;
     use leptos_axum::ResponseOptions;
+    use tracing::{debug, error};
+    let state: ServerState = expect_context();
 
     let response_opts: ResponseOptions = expect_context();
     debug!("Creating article!");

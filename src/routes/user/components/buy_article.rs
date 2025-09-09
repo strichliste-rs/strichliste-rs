@@ -1,18 +1,17 @@
 use std::rc::Rc;
 
 use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
-use tracing::error;
 
 use crate::{
     models::{play_sound, Article, Money, Transaction, UserId},
-    routes::{
-        articles::{get_all_articles, get_article},
-        user::MoneyArgs,
-    },
+    routes::{articles::get_all_articles, user::MoneyArgs},
 };
 
 #[cfg(feature = "ssr")]
-use crate::{backend::db::DBGROUP_SNACKBAR_ID, models::Group};
+use {
+    crate::{backend::db::DBGROUP_SNACKBAR_ID, models::Group, routes::articles::get_article},
+    tracing::error,
+};
 
 #[server]
 pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {

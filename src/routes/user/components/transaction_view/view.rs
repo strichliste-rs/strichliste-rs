@@ -6,7 +6,7 @@ use leptos_router::hooks::use_params_map;
 use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
-    models::{Money, Page, PageRequestParams, PageResponseParams, Transaction, TransactionType, User, UserId},
+    models::{Money, PageRequestParams, PageResponseParams, Transaction, TransactionType, UserId},
     routes::user::{
         components::{
             icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
@@ -88,7 +88,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 Effect::new(move |_| {
                     
                 let _ = use_infinite_scroll_with_options(el, move |_| async move {
-                    let next_params = previous_transactions_presonse_params.with_untracked(|p| PageResponseParams::next_params(p.clone(), 100));
+                    let next_params = previous_transactions_presonse_params.with_untracked(|p| PageResponseParams::next_params(*p, 100));
                     if let Some(params) = next_params{
                         
                     let mut data = get_user_transactions(user_id, params).await;

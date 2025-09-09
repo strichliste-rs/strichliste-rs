@@ -1,13 +1,15 @@
 use leptos::prelude::*;
-use tracing::{debug, error, trace, warn};
 
-use crate::{
-    models::{Money, Page, PageRequestParams, Transaction, TransactionType, User, UserId},
-    routes::user::get_user,
-};
+use crate::models::{Page, PageRequestParams, Transaction, UserId};
 
 #[cfg(feature = "ssr")]
-use crate::models::{Group, GroupId, TransactionDB};
+use {
+    crate::{
+        models::{Group, GroupId, Money, TransactionDB, User},
+        routes::user::get_user,
+    },
+    tracing::{debug, error, trace, warn},
+};
 
 #[server]
 pub async fn get_group_members(gid: i64) -> Result<Vec<String>, ServerFnError> {
@@ -55,17 +57,20 @@ pub async fn get_user_transactions(
     use leptos_axum::ResponseOptions;
     let response_opts: ResponseOptions = expect_context();
 
-    let transactions = match Transaction::get_user_transactions(&*state.db.lock().await, user_id, page_request_params).await{
+    let transactions = match Transaction::get_user_transactions(
+        &*state.db.lock().await,
+        user_id,
+        page_request_params,
+    )
+    .await
+    {
         Ok(transactions) => transactions,
-        Err(err) =>{
-        error!(
-            "Failed to fetch transactions: {}",
-            err.to_string()
-        );
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to fetch transactions!"));
+        Err(err) => {
+            error!("Failed to fetch transactions: {}", err.to_string());
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(ServerFnError::new("Failed to fetch transactions!"));
         }
-            };
+    };
 
     Ok(transactions)
 }
@@ -86,13 +91,13 @@ pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<()
 
     let user = get_user(user_id).await?;
 
-    let user = match user{
+    let user = match user {
         Some(user) => user,
         None => {
-        warn!("A user with id '{}' does not exist!", user_id);
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new("Invalid user!"));
-    }
+            warn!("A user with id '{}' does not exist!", user_id);
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(ServerFnError::new("Invalid user!"));
+        }
     };
 
     let db = state.db.lock().await;

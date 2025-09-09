@@ -4,10 +4,13 @@ use leptos::{
     prelude::*,
     task::spawn_local,
 };
-use leptos_router::hooks::use_params_map;
-use tracing::{debug, error};
+#[cfg(feature = "ssr")]
+use {
+    tracing::{debug, error},
+    crate::models::Money
+};
 
-use crate::models::{Article, Barcode, BarcodeDiff, Money};
+use crate::models::{Article, Barcode, BarcodeDiff};
 
 #[server]
 pub async fn get_article(article_id: i64) -> Result<Article, ServerFnError> {
@@ -131,6 +134,7 @@ pub async fn update_article(id: i64, name: String, cost: String, barcodes: Optio
 
 #[component]
 pub fn Edit() -> impl IntoView {
+use leptos_router::hooks::use_params_map;
     let params = use_params_map();
     let article_id_string = params
         .read_untracked()
