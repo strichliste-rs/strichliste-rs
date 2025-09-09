@@ -50,7 +50,7 @@ in {
         };
 
         lower_limit = mkOption {
-          type = types.int;
+          type = types.int // { check = (value: value <= 0); };
           description = "The lower account limit in cents. Must be <= 0.";
         };
       };
