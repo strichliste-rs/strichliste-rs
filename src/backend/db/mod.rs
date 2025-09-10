@@ -147,7 +147,6 @@ impl DB {
         debug!("Linked group to user: DBUSER_AUFLADUNG");
 
         // no need ?
-        // GroupDB::_create(&mut *transaction, DBUSER_AUFLADUNG_ID).await?;
 
         transaction.commit().await.map_err(From::from)
     }

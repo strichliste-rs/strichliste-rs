@@ -31,64 +31,6 @@ pub enum TransactionType {
     SentAndReceived(GroupId), // sending group is stored as group_id in Transaction
 }
 
-// #[cfg_attr(feature = "ssr", derive(sqlx::Type))]
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-// pub enum TransactionTypeDB {
-//     DEPOSIT,
-//     WITHDRAW,
-//     BOUGHT,
-//     RECEIVED,
-//     SENT,
-// }
-
-// impl From<&TransactionType> for TransactionTypeDB {
-//     fn from(value: &TransactionType) -> Self {
-//         match value {
-//             TransactionType::DEPOSIT => Self::DEPOSIT,
-//             TransactionType::WITHDRAW => Self::WITHDRAW,
-//             TransactionType::BOUGHT(_) => Self::BOUGHT,
-//             TransactionType::RECEIVED(_) => Self::RECEIVED,
-//             TransactionType::SENT(_) => Self::SENT,
-//         }
-//     }
-// }
-
-// impl From<TransactionType> for TransactionTypeDB {
-//     fn from(value: TransactionType) -> Self {
-//         match value {
-//             TransactionType::DEPOSIT => Self::DEPOSIT,
-//             TransactionType::WITHDRAW => Self::WITHDRAW,
-//             TransactionType::BOUGHT(_) => Self::BOUGHT,
-//             TransactionType::RECEIVED(_) => Self::RECEIVED,
-//             TransactionType::SENT(_) => Self::SENT,
-//         }
-//     }
-// }
-
-// impl From<(&TransactionTypeDB, Option<i64>)> for TransactionType {
-//     fn from(value: (&TransactionTypeDB, Option<i64>)) -> Self {
-//         match value.0 {
-//             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
-//             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-//             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-//             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
-//             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
-//         }
-//     }
-// }
-
-// impl From<(TransactionTypeDB, Option<i64>)> for TransactionType {
-//     fn from(value: (TransactionTypeDB, Option<i64>)) -> Self {
-//         match value.0 {
-//             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
-//             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-//             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-//             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
-//             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
-//         }
-//     }
-// }
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
@@ -103,38 +45,6 @@ pub struct TransactionDB {
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
 }
-
-// #[cfg(feature = "ssr")]
-// impl From<&Transaction> for TransactionDB {
-//     fn from(value: &Transaction) -> Self {
-//         let Transaction {
-//             id,
-//             user_id,
-//             is_undone,
-//             t_type,
-//             money,
-//             description,
-//             timestamp,
-//             is_undone_signal: _,
-//         } = value;
-
-//         TransactionDB {
-//             id: *id,
-//             user_id: *user_id,
-//             is_undone: *is_undone,
-//             t_type_data: match value.t_type {
-//                 TransactionType::SENT(var)
-//                 | TransactionType::BOUGHT(var)
-//                 | TransactionType::RECEIVED(var) => Some(var),
-//                 _ => None,
-//             },
-//             t_type: t_type.into(),
-//             money: (*money).value,
-//             description: description.clone(),
-//             timestamp: *timestamp,
-//         }
-//     }
-// }
 
 #[cfg(feature = "ssr")]
 impl From<Transaction> for TransactionDB {
