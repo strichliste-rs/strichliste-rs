@@ -486,23 +486,13 @@ impl Transaction {
             receivers.push(user_recv);
         }
 
-        let mut delta = HashMap::new();
+        let mut delta_map = HashMap::new();
 
         let mut full_cost = transaction_db.money;
         let cost_share = transaction_db.money / sender_group.members.len() as u64;
 
-        for user in senders.iter() {
-            _ = delta.insert(
-                user.clone(),
-                TransactionDelta {
-                    amount_pre: user.money.value,
-                    delta: 0,
-                },
-            );
-        }
-
-        for user in receivers.iter() {
-            _ = delta.insert(
+        for user in senders.iter().chain(receivers.iter()) {
+            _ = delta_map.insert(
                 user.clone(),
                 TransactionDelta {
                     amount_pre: user.money.value,
@@ -512,7 +502,7 @@ impl Transaction {
         }
 
         for sender in senders.iter() {
-            let user = match delta.get_mut(sender) {
+            let user = match delta_map.get_mut(sender) {
                 Some(user) => user,
                 None => {
                     error!("Failed to find user in HashMap where it should exist!");
@@ -526,7 +516,7 @@ impl Transaction {
 
         while full_cost > 0 {
             for sender in senders.iter_mut() {
-                let user = match delta.get_mut(sender) {
+                let user = match delta_map.get_mut(sender) {
                     Some(user) => user,
                     None => {
                         error!("Failed to find user in HashMap where it should exist!");
@@ -545,7 +535,7 @@ impl Transaction {
         let cost_share = transaction_db.money / receiver_group.members.len() as u64;
 
         for receiver in receivers.iter_mut() {
-            let user = match delta.get_mut(receiver) {
+            let user = match delta_map.get_mut(receiver) {
                 Some(user) => user,
                 None => {
                     error!("Failed to find user in HashMap where it should exist!");
@@ -558,7 +548,7 @@ impl Transaction {
 
         while full_cost < transaction_db.money {
             for receiver in receivers.iter_mut() {
-                let user = match delta.get_mut(receiver) {
+                let user = match delta_map.get_mut(receiver) {
                     Some(user) => user,
                     None => {
                         error!("Failed to find user in HashMap where it should exist!");
@@ -574,7 +564,7 @@ impl Transaction {
             }
         }
 
-        Ok(delta)
+        Ok(delta_map)
     }
 
     pub async fn create<T>(
