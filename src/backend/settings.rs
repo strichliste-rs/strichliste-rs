@@ -17,7 +17,7 @@ pub struct SoundSettings {
 
 #[derive(Deserialize, Debug)]
 pub struct AccountsSettings {
-    pub upper_limit: usize,
+    pub upper_limit: i64,
     pub lower_limit: i64,
 }
 

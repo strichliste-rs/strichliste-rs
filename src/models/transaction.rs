@@ -1,10 +1,13 @@
+#[cfg(feature = "ssr")]
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
 #[cfg(feature = "ssr")]
 use crate::{
     backend::Settings,
-    models::{Page, PageRequestParams},
+    models::{Page, PageRequestParams, User},
     routes::user::CreateTransactionError,
 };
 
@@ -35,63 +38,18 @@ pub enum TransactionType {
     SentAndReceived(GroupId), // sending group is stored as group_id in Transaction
 }
 
-// #[cfg_attr(feature = "ssr", derive(sqlx::Type))]
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-// pub enum TransactionTypeDB {
-//     DEPOSIT,
-//     WITHDRAW,
-//     BOUGHT,
-//     RECEIVED,
-//     SENT,
-// }
+#[cfg(feature = "ssr")]
+struct TransactionDelta {
+    amount_pre: i64,
+    delta: i64,
+}
 
-// impl From<&TransactionType> for TransactionTypeDB {
-//     fn from(value: &TransactionType) -> Self {
-//         match value {
-//             TransactionType::DEPOSIT => Self::DEPOSIT,
-//             TransactionType::WITHDRAW => Self::WITHDRAW,
-//             TransactionType::BOUGHT(_) => Self::BOUGHT,
-//             TransactionType::RECEIVED(_) => Self::RECEIVED,
-//             TransactionType::SENT(_) => Self::SENT,
-//         }
-//     }
-// }
-
-// impl From<TransactionType> for TransactionTypeDB {
-//     fn from(value: TransactionType) -> Self {
-//         match value {
-//             TransactionType::DEPOSIT => Self::DEPOSIT,
-//             TransactionType::WITHDRAW => Self::WITHDRAW,
-//             TransactionType::BOUGHT(_) => Self::BOUGHT,
-//             TransactionType::RECEIVED(_) => Self::RECEIVED,
-//             TransactionType::SENT(_) => Self::SENT,
-//         }
-//     }
-// }
-
-// impl From<(&TransactionTypeDB, Option<i64>)> for TransactionType {
-//     fn from(value: (&TransactionTypeDB, Option<i64>)) -> Self {
-//         match value.0 {
-//             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
-//             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-//             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-//             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
-//             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
-//         }
-//     }
-// }
-
-// impl From<(TransactionTypeDB, Option<i64>)> for TransactionType {
-//     fn from(value: (TransactionTypeDB, Option<i64>)) -> Self {
-//         match value.0 {
-//             TransactionTypeDB::DEPOSIT => Self::DEPOSIT,
-//             TransactionTypeDB::WITHDRAW => Self::WITHDRAW,
-//             TransactionTypeDB::BOUGHT => Self::BOUGHT(value.1.unwrap()),
-//             TransactionTypeDB::RECEIVED => Self::RECEIVED(value.1.unwrap().into()),
-//             TransactionTypeDB::SENT => Self::SENT(value.1.unwrap().into()),
-//         }
-//     }
-// }
+#[cfg(feature = "ssr")]
+impl TransactionDelta {
+    fn post_amount(&self) -> i64 {
+        self.amount_pre + self.delta
+    }
+}
 
 use serde::{Deserialize, Serialize};
 
@@ -107,38 +65,6 @@ pub struct TransactionDB {
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
 }
-
-// #[cfg(feature = "ssr")]
-// impl From<&Transaction> for TransactionDB {
-//     fn from(value: &Transaction) -> Self {
-//         let Transaction {
-//             id,
-//             user_id,
-//             is_undone,
-//             t_type,
-//             money,
-//             description,
-//             timestamp,
-//             is_undone_signal: _,
-//         } = value;
-
-//         TransactionDB {
-//             id: *id,
-//             user_id: *user_id,
-//             is_undone: *is_undone,
-//             t_type_data: match value.t_type {
-//                 TransactionType::SENT(var)
-//                 | TransactionType::BOUGHT(var)
-//                 | TransactionType::RECEIVED(var) => Some(var),
-//                 _ => None,
-//             },
-//             t_type: t_type.into(),
-//             money: (*money).value,
-//             description: description.clone(),
-//             timestamp: *timestamp,
-//         }
-//     }
-// }
 
 #[cfg(feature = "ssr")]
 impl From<Transaction> for TransactionDB {
@@ -518,6 +444,139 @@ impl Transaction {
         TransactionDB::set_undone(&mut *conn, self.id, new_value).await
     }
 
+    async fn get_transaction_delta<T>(
+        conn: &mut T,
+        sender_group: &Group,
+        receiver_group: &Group,
+        transaction_db: &TransactionDB,
+    ) -> Result<HashMap<User, TransactionDelta>, DBError>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        use crate::models::User;
+        use tracing::error;
+
+        let mut senders = Vec::<User>::new();
+        let mut receivers = Vec::<User>::new();
+
+        for sender in sender_group.members.iter() {
+            let user_send = match User::get(&mut *conn, UserId(sender.id)).await? {
+                Some(val) => val,
+                None => {
+                    error!("Failed to find a user that should exist! Id: {}", sender.id);
+                    return Err(DBError::new("Failed to find user"));
+                }
+            };
+
+            senders.push(user_send);
+        }
+
+        for receiver in receiver_group.members.iter() {
+            let user_recv = match User::get(&mut *conn, UserId(receiver.id)).await? {
+                Some(val) => val,
+                None => {
+                    error!(
+                        "Failed to find a user that should exist! Id: {}",
+                        receiver.id
+                    );
+                    return Err(DBError::new("Failed to find user"));
+                }
+            };
+
+            receivers.push(user_recv);
+        }
+
+        let mut delta = HashMap::new();
+
+        let mut full_cost = transaction_db.money;
+        let cost_share = transaction_db.money / sender_group.members.len() as u64;
+
+        for user in senders.iter() {
+            _ = delta.insert(
+                user.clone(),
+                TransactionDelta {
+                    amount_pre: user.money.value,
+                    delta: 0,
+                },
+            );
+        }
+
+        for user in receivers.iter() {
+            _ = delta.insert(
+                user.clone(),
+                TransactionDelta {
+                    amount_pre: user.money.value,
+                    delta: 0,
+                },
+            );
+        }
+
+        for sender in senders.iter() {
+            let user = match delta.get_mut(sender) {
+                Some(user) => user,
+                None => {
+                    error!("Failed to find user in HashMap where it should exist!");
+                    return Err(DBError::new("Failed to find user"));
+                }
+            };
+
+            user.delta -= cost_share as i64;
+            full_cost -= cost_share;
+        }
+
+        while full_cost > 0 {
+            for sender in senders.iter_mut() {
+                let user = match delta.get_mut(sender) {
+                    Some(user) => user,
+                    None => {
+                        error!("Failed to find user in HashMap where it should exist!");
+                        return Err(DBError::new("Failed to find user"));
+                    }
+                };
+                user.delta -= 1;
+                if full_cost == 0 {
+                    break;
+                }
+
+                full_cost -= 1;
+            }
+        }
+
+        let cost_share = transaction_db.money / receiver_group.members.len() as u64;
+
+        for receiver in receivers.iter_mut() {
+            let user = match delta.get_mut(receiver) {
+                Some(user) => user,
+                None => {
+                    error!("Failed to find user in HashMap where it should exist!");
+                    return Err(DBError::new("Failed to find user"));
+                }
+            };
+            user.delta += cost_share as i64;
+            full_cost += cost_share;
+        }
+
+        while full_cost < transaction_db.money {
+            for receiver in receivers.iter_mut() {
+                let user = match delta.get_mut(receiver) {
+                    Some(user) => user,
+                    None => {
+                        error!("Failed to find user in HashMap where it should exist!");
+                        return Err(DBError::new("Failed to find user"));
+                    }
+                };
+                user.delta += 1;
+                if full_cost == transaction_db.money {
+                    break;
+                }
+
+                full_cost += 1;
+            }
+        }
+
+        Ok(delta)
+    }
+
     pub async fn create<T>(
         conn: &mut T,
         sender: GroupId,
@@ -531,12 +590,6 @@ impl Transaction {
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
         type Error = CreateTransactionError;
-        use tracing::trace;
-
-        use crate::{
-            backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
-            models::{User, UserDB},
-        };
 
         let t_type_data = match t_type {
             TransactionType::Bought(id) => Some(id),
@@ -565,139 +618,39 @@ impl Transaction {
             Group::get(&mut *conn, GroupId(transaction_db.receiver)).await?,
         );
 
-        let mut senders = Vec::<User>::new();
-        let mut receivers = Vec::<User>::new();
-
-        for sender in sender_group.members.iter() {
-            let user_send = match User::get(&mut *conn, UserId(sender.id)).await? {
-                Some(val) => val,
-                None => return Err(Error::new("Failed to find User")),
-            };
-
-            senders.push(user_send);
-        }
-
-        for receiver in receiver_group.members.iter() {
-            let user_recv = match User::get(&mut *conn, UserId(receiver.id)).await? {
-                Some(val) => val,
-                None => return Err(Error::new("Failed to find User")),
-            };
-
-            receivers.push(user_recv);
-        }
-
-        let mut full_cost = transaction_db.money;
-        let cost_share = transaction_db.money / sender_group.members.len() as u64;
-
-        for sender in senders.iter_mut() {
-            sender
-                .add_money(
-                    &mut *conn,
-                    Money {
-                        value: -(cost_share as i64),
-                    },
-                )
-                .await?;
-
-            trace!("full_cost: {full_cost}");
-            full_cost -= cost_share;
-        }
-
-        while full_cost > 0 {
-            for sender in senders.iter_mut() {
-                sender.add_money(&mut *conn, Money { value: -1 }).await?;
-                trace!("full_cost: {full_cost}");
-                if full_cost == 0 {
-                    break;
-                }
-
-                full_cost -= 1;
-            }
-        }
-
-        let cost_share = transaction_db.money / receiver_group.members.len() as u64;
-
-        for receiver in receivers.iter_mut() {
-            receiver
-                .add_money(
-                    &mut *conn,
-                    Money {
-                        value: cost_share as i64,
-                    },
-                )
-                .await?;
-
-            full_cost += cost_share;
-        }
-
-        while full_cost < transaction_db.money {
-            for receiver in receivers.iter_mut() {
-                receiver.add_money(&mut *conn, Money { value: 1 }).await?;
-
-                if full_cost == transaction_db.money {
-                    break;
-                }
-
-                full_cost += 1;
-            }
-        }
-
-        // fetch all Users which are involved in the transaction and have invalid account limits
-        let users = sqlx::query_as!(
-            UserDB,
-            "
-                select
-                    distinct Users.*
-                from
-                    UserGroupMap
-                join
-                    Users on Users.id = UserGroupMap.uid
-                join
-                    Transactions
-                where
-                    (UserGroupMap.gid = Transactions.sender or UserGroupMap.gid = Transactions.receiver)
-                    and Transactions.id = ?
-                    and Users.id != ?
-                    and Users.id != ?
-            ",
-            transaction_db.id,
-            DBUSER_AUFLADUNG_ID.0,
-            DBUSER_SNACKBAR_ID.0,
-        ).fetch_all(&mut *conn).await.map_err(DBError::new)?;
+        let deltas = Transaction::get_transaction_delta(
+            &mut *conn,
+            &sender_group,
+            &receiver_group,
+            &transaction_db,
+        )
+        .await?;
 
         let mut users_too_low = Vec::<String>::new();
         let mut users_too_high = Vec::<String>::new();
 
-        let transaction_will_add_money = match t_type {
-            TransactionType::Deposit => true,
-            TransactionType::Withdraw => false,
-            TransactionType::Bought(_) => false,
-            TransactionType::Received(_) => true,
-            TransactionType::Sent(_) => false,
-            TransactionType::SentAndReceived(_) => {
-                // we'd have to actually do math here to figure this out
-                // 'false' is probably good enough
-                // this will only be a problem, if you have too much money, send and receive money and you profit from that transaction
-                false
-            }
-        };
+        for (key, value) in deltas.iter() {
+            use crate::backend::db::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID};
 
-        for user in users {
-            if user.money as usize > settings.accounts.upper_limit {
-                if !transaction_will_add_money {
+            if key.id.0 == DBUSER_AUFLADUNG_ID.0 || key.id.0 == DBUSER_SNACKBAR_ID.0 {
+                // don't do tracking on the system users
+                continue;
+            }
+
+            if value.post_amount() > settings.accounts.upper_limit {
+                if value.delta < 0 {
                     // allow users to loose money
                     continue;
                 }
-                users_too_high.push(user.nickname.clone())
-            }
 
-            if user.money < settings.accounts.lower_limit {
-                if transaction_will_add_money {
-                    // allow users to get out of debt
+                users_too_high.push(key.nickname.clone());
+            } else if value.post_amount() < settings.accounts.lower_limit {
+                if value.delta > 0 {
+                    // allow users to get money
                     continue;
                 }
 
-                users_too_low.push(user.nickname.clone())
+                users_too_low.push(key.nickname.clone());
             }
         }
 
@@ -707,6 +660,11 @@ impl Transaction {
 
         if !users_too_high.is_empty() {
             return Err(CreateTransactionError::TooMuchMoneyError(users_too_high));
+        }
+
+        for (mut key, value) in deltas.into_iter() {
+            key.add_money(&mut *conn, Money { value: value.delta })
+                .await?;
         }
 
         Ok(transaction_db.id)
