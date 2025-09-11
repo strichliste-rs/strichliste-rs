@@ -53,7 +53,7 @@ async fn main() {
             }
 
             if settings.accounts.upper_limit < 0 {
-                error!("Failed to parse config: accounts.upper:limit may not be negative!");
+                error!("Failed to parse config: accounts.upper_limit may not be negative!");
                 exit(1);
             }
 
