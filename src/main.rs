@@ -52,8 +52,13 @@ async fn main() {
                 exit(1);
             }
 
+            if settings.accounts.upper_limit < 0 {
+                error!("Failed to parse config: accounts.upper:limit may not be negative!");
+                exit(1);
+            }
+
             if settings.accounts.upper_limit == 0 {
-                settings.accounts.upper_limit = usize::MAX;
+                settings.accounts.upper_limit = i64::MAX;
             }
 
             settings

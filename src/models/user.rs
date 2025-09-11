@@ -18,7 +18,7 @@ use {
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub struct GroupId(pub DatabaseId);
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UserId(pub DatabaseId);
 
 impl fmt::Display for UserId {
@@ -241,7 +241,7 @@ impl UserDB {
         .map(|result| result.map(|elem| elem.card_number))
     }
 
-    async fn get<T>(conn: &mut T, id: i64) -> DatabaseResponse<Option<Self>>
+    pub async fn get<T>(conn: &mut T, id: i64) -> DatabaseResponse<Option<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -295,7 +295,7 @@ impl UserDB {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct User {
     pub id: UserId,
     pub nickname: String,
