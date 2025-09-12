@@ -9,6 +9,7 @@ pub fn View() -> impl IntoView {
                 <a href="/">"Strichliste"</a>
                 <a href="/inactive_users">"Inactive users"</a>
                 <a href="/articles">"Article list"</a>
+                <a href="/split_transaction">"Split transaction"</a>
             </div>
         </nav>
     }

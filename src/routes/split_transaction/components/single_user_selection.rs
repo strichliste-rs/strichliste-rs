@@ -1,0 +1,88 @@
+use leptos::{html, prelude::*};
+
+use crate::routes::{components::error_message::ErrorMessage, home::get_all_users};
+
+#[component]
+pub fn SelectSingleUser(
+    title: String,
+    input: RwSignal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let hidden_div_node_ref = NodeRef::<html::Div>::new();
+
+    let all_users_resource = OnceResource::new(get_all_users());
+
+    view! {
+        <Suspense fallback=move || {
+            view! { <p class="text-white text-center">"Loading users"</p> }
+        }>
+            {move || {
+                let all_users = match all_users_resource.get() {
+                    Some(Ok(value)) => value,
+                    _ => {
+                        return view! {
+                            <ErrorMessage error=String::from("Failed to fetch users!") />
+                        }
+                            .into_any();
+                    }
+                };
+
+                view! {
+                    <div class="flex h-screen bg-gray-900">
+                        <div class="w-full max-w-xs m-auto bg-indigo-100 rounded p-5">
+                            <div>
+                                <label class="block mb-2 text-indigo-500">{title.clone()}</label>
+                                <input
+                                    bind:value=input
+                                    autocomplete="off"
+                                    class="w-full p-2 mb-6 text-indigo-700 border-b-2 border-indigo-500 outline-none focus:bg-gray-300"
+                                    type="text"
+                                    name="to_user"
+                                />
+                            </div>
+                            <div
+                                class="flex flex-col items-center"
+                                class=("hidden", move || input.get().is_empty())
+                                node_ref=hidden_div_node_ref
+                            >
+                                {move || {
+                                    let search = input.get();
+                                    all_users
+                                        .iter()
+                                        .filter(|elem| {
+                                            elem.nickname
+                                                .to_lowercase()
+                                                .contains(&search.to_lowercase())
+                                        })
+                                        .map(|elem| {
+                                            let nickname = elem.nickname.clone();
+                                            let n_clone = nickname.clone();
+
+                                            view! {
+                                                <button
+                                                    class="bg-gray-400 text-white p-2 rounded"
+                                                    on:click=move |_| {
+                                                        input.set(n_clone.clone());
+                                                        hidden_div_node_ref
+                                                            .get()
+                                                            .map(|elem| {
+                                                                elem.class("hidden flex flex-col items-center")
+                                                            });
+                                                    }
+                                                >
+                                                    {nickname}
+                                                </button>
+                                            }
+                                        })
+                                        .collect_view()
+                                }}
+                            </div>
+                            {children()}
+                        </div>
+                    </div>
+                }
+                    .into_any()
+            }}
+        </Suspense>
+    }
+}
