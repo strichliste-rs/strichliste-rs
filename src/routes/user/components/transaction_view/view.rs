@@ -215,7 +215,10 @@ pub fn format_transaction(
                             view! { <p>"Loading users"</p> }
                         }>
                             {move || {
-                                let description = transaction.description.as_ref().map(|val| format!(": {val}"));
+                                let description = transaction
+                                    .description
+                                    .as_ref()
+                                    .map(|val| format!(": {val}"));
                                 group_members_resource
                                     .get()
                                     .map(|group_members| {
