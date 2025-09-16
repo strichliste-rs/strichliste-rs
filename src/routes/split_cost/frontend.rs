@@ -24,7 +24,7 @@ pub fn Show() -> impl IntoView {
         spawn_local(async move {
             if let Err(e) = split_cost(
                 primary_user.get(),
-                secondary_users.get(),
+                Some(secondary_users.get()),
                 money_input.get(),
                 description_input.get(),
             )
