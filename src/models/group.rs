@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use sqlx::{query, query_as, Executor};
 
 use crate::{
@@ -50,6 +51,26 @@ impl Group {
         }
 
         Ok(groups)
+    }
+
+    pub async fn get_group_id_for_multiple_users<T>(
+        conn: &mut T,
+        uids: &[UserId],
+    ) -> DatabaseResponse<GroupId>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        Ok(
+            match GroupDB::get_group_for_multiple_users_id(&mut *conn, uids).await? {
+                Some(val) => val.id,
+                None => {
+                    GroupDB::create_group_for_multiple_users_id(&mut *conn, uids)
+                        .await?
+                        .id
+                }
+            }
+            .into(),
+        )
     }
 }
 
@@ -205,6 +226,57 @@ impl GroupDB {
             None => Err(DBError::new(format!("Failed to find group: {}", gid.0))),
             Some(value) => Ok(value),
         }
+    }
+
+    pub async fn get_group_for_multiple_users_id<T>(
+        conn: &mut T,
+        user_ids: &[UserId],
+    ) -> DatabaseResponse<Option<Self>>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let count = user_ids.len() as i64;
+        let string = user_ids
+            .iter()
+            .map(|val| format!("{val}"))
+            .collect_vec()
+            .join(", ");
+
+        let group_id = query!(
+            "
+                select gid
+                from UserGroupMap
+                group by gid
+                having
+                    count(distinct uid) = ?
+                    and sum(case when uid not in (?) then 1 else 0 end) = 0
+                    and count(distinct case when uid in (?) then uid end) = ?
+            ",
+            count,
+            string,
+            string,
+            count
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(group_id.map(|val| GroupDB { id: val.gid }))
+    }
+
+    pub async fn create_group_for_multiple_users_id<T>(
+        conn: &mut T,
+        user_ids: &[UserId],
+    ) -> DatabaseResponse<Self>
+    where
+        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
+    {
+        let new_group = GroupDB::create(&mut *conn).await?;
+
+        for user in user_ids.iter() {
+            new_group.link_user(&mut *conn, user).await?;
+        }
+
+        Ok(new_group)
     }
 }
 
