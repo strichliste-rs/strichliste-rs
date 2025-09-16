@@ -32,7 +32,7 @@ pub fn SelectSingleUser(
                 view! {
                     <div class=format!("flex {}", extra_class.as_ref().map_or("", |v| v))>
                         <div class=format!(
-                            "max-w-xs m-auto bg-indigo-100 rounded p-5 {}",
+                            "bg-indigo-100 rounded p-5 {}",
                             extra_class.as_ref().map_or("", |v| v),
                         )>
                             <div>
