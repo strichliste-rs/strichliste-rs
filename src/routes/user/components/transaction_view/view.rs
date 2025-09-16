@@ -215,6 +215,7 @@ pub fn format_transaction(
                             view! { <p>"Loading users"</p> }
                         }>
                             {move || {
+                                let description = transaction.description.as_ref().map(|val| format!(": {val}"));
                                 group_members_resource
                                     .get()
                                     .map(|group_members| {
@@ -225,13 +226,13 @@ pub fn format_transaction(
                                                         {if money_value < 0 {
                                                             view! {
                                                                 <RightArrowIcon class="w-[2rem]" />
-                                                                {members.join(", ")}
+                                                                {members.join(", ") + &description.unwrap_or_default()}
                                                             }
                                                                 .into_any()
                                                         } else {
                                                             view! {
                                                                 <LeftArrowIcon class="w-[2rem]" />
-                                                                {members.join(", ")}
+                                                                {members.join(", ") + &description.unwrap_or_default()}
                                                             }
                                                                 .into_any()
                                                         }}
