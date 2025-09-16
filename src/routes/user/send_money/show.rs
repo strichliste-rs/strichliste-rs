@@ -64,7 +64,7 @@ pub async fn send_money(
         }
     };
 
-    let recipient = match User::get_by_nick(&mut *db_trns, to_user.clone()).await {
+    let recipient = match User::get_by_nick(&mut *db_trns, &to_user.clone()).await {
         Ok(val) => val,
         Err(e) => {
             error!("Failed to lookup db: {e}");

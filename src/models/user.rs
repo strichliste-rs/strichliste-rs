@@ -276,7 +276,7 @@ impl UserDB {
         .map_err(From::from)
     }
 
-    async fn get_by_nick<T>(conn: &mut T, nick: String) -> DatabaseResponse<Option<Self>>
+    async fn get_by_nick<T>(conn: &mut T, nick: &String) -> DatabaseResponse<Option<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -355,7 +355,7 @@ impl User {
         }
 
         let group = GroupDB::create(&mut *transaction).await?;
-        group.link_user(&mut *transaction, id).await?;
+        group.link_user(&mut *transaction, &id).await?;
 
         transaction.commit().await.map_err(DBError::new)?;
         Ok(id)
@@ -433,7 +433,7 @@ impl User {
         }
     }
 
-    pub async fn get_by_nick<T>(conn: &mut T, name: String) -> DatabaseResponse<Option<User>>
+    pub async fn get_by_nick<T>(conn: &mut T, name: &String) -> DatabaseResponse<Option<User>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {

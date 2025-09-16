@@ -119,7 +119,7 @@ impl GroupDB {
         .map(From::from)
     }
 
-    pub async fn link_user<T>(&self, conn: &mut T, user_id: UserId) -> DatabaseResponse<()>
+    pub async fn link_user<T>(&self, conn: &mut T, user_id: &UserId) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
