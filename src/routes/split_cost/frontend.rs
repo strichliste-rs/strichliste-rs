@@ -35,19 +35,13 @@ pub fn Show() -> impl IntoView {
         })
     };
     view! {
-        {
-            move || {
-                let msg = error_signal.get();
-                match msg.len() {
-                    0 => ().into_any(),
-                    _ => {
-                        view! {
-                            <ErrorMessage error=msg/>
-                        }.into_any()
-                    }
-                }
+        {move || {
+            let msg = error_signal.get();
+            match msg.len() {
+                0 => ().into_any(),
+                _ => view! { <ErrorMessage error=msg /> }.into_any(),
             }
-        }
+        }}
         <div class="flex flex-col items-center text-[1.25em]">
             <div class="grid grid-cols-2 py-2 w-fit h-fit justify-center gap-2">
                 <SelectSingleUser
@@ -81,7 +75,12 @@ pub fn Show() -> impl IntoView {
                     </div>
                 </div>
                 <div class="flex items-center justify-center bg-indigo-100 rounded p-2">
-                    <button class="w-full bg-indigo-700 hover:bg-pink-700 text-white p-3 rounded" on:click=on_click>"Split cost"</button>
+                    <button
+                        class="w-full bg-indigo-700 hover:bg-pink-700 text-white p-3 rounded"
+                        on:click=on_click
+                    >
+                        "Split cost"
+                    </button>
                 </div>
             </div>
         </div>

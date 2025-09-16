@@ -1,0 +1,18 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select gid\n                from UserGroupMap\n                group by gid\n                having\n                    count(distinct uid) = ?\n                    and sum(case when uid not in (?) then 1 else 0 end) = 0\n                    and count(distinct case when uid in (?) then uid end) = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "gid",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [false]
+  },
+  "hash": "5cf567cf1e177604d045d4fce222c3b124b405aca7308f78b08d5dd5b6d09947"
+}
