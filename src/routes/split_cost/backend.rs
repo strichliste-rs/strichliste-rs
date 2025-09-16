@@ -60,7 +60,7 @@ impl From<DBError> for SplitCostError {
 #[server]
 pub async fn split_cost(
     primary_user: String,
-    secondary_users_input: Vec<String>,
+    secondary_users_input: Option<Vec<String>>,
     money: String,
     description: String,
 ) -> Result<(), SplitCostError> {
@@ -83,6 +83,16 @@ pub async fn split_cost(
         response_opts.set_status(StatusCode::BAD_REQUEST);
         return Err(SplitCostError::MayNotBeEmptyError("User".to_string()));
     }
+
+    let secondary_users_input = match secondary_users_input {
+        Some(val) => val,
+        None => {
+            response_opts.set_status(StatusCode::BAD_REQUEST);
+            return Err(SplitCostError::MayNotBeEmptyError(
+                "Other users".to_string(),
+            ));
+        }
+    };
 
     if secondary_users_input.is_empty() {
         response_opts.set_status(StatusCode::BAD_REQUEST);
