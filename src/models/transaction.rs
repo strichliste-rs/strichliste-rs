@@ -424,6 +424,11 @@ impl Transaction {
 
                 transaction.money = price.into();
                 transaction.description = Some(article_name);
+            } else if let TransactionType::Sent(_) = transaction.t_type {
+                let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
+
+                // this shows the user his transferred amount when a group transaction was made
+                transaction.money.value /= sender_group.members.len() as i64;
             }
         }
 
