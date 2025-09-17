@@ -397,38 +397,44 @@ impl Transaction {
         let mut article_cache = HashMap::<i64, (i64, String)>::new();
 
         for transaction in transactions.iter_mut() {
-            if let TransactionType::Bought(article_id) = transaction.t_type {
-                let (price, article_name) = match article_cache.get(&article_id) {
-                    None => {
-                        let article = match ArticleDB::get_single(&mut *conn, article_id).await? {
-                            None => continue, // Article got nuked?,
-                            Some(value) => value,
-                        };
+            match transaction.t_type {
+                TransactionType::Bought(article_id) => {
+                    let (price, article_name) = match article_cache.get(&article_id) {
+                        None => {
+                            let article =
+                                match ArticleDB::get_single(&mut *conn, article_id).await? {
+                                    None => continue, // Article got nuked?,
+                                    Some(value) => value,
+                                };
 
-                        let price = ArticleDB::get_effective_cost(
-                            &mut *conn,
-                            article_id,
-                            transaction.timestamp,
-                        )
-                        .await?;
+                            let price = ArticleDB::get_effective_cost(
+                                &mut *conn,
+                                article_id,
+                                transaction.timestamp,
+                            )
+                            .await?;
 
-                        let result = (price, article.name);
+                            let result = (price, article.name);
 
-                        _ = article_cache.insert(article_id, result.clone());
+                            _ = article_cache.insert(article_id, result.clone());
 
-                        result
-                    }
+                            result
+                        }
 
-                    Some(value) => value.clone(),
-                };
+                        Some(value) => value.clone(),
+                    };
 
-                transaction.money = price.into();
-                transaction.description = Some(article_name);
-            } else if let TransactionType::Sent(_) = transaction.t_type {
-                let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
+                    transaction.money = price.into();
+                    transaction.description = Some(article_name);
+                }
+                TransactionType::Sent(_) => {
+                    let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
 
-                // this shows the user his transferred amount when a group transaction was made
-                transaction.money.value /= sender_group.members.len() as i64;
+                    // this shows the user his transferred amount when a group transaction was made
+                    transaction.money.value /= sender_group.members.len() as i64;
+                }
+
+                _ => {}
             }
         }
 

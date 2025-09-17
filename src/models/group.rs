@@ -140,7 +140,7 @@ impl GroupDB {
         .map(From::from)
     }
 
-    pub async fn link_user<T>(&self, conn: &mut T, user_id: &UserId) -> DatabaseResponse<()>
+    pub async fn link_user<T>(&self, conn: &mut T, user_id: UserId) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -236,11 +236,9 @@ impl GroupDB {
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
         let count = user_ids.len() as i64;
-        let string = user_ids
-            .iter()
-            .map(|val| format!("{val}"))
-            .collect_vec()
-            .join(", ");
+        let user_ids_string: String =
+            Itertools::intersperse(user_ids.iter().map(ToString::to_string), String::from(", "))
+                .collect();
 
         let group_id = query!(
             "
@@ -253,8 +251,8 @@ impl GroupDB {
                     and count(distinct case when uid in (?) then uid end) = ?
             ",
             count,
-            string,
-            string,
+            user_ids_string,
+            user_ids_string,
             count
         )
         .fetch_optional(&mut *conn)
@@ -273,7 +271,7 @@ impl GroupDB {
         let new_group = GroupDB::create(&mut *conn).await?;
 
         for user in user_ids.iter() {
-            new_group.link_user(&mut *conn, user).await?;
+            new_group.link_user(&mut *conn, *user).await?;
         }
 
         Ok(new_group)

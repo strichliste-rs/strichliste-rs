@@ -355,7 +355,7 @@ impl User {
         }
 
         let group = GroupDB::create(&mut *transaction).await?;
-        group.link_user(&mut *transaction, &id).await?;
+        group.link_user(&mut *transaction, id).await?;
 
         transaction.commit().await.map_err(DBError::new)?;
         Ok(id)

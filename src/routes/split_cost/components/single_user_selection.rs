@@ -2,6 +2,8 @@ use leptos::{html, prelude::*};
 
 use crate::routes::{components::error_message::ErrorMessage, home::get_all_users};
 
+const MAX_USER_DISPLAY_LIMIT: usize = 5;
+
 #[component]
 pub fn SelectSingleUser(
     title: String,
@@ -73,7 +75,7 @@ pub fn SelectSingleUser(
                                                 }
                                             }
                                         })
-                                        .take(5)
+                                        .take(MAX_USER_DISPLAY_LIMIT)
                                         .map(|elem| {
                                             let nickname = elem.nickname.clone();
                                             let n_clone = nickname.clone();
