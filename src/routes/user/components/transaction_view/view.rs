@@ -219,23 +219,27 @@ pub fn format_transaction(
                                     .description
                                     .as_ref()
                                     .map(|val| format!(": {val}"));
+                                let fmt_description = |other: String, description: Option<String>| {
+                                    other + &description.unwrap_or_default()
+                                };
                                 group_members_resource
                                     .get()
                                     .map(|group_members| {
                                         match group_members {
                                             Ok(members) => {
+
                                                 view! {
                                                     <p class="text-white flex items-center">
                                                         {if money_value < 0 {
                                                             view! {
                                                                 <RightArrowIcon class="w-[2rem]" />
-                                                                {members.join(", ") + &description.unwrap_or_default()}
+                                                                {fmt_description(members.join(", "), description)}
                                                             }
                                                                 .into_any()
                                                         } else {
                                                             view! {
                                                                 <LeftArrowIcon class="w-[2rem]" />
-                                                                {members.join(", ") + &description.unwrap_or_default()}
+                                                                {fmt_description(members.join(", "), description)}
                                                             }
                                                                 .into_any()
                                                         }}

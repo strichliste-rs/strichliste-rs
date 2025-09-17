@@ -126,7 +126,7 @@ impl DB {
         let group_a = GroupDB::_create(&mut *transaction, DBGROUP_AUFLADUNG_ID.0).await?;
 
         match group_k
-            .link_user(&mut *transaction, &DBUSER_SNACKBAR_ID)
+            .link_user(&mut *transaction, DBUSER_SNACKBAR_ID)
             .await
         {
             Ok(_) => {}
@@ -136,7 +136,7 @@ impl DB {
         };
         debug!("Linked group to user: DBUSER_KASSE");
         match group_a
-            .link_user(&mut *transaction, &DBUSER_AUFLADUNG_ID)
+            .link_user(&mut *transaction, DBUSER_AUFLADUNG_ID)
             .await
         {
             Ok(_) => {}
