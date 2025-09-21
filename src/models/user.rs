@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::model::Money;
 #[cfg(feature = "ssr")]
-use crate::models::Page;
+use crate::model::Page;
 
 use super::DatabaseId;
 
@@ -386,7 +386,6 @@ impl User {
         limit: usize,
     ) -> DatabaseResponse<Page<TransactionDB>> {
         use crate::model::PageRequestParams;
-
 
         let mut conn = db.get_conn().await?;
         TransactionDB::get_user_transactions(&mut *conn, self.id, PageRequestParams::new(limit))

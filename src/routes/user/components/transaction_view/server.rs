@@ -1,8 +1,8 @@
 use leptos::prelude::*;
 
 use crate::{
-    model::PageRequestParams,
-    models::{Page, Transaction, UserId},
+    model::{Page, PageRequestParams},
+    models::{Transaction, UserId},
 };
 
 #[cfg(feature = "ssr")]
