@@ -1,8 +1,8 @@
 use itertools::Itertools;
-use sqlx::{query, query_as, Executor};
+use sqlx::{query, Executor};
 
 use crate::{
-    backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB},
+    backend::database::{DatabaseResponse, DatabaseType, GroupDB},
     models::{DatabaseId, UserDB},
 };
 
@@ -81,29 +81,6 @@ impl From<DatabaseId> for GroupDB {
 }
 
 impl GroupDB {
-    pub async fn get<T>(conn: &mut T, gid: GroupId) -> DatabaseResponse<Self>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        let group = query_as!(
-            Self,
-            "
-                select *
-                from Groups
-                where id = ?
-            ",
-            gid.0
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        match group {
-            None => Err(DBError::new(format!("Failed to find group: {}", gid.0))),
-            Some(value) => Ok(value),
-        }
-    }
-
     pub async fn get_group_for_multiple_users_id<T>(
         conn: &mut T,
         user_ids: &[UserId],
