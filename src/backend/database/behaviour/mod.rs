@@ -13,6 +13,7 @@ pub mod article_set_name;
 pub mod article_set_price;
 pub mod group_create;
 pub mod group_get;
+pub mod group_get_group_for_multiple_users;
 pub mod group_get_groups;
 pub mod group_get_members;
 pub mod group_get_single_group;
