@@ -4,8 +4,6 @@ pub use page::*;
 pub use transaction::*;
 pub use user::*;
 
-#[cfg(feature = "ssr")]
-mod group;
 mod money;
 mod transaction;
 mod user;

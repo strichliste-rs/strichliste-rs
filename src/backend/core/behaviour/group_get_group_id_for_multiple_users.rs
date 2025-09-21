@@ -1,11 +1,13 @@
+#![cfg(feature = "ssr")]
 use sqlx::Executor;
 
-use crate::backend::{
-    core::Group,
-    database::{DatabaseResponse, DatabaseType, GroupDB},
+use crate::{
+    backend::{
+        core::Group,
+        database::{DatabaseResponse, DatabaseType, GroupDB},
+    },
+    models::{GroupId, UserId},
 };
-
-use super::{GroupId, UserId};
 
 impl Group {
     pub async fn get_group_id_for_multiple_users<T>(
