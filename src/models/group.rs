@@ -1,18 +1,11 @@
 use sqlx::Executor;
 
-use crate::{
-    backend::database::{DatabaseResponse, DatabaseType, GroupDB},
-    models::UserDB,
+use crate::backend::{
+    core::Group,
+    database::{DatabaseResponse, DatabaseType, GroupDB},
 };
 
 use super::{GroupId, UserId};
-
-#[derive(Debug)]
-pub struct Group {
-    #[allow(dead_code)]
-    pub id: GroupId,
-    pub members: Vec<UserDB>,
-}
 
 impl Group {
     pub async fn get<T>(conn: &mut T, gid: GroupId) -> DatabaseResponse<Self>

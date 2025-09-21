@@ -6,7 +6,10 @@ use leptos::prelude::RwSignal;
 
 #[cfg(feature = "ssr")]
 use crate::{
-    backend::{core::Settings, database::ArticleDB},
+    backend::{
+        core::{Group, Settings},
+        database::ArticleDB,
+    },
     models::{Page, PageRequestParams, User},
     routes::user::CreateTransactionError,
 };
@@ -21,7 +24,6 @@ use {
     crate::backend::database::{DBError, DB},
     crate::backend::database::{DatabaseResponse, DatabaseType},
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::models::Group,
     itertools::Itertools,
     sqlx::query,
     sqlx::{query_as, Executor},
@@ -429,6 +431,8 @@ impl Transaction {
                     transaction.description = Some(article_name);
                 }
                 TransactionType::Sent(_) => {
+                    use crate::backend::core::Group;
+
                     let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
 
                     // this shows the user his transferred amount when a group transaction was made

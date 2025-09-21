@@ -5,7 +5,8 @@ use crate::models::{Page, PageRequestParams, Transaction, UserId};
 #[cfg(feature = "ssr")]
 use {
     crate::{
-        models::{Group, GroupId, Money, TransactionDB, User},
+        backend::core::Group,
+        models::{GroupId, Money, TransactionDB, User},
         routes::user::get_user,
     },
     tracing::{debug, error, trace, warn},

@@ -6,8 +6,9 @@ use crate::routes::user::CreateTransactionError;
 
 #[cfg(feature = "ssr")]
 use {
+    crate::backend::core::Group,
     crate::backend::database::DBError,
-    crate::models::{Group, GroupId, Money, Transaction, User, UserId},
+    crate::models::{GroupId, Money, Transaction, User, UserId},
     leptos_axum::redirect,
     tracing::error,
 };
