@@ -13,3 +13,4 @@ pub mod article_set_name;
 pub mod article_set_price;
 pub mod group_create;
 pub mod group_get_members;
+pub mod group_link_user;
