@@ -1,4 +1,4 @@
-use crate::{model::Money, models::MoneyParseError};
+use crate::model::{Money, MoneyParseError};
 
 impl TryFrom<String> for Money {
     type Error = MoneyParseError;
