@@ -8,13 +8,6 @@ use crate::backend::{
 use super::{GroupId, UserId};
 
 impl Group {
-    pub async fn get_user_group_id<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<GroupId>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        Ok(GroupDB::get_single_group(conn, uid).await?.into())
-    }
-
     #[allow(dead_code)]
     pub async fn get_groups<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<Vec<Self>>
     where
