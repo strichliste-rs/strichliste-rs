@@ -12,6 +12,7 @@ pub mod article_remove_barcode;
 pub mod article_set_name;
 pub mod article_set_price;
 pub mod group_create;
+pub mod group_get_groups;
 pub mod group_get_members;
 pub mod group_get_single_group;
 pub mod group_link_user;
