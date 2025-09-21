@@ -11,4 +11,5 @@ pub mod article_get_sounds;
 pub mod article_remove_barcode;
 pub mod article_set_name;
 pub mod article_set_price;
+pub mod group_create;
 pub mod group_get_members;
