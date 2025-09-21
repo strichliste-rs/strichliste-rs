@@ -10,7 +10,6 @@ use {
     super::TransactionDB,
     crate::backend::database::{DBError, DB},
     crate::backend::database::{DatabaseResponse, DatabaseType},
-    crate::models::GroupDB,
     sqlx::query,
     sqlx::query_as,
     sqlx::Executor,
@@ -343,6 +342,8 @@ impl User {
         nickname: String,
         card_number: Option<String>,
     ) -> DatabaseResponse<UserId> {
+        use crate::backend::database::GroupDB;
+
         let mut transaction = db.get_conn_transaction().await?;
 
         let id = UserDB::insert(&mut *transaction, nickname).await?;

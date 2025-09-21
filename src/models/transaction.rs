@@ -21,7 +21,7 @@ use {
     crate::backend::database::{DBError, DB},
     crate::backend::database::{DatabaseResponse, DatabaseType},
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::models::{Group, GroupDB},
+    crate::models::Group,
     itertools::Itertools,
     sqlx::query,
     sqlx::{query_as, Executor},
@@ -356,6 +356,8 @@ impl Transaction {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        use crate::backend::database::GroupDB;
+
         let transaction_db = TransactionDB::get(conn, id).await?;
 
         let transaction_db = match transaction_db {
@@ -379,7 +381,7 @@ impl Transaction {
         use itertools::Itertools;
         use std::collections::HashMap;
 
-        use crate::models::PageResponseParams;
+        use crate::{backend::database::GroupDB, models::PageResponseParams};
         let mut conn = db.get_conn().await?;
 
         let user_groups = GroupDB::get_groups(&mut *conn, user_id).await?;

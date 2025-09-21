@@ -5,11 +5,9 @@ use sqlx::{
 };
 use tracing::{debug, info};
 
-use crate::{
-    backend::database::{
-        DBError, DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID, DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID,
-    },
-    models::GroupDB,
+use crate::backend::database::{
+    DBError, GroupDB, DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID, DBUSER_AUFLADUNG_ID,
+    DBUSER_SNACKBAR_ID,
 };
 
 pub struct DB {

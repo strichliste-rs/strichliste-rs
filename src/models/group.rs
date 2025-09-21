@@ -2,7 +2,7 @@ use itertools::Itertools;
 use sqlx::{query, query_as, Executor};
 
 use crate::{
-    backend::database::{DBError, DatabaseResponse, DatabaseType},
+    backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB},
     models::{DatabaseId, UserDB},
 };
 
@@ -72,10 +72,6 @@ impl Group {
             .into(),
         )
     }
-}
-
-pub struct GroupDB {
-    pub id: DatabaseId,
 }
 
 impl From<DatabaseId> for GroupDB {

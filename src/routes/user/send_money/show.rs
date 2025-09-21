@@ -8,7 +8,8 @@ use crate::{
 
 #[cfg(feature = "ssr")]
 use {
-    crate::models::{GroupDB, GroupId},
+    crate::backend::database::GroupDB,
+    crate::models::GroupId,
     crate::models::{Money, Transaction, User},
     tracing::error,
 };
