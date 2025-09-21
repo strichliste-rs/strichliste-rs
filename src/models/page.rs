@@ -1,41 +1,15 @@
 use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
-pub struct PageRequestParams {
-    pub offset: usize,
-    pub limit: usize,
-}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Page<T> {
     pub params: PageResponseParams,
     pub items: Vec<T>,
 }
 
+use crate::model::PageResponseParams;
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
-pub struct PageResponseParams {
+pub struct PageRequestParams {
     pub offset: usize,
-    pub len: usize,
-    pub total: usize,
-}
-
-impl PageResponseParams {
-    pub fn next_params(prev: Option<Self>, limit: usize) -> Option<PageRequestParams> {
-        match prev {
-            Some(prev) => {
-                if prev.has_next() {
-                    Some(PageRequestParams {
-                        offset: prev.offset + prev.len,
-                        limit,
-                    })
-                } else {
-                    None
-                }
-            }
-            None => Some(PageRequestParams { offset: 0, limit }),
-        }
-    }
-    pub fn has_next(&self) -> bool {
-        self.offset + self.len < self.total
-    }
+    pub limit: usize,
 }
 
 impl<T> Page<T> {

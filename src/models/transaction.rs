@@ -384,7 +384,7 @@ impl Transaction {
         use itertools::Itertools;
         use std::collections::HashMap;
 
-        use crate::{backend::database::GroupDB, models::PageResponseParams};
+        use crate::{backend::database::GroupDB, model::PageResponseParams};
         let mut conn = db.get_conn().await?;
 
         let user_groups = GroupDB::get_groups(&mut *conn, user_id).await?;
