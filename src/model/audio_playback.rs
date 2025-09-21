@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::Money;
+use crate::model::Money;
+
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum AudioPlayback {

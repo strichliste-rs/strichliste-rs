@@ -7,7 +7,7 @@ use crate::{
         core::Article,
         database::{ArticleDB, DatabaseResponse, DatabaseType},
     },
-    models::Money,
+    model::Money,
 };
 
 impl Article {

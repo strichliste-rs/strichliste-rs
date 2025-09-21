@@ -1,12 +1,11 @@
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
-use crate::backend::core::Article;
+use crate::{backend::core::Article, model::Money};
 
 #[server]
 pub async fn create_article(name: String, cost: String) -> Result<(), ServerFnError> {
     use crate::backend::core::ServerState;
-    use crate::models::Money;
     use axum::http::StatusCode;
     use leptos_axum::redirect;
     use leptos_axum::ResponseOptions;

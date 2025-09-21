@@ -1,9 +1,10 @@
 use std::fmt;
 
+use crate::model::Money;
 #[cfg(feature = "ssr")]
 use crate::models::Page;
 
-use super::{DatabaseId, Money};
+use super::DatabaseId;
 
 #[cfg(feature = "ssr")]
 use {

@@ -4,8 +4,8 @@ use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn
 
 use crate::{
     backend::core::Article,
-    model::AudioPlayback,
-    models::{play_sound, Money, Transaction, UserId},
+    model::{AudioPlayback, Money},
+    models::{play_sound, Transaction, UserId},
     routes::{articles::get_all_articles, user::MoneyArgs},
 };
 

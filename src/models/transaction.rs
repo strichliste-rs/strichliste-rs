@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
+use crate::model::Money;
 #[cfg(feature = "ssr")]
 use crate::{
     backend::{
@@ -17,7 +18,7 @@ use crate::{
 #[cfg(feature = "ssr")]
 use super::UserId;
 
-use super::{DatabaseId, GroupId, Money};
+use super::{DatabaseId, GroupId};
 
 #[cfg(feature = "ssr")]
 use {

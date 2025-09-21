@@ -5,7 +5,7 @@ use leptos::{
 };
 #[cfg(feature = "ssr")]
 use {
-    crate::models::Money,
+    crate::model::Money,
     tracing::{debug, error},
 };
 

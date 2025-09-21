@@ -2,7 +2,8 @@ use leptos::{html, prelude::*};
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    models::{Money, PageRequestParams, Transaction, UserId},
+    model::Money,
+    models::{PageRequestParams, Transaction, UserId},
     routes::user::components::transaction_view::{format_transaction, get_user_transactions},
 };
 

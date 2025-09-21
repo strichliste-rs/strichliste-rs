@@ -6,7 +6,8 @@ use crate::models::{Page, PageRequestParams, Transaction, UserId};
 use {
     crate::{
         backend::core::Group,
-        models::{GroupId, Money, TransactionDB, User},
+        model::Money,
+        models::{GroupId, TransactionDB, User},
         routes::user::get_user,
     },
     tracing::{debug, error, trace, warn},

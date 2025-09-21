@@ -5,7 +5,7 @@ use crate::{
         core::Article,
         database::{ArticleDB, DBError, DatabaseResponse, DB},
     },
-    models::Money,
+    model::Money,
 };
 
 impl Article {
