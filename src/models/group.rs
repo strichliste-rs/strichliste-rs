@@ -2,7 +2,7 @@ use sqlx::Executor;
 
 use crate::{
     backend::database::{DatabaseResponse, DatabaseType, GroupDB},
-    models::{DatabaseId, UserDB},
+    models::UserDB,
 };
 
 use super::{GroupId, UserId};
@@ -70,12 +70,6 @@ impl Group {
             }
             .into(),
         )
-    }
-}
-
-impl From<DatabaseId> for GroupDB {
-    fn from(id: DatabaseId) -> Self {
-        GroupDB { id }
     }
 }
 

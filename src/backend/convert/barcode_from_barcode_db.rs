@@ -1,5 +1,3 @@
-#![cfg(feature = "ssr")]
-
 use crate::backend::{core::Barcode, database::BarcodeDB};
 
 impl From<BarcodeDB> for Barcode {
