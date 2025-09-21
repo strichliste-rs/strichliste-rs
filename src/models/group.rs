@@ -8,20 +8,6 @@ use crate::backend::{
 use super::{GroupId, UserId};
 
 impl Group {
-    pub async fn get<T>(conn: &mut T, gid: GroupId) -> DatabaseResponse<Self>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        let group_db = GroupDB::get(conn, gid).await?;
-
-        let members = GroupDB::get_members(conn, group_db.id).await?;
-
-        Ok(Self {
-            id: group_db.id.into(),
-            members,
-        })
-    }
-
     pub async fn get_user_group_id<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<GroupId>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,

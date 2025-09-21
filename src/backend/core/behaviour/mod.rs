@@ -6,3 +6,4 @@ pub mod article_new;
 pub mod article_set_barcodes;
 pub mod article_set_name;
 pub mod article_set_price;
+pub mod group_get;
