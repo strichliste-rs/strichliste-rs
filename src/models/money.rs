@@ -17,12 +17,6 @@ impl std::fmt::Display for MoneyParseError {
     }
 }
 
-impl From<i64> for Money {
-    fn from(value: i64) -> Self {
-        Self { value }
-    }
-}
-
 impl TryFrom<String> for Money {
     type Error = MoneyParseError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
