@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::PageRequestParams;
+use crate::model::PageRequestParams;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub struct PageResponseParams {
@@ -8,6 +8,7 @@ pub struct PageResponseParams {
     pub len: usize,
     pub total: usize,
 }
+
 impl PageResponseParams {
     pub fn next_params(prev: Option<Self>, limit: usize) -> Option<PageRequestParams> {
         match prev {

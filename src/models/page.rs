@@ -5,12 +5,7 @@ pub struct Page<T> {
     pub items: Vec<T>,
 }
 
-use crate::model::PageResponseParams;
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
-pub struct PageRequestParams {
-    pub offset: usize,
-    pub limit: usize,
-}
+use crate::model::{PageRequestParams, PageResponseParams};
 
 impl<T> Page<T> {
     pub fn new(request: PageRequestParams, total: usize, items: Vec<T>) -> Self {
@@ -22,11 +17,5 @@ impl<T> Page<T> {
             },
             items,
         }
-    }
-}
-
-impl PageRequestParams {
-    pub fn new(limit: usize) -> Self {
-        Self { offset: 0, limit }
     }
 }

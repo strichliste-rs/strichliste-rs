@@ -10,9 +10,7 @@ use crate::{
     backend::{
         core::{Group, Settings},
         database::ArticleDB,
-    },
-    models::{Page, PageRequestParams, User},
-    routes::user::CreateTransactionError,
+    }, model::PageRequestParams, models::{Page, User}, routes::user::CreateTransactionError
 };
 
 #[cfg(feature = "ssr")]

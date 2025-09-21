@@ -385,7 +385,8 @@ impl User {
         db: &DB,
         limit: usize,
     ) -> DatabaseResponse<Page<TransactionDB>> {
-        use crate::models::PageRequestParams;
+        use crate::model::PageRequestParams;
+
 
         let mut conn = db.get_conn().await?;
         TransactionDB::get_user_transactions(&mut *conn, self.id, PageRequestParams::new(limit))
