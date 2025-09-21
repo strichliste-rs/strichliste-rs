@@ -73,12 +73,6 @@ impl Group {
     }
 }
 
-impl From<GroupDB> for GroupId {
-    fn from(val: GroupDB) -> Self {
-        GroupId(val.id)
-    }
-}
-
 impl From<&GroupDB> for GroupId {
     fn from(value: &GroupDB) -> Self {
         Self(value.id)
