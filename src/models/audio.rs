@@ -6,25 +6,14 @@ use leptos::{
     task::spawn_local,
 };
 use reactive_stores::{Store, StoreField};
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    models::Money,
+    model::AudioPlayback,
     routes::{
         state::{FrontendStore, FrontendStoreStoreFields},
         user::{get_item_sound_url, MoneyArgs},
     },
 };
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum AudioPlayback {
-    Failed,
-    Undo,
-    Deposit(Money),
-    Sent(Money),
-    Withdraw(Money),
-    Bought(i64),
-}
 
 /*
    How to use a callback

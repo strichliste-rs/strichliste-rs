@@ -9,7 +9,8 @@ use tracing::error;
 #[cfg(feature = "ssr")]
 use crate::backend::database::DBError;
 use crate::{
-    models::{play_sound, AudioPlayback, Money, Transaction, TransactionType, User, UserId},
+    model::AudioPlayback,
+    models::{play_sound, Money, Transaction, TransactionType, User, UserId},
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
 };
 

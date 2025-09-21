@@ -4,6 +4,7 @@ use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn
 
 use crate::{
     backend::core::Article,
+    model::AudioPlayback,
     models::{play_sound, Money, Transaction, UserId},
     routes::{articles::get_all_articles, user::MoneyArgs},
 };
@@ -125,10 +126,7 @@ pub fn buy_article(
                 money.update(|money| money.value -= transaction.money.value);
                 transactions.update(|trns| trns.insert(0, transaction));
                 error.set(String::new());
-                play_sound(
-                    Rc::new(args),
-                    crate::models::AudioPlayback::Bought(article_id),
-                );
+                play_sound(Rc::new(args), AudioPlayback::Bought(article_id));
             }
 
             Err(e) => {
