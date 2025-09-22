@@ -19,4 +19,5 @@ pub mod group_get_groups;
 pub mod group_get_members;
 pub mod group_get_single_group;
 pub mod group_link_user;
+pub mod user_insert;
 pub mod user_set_money;
