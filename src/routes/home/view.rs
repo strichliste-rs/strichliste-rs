@@ -3,7 +3,7 @@ use leptos_router::hooks::use_navigate;
 #[cfg(feature = "ssr")]
 use tracing::{debug, error};
 
-use crate::{model::Money, models::User};
+use crate::{backend::core::User, model::Money};
 
 #[server]
 pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {

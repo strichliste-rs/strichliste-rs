@@ -1,6 +1,9 @@
-use crate::model::{Money, UserId};
 #[cfg(feature = "ssr")]
-use crate::{backend::database::UserDB, model::Page};
+use crate::{
+    backend::{core::User, database::UserDB},
+    model::Page,
+    model::{Money, UserId},
+};
 
 #[cfg(feature = "ssr")]
 use {
@@ -9,16 +12,6 @@ use {
     crate::backend::database::{DatabaseResponse, DatabaseType},
     sqlx::Executor,
 };
-
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct User {
-    pub id: UserId,
-    pub nickname: String,
-    pub card_number: Option<String>,
-    pub money: Money,
-}
 
 #[cfg(feature = "ssr")]
 impl User {

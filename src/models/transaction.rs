@@ -8,11 +8,10 @@ use crate::model::{GroupId, Money};
 #[cfg(feature = "ssr")]
 use crate::{
     backend::{
-        core::{Group, Settings},
+        core::{Group, Settings, User},
         database::ArticleDB,
     },
     model::{Page, PageRequestParams, UserId},
-    models::User,
     routes::user::CreateTransactionError,
 };
 
@@ -468,7 +467,6 @@ impl Transaction {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
-        use crate::models::User;
         use tracing::error;
 
         let mut senders = Vec::<User>::new();

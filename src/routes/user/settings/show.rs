@@ -5,7 +5,7 @@ use crate::{model::UserId, routes::user::get_user};
 
 #[cfg(feature = "ssr")]
 use {
-    crate::models::User,
+    crate::backend::core::User,
     tracing::{debug, error, warn},
 };
 

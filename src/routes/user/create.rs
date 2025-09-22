@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
 use {
-    crate::models::User,
+    crate::backend::core::User,
     tracing::{debug, error},
 };
 

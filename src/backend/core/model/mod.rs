@@ -3,6 +3,7 @@ pub mod barcode;
 pub mod group;
 pub mod settings;
 pub mod state;
+pub mod user;
 
 pub use article::*;
 pub use barcode::*;
@@ -12,3 +13,4 @@ pub use group::*;
 pub use settings::*;
 #[cfg(feature = "ssr")]
 pub use state::*;
+pub use user::*;
