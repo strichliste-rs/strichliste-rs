@@ -1,49 +1,18 @@
 #[cfg(feature = "ssr")]
 use crate::{
     backend::{core::User, database::UserDB},
-    model::Page,
     model::{Money, UserId},
 };
 
 #[cfg(feature = "ssr")]
 use {
-    super::TransactionDB,
-    crate::backend::database::{DBError, DB},
+    crate::backend::database::DB,
     crate::backend::database::{DatabaseResponse, DatabaseType},
     sqlx::Executor,
 };
 
 #[cfg(feature = "ssr")]
 impl User {
-    pub async fn get_all(db: &DB) -> Result<Vec<Self>, DBError> {
-        let mut conn = db.get_conn().await?;
-
-        let users_db = UserDB::get_all(&mut *conn).await?;
-        let mut users = Vec::<User>::new();
-
-        for user_db in users_db.into_iter() {
-            users.push(
-                Self::get(&mut *conn, UserId(user_db.id))
-                    .await?
-                    .expect("user should exist"),
-            )
-        }
-
-        Ok(users)
-    }
-
-    pub async fn get_transactions(
-        &self,
-        db: &DB,
-        limit: usize,
-    ) -> DatabaseResponse<Page<TransactionDB>> {
-        use crate::model::PageRequestParams;
-
-        let mut conn = db.get_conn().await?;
-        TransactionDB::get_user_transactions(&mut *conn, self.id, PageRequestParams::new(limit))
-            .await
-    }
-
     pub async fn get_by_card_number(
         db: &DB,
         card_number: String,
