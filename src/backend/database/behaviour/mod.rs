@@ -21,6 +21,7 @@ pub mod group_get_single_group;
 pub mod group_link_user;
 pub mod user_get;
 pub mod user_get_all;
+pub mod user_get_by_nick;
 pub mod user_get_card_number;
 pub mod user_get_id_by_card_number;
 pub mod user_insert;

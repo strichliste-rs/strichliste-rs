@@ -7,32 +7,10 @@ use {
     super::TransactionDB,
     crate::backend::database::{DBError, DB},
     crate::backend::database::{DatabaseResponse, DatabaseType},
-    sqlx::query_as,
     sqlx::Executor,
 };
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ssr")]
-impl UserDB {
-    async fn get_by_nick<T>(conn: &mut T, nick: &String) -> DatabaseResponse<Option<Self>>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        query_as!(
-            UserDB,
-            "
-                select *
-                from Users
-                where nickname = ?
-            ",
-            nick
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(From::from)
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct User {
