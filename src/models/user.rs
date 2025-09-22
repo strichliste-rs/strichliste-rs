@@ -1,8 +1,6 @@
-
 #[cfg(feature = "ssr")]
 use crate::model::Page;
-use crate::model::{GroupId, Money, UserId};
-
+use crate::model::{Money, UserId};
 
 #[cfg(feature = "ssr")]
 use {
@@ -13,12 +11,6 @@ use {
     sqlx::query_as,
     sqlx::Executor,
 };
-
-impl From<i64> for GroupId {
-    fn from(value: i64) -> Self {
-        Self(value)
-    }
-}
 
 impl From<i64> for UserId {
     fn from(value: i64) -> Self {
