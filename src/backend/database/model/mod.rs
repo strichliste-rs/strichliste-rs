@@ -4,6 +4,7 @@ pub mod barcode;
 pub mod db;
 pub mod db_error;
 pub mod group;
+pub mod user;
 
 pub use article::*;
 pub use article_cost_map::*;
@@ -11,3 +12,4 @@ pub use barcode::*;
 pub use db::*;
 pub use db_error::*;
 pub use group::*;
+pub use user::*;
