@@ -12,6 +12,8 @@ pub mod group_get_groups;
 pub mod group_get_user_group_id;
 pub mod transaction_get;
 pub mod transaction_get_user_transactions;
+pub mod transaction_set_money;
+pub mod transaction_set_undone;
 pub mod user_add_money;
 pub mod user_create;
 pub mod user_get;

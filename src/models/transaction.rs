@@ -335,20 +335,6 @@ pub struct Transaction {
 
 #[cfg(feature = "ssr")]
 impl Transaction {
-    pub async fn set_money<T>(&mut self, conn: &mut T, new_value: i64) -> DatabaseResponse<()>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        TransactionDB::set_money(&mut *conn, self.id, new_value).await
-    }
-
-    pub async fn set_undone<T>(&mut self, conn: &mut T, new_value: bool) -> DatabaseResponse<()>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        TransactionDB::set_undone(&mut *conn, self.id, new_value).await
-    }
-
     async fn get_transaction_delta<T>(
         conn: &mut T,
         sender_group: &Group,
