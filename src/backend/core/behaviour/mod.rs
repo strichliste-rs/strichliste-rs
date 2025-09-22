@@ -12,6 +12,7 @@ pub mod group_get_groups;
 pub mod group_get_user_group_id;
 pub mod user_create;
 pub mod user_get_all;
+pub mod user_get_by_card_number;
 pub mod user_get_transactions;
 pub mod user_set_card_number;
 pub mod user_set_money;

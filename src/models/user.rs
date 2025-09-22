@@ -6,30 +6,12 @@ use crate::{
 
 #[cfg(feature = "ssr")]
 use {
-    crate::backend::database::DB,
     crate::backend::database::{DatabaseResponse, DatabaseType},
     sqlx::Executor,
 };
 
 #[cfg(feature = "ssr")]
 impl User {
-    pub async fn get_by_card_number(
-        db: &DB,
-        card_number: String,
-    ) -> DatabaseResponse<Option<User>> {
-        let mut conn = db.get_conn().await?;
-        let user_id = UserDB::get_id_by_card_number(&mut *conn, card_number).await?;
-
-        match user_id {
-            None => Ok(None),
-            Some(user_id) => {
-                let user = Self::get(&mut *conn, user_id).await?;
-
-                Ok(user)
-            }
-        }
-    }
-
     pub async fn get<T>(conn: &mut T, id: UserId) -> DatabaseResponse<Option<User>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
