@@ -1,4 +1,4 @@
-use crate::models::{GroupId, UserId};
+use crate::{model::UserId, models::GroupId};
 
 pub const DBGROUP_SNACKBAR_ID: GroupId = GroupId(0);
 pub const DBGROUP_AUFLADUNG_ID: GroupId = GroupId(1);

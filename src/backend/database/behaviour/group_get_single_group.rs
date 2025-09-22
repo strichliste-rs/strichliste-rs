@@ -1,8 +1,7 @@
 use sqlx::{query, Executor};
 
 use crate::{
-    backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB},
-    models::{DatabaseId, UserId},
+    backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB}, model::UserId, models::DatabaseId
 };
 
 impl GroupDB {

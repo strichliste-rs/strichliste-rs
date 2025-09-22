@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 
-use crate::{models::UserId, routes::user::get_user};
+use crate::{model::UserId, routes::user::get_user};
 
 #[cfg(feature = "ssr")]
 use {

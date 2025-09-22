@@ -3,8 +3,7 @@
 use sqlx::{query, Executor};
 
 use crate::{
-    backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType, DBGROUP_SNACKBAR_ID},
-    models::UserId,
+    backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType, DBGROUP_SNACKBAR_ID}, model::UserId,
 };
 
 impl ArticleDB {

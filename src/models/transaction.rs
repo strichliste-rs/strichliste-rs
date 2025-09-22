@@ -11,13 +11,11 @@ use crate::{
         core::{Group, Settings},
         database::ArticleDB,
     },
-    model::{Page, PageRequestParams},
+    model::{Page, PageRequestParams, UserId},
     models::User,
     routes::user::CreateTransactionError,
 };
 
-#[cfg(feature = "ssr")]
-use super::UserId;
 
 use super::{DatabaseId, GroupId};
 

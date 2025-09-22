@@ -7,7 +7,8 @@ use crate::{
         core::Group,
         database::{DatabaseResponse, DatabaseType, GroupDB},
     },
-    models::{GroupId, UserId},
+    model::UserId,
+    models::GroupId,
 };
 impl Group {
     pub async fn get_user_group_id<T>(conn: &mut T, uid: UserId) -> DatabaseResponse<GroupId>

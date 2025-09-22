@@ -2,8 +2,7 @@ use itertools::Itertools;
 use sqlx::{query, Executor};
 
 use crate::{
-    backend::database::{DatabaseResponse, DatabaseType, GroupDB},
-    models::UserId,
+    backend::database::{DatabaseResponse, DatabaseType, GroupDB}, model::UserId,
 };
 
 impl GroupDB {

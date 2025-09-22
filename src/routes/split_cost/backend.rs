@@ -8,8 +8,8 @@ use crate::routes::user::CreateTransactionError;
 use {
     crate::backend::core::Group,
     crate::backend::database::DBError,
-    crate::model::Money,
-    crate::models::{GroupId, Transaction, User, UserId},
+    crate::model::{Money, UserId},
+    crate::models::{GroupId, Transaction, User},
     leptos_axum::redirect,
     tracing::error,
 };

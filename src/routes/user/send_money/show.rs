@@ -2,7 +2,7 @@ use leptos::{html, leptos_dom::logging::console_log, prelude::*, task::spawn_loc
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    models::UserId,
+    model::UserId,
     routes::{home::get_all_users, user::get_user},
 };
 

@@ -4,8 +4,7 @@ use crate::{
     backend::{
         core::Article,
         database::{ArticleDB, DatabaseResponse, DB},
-    },
-    models::UserId,
+    }, model::UserId,
 };
 impl Article {
     pub async fn get_articles_for_user(db: &DB, user_id: UserId) -> DatabaseResponse<Vec<Self>> {

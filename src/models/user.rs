@@ -1,8 +1,8 @@
 use std::fmt;
 
-use crate::model::Money;
 #[cfg(feature = "ssr")]
 use crate::model::Page;
+use crate::model::{Money, UserId};
 
 use super::DatabaseId;
 
@@ -18,14 +18,6 @@ use {
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub struct GroupId(pub DatabaseId);
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UserId(pub DatabaseId);
-
-impl fmt::Display for UserId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 impl fmt::Display for GroupId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
