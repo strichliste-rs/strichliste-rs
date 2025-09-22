@@ -15,24 +15,6 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
 impl UserDB {
-    pub async fn get<T>(conn: &mut T, id: i64) -> DatabaseResponse<Option<Self>>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        query_as!(
-            UserDB,
-            "
-                select *
-                from Users
-                where id = ?
-            ",
-            id
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(From::from)
-    }
-
     async fn get_all<T>(conn: &mut T) -> DatabaseResponse<Vec<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
