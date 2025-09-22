@@ -17,7 +17,7 @@ use {
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     itertools::Itertools,
     sqlx::query,
-    sqlx::{query_as, Executor},
+    sqlx::Executor,
 };
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -161,39 +161,6 @@ where
 
 #[cfg(feature = "ssr")]
 impl TransactionDB {
-    pub async fn get<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Option<TransactionDB>>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        let result = query_as!(
-            TransactionDB,
-            r#"
-                select
-                    id as "id: i64",
-                    sender as "sender: i64",
-                    receiver as "receiver: i64",
-                    is_undone,
-                    t_type_data,
-                    money as "money: u64",
-                    description,
-                    timestamp as "timestamp: DateTime<Utc>"
-                from Transactions
-                where id = ?
-            "#,
-            id
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        let result = match result {
-            None => return Ok(None),
-            Some(value) => value,
-        };
-
-        Ok(Some(result))
-    }
-
     pub async fn get_user_transactions<T>(
         conn: &mut T,
         user_id: UserId,
