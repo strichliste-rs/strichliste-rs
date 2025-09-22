@@ -7,7 +7,6 @@ use {
     super::TransactionDB,
     crate::backend::database::{DBError, DB},
     crate::backend::database::{DatabaseResponse, DatabaseType},
-    sqlx::query,
     sqlx::query_as,
     sqlx::Executor,
 };
@@ -16,24 +15,6 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
 impl UserDB {
-    pub async fn get_card_number<T>(conn: &mut T, user_id: i64) -> DatabaseResponse<Option<String>>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        query!(
-            "
-                select card_number
-                from UserCardNumberMap
-                where user_id = ?
-            ",
-            user_id
-        )
-        .fetch_optional(&mut *conn)
-        .await
-        .map_err(From::from)
-        .map(|result| result.map(|elem| elem.card_number))
-    }
-
     pub async fn get<T>(conn: &mut T, id: i64) -> DatabaseResponse<Option<Self>>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
