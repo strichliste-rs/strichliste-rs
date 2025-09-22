@@ -10,8 +10,8 @@ use {
     crate::{
         backend::core::Group,
         backend::core::User,
+        backend::database::TransactionDB,
         model::{GroupId, Money},
-        models::TransactionDB,
         routes::user::get_user,
     },
     tracing::{debug, error, trace, warn},

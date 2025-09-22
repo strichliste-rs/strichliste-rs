@@ -9,7 +9,7 @@ use crate::model::{GroupId, Money};
 use crate::{
     backend::{
         core::{Group, Settings, User},
-        database::ArticleDB,
+        database::{ArticleDB, TransactionDB},
     },
     model::{Page, PageRequestParams, UserId},
     routes::user::CreateTransactionError,
@@ -51,19 +51,6 @@ impl TransactionDelta {
 }
 
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "ssr")]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, sqlx::Type, sqlx::FromRow)]
-pub struct TransactionDB {
-    pub id: i64,
-    pub sender: i64,
-    pub receiver: i64,
-    pub is_undone: bool,
-    pub t_type_data: Option<i64>,
-    pub money: u64,
-    pub description: Option<String>,
-    pub timestamp: DateTime<Utc>,
-}
 
 #[cfg(feature = "ssr")]
 impl From<Transaction> for TransactionDB {

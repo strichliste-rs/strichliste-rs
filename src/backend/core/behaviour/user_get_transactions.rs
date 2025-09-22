@@ -3,10 +3,9 @@
 use crate::{
     backend::{
         core::User,
-        database::{DatabaseResponse, DB},
+        database::{DatabaseResponse, TransactionDB, DB},
     },
     model::Page,
-    models::TransactionDB,
 };
 impl User {
     pub async fn get_transactions(
