@@ -7,8 +7,8 @@ use crate::{
         core::{Group, Settings},
         database::{DatabaseType, TransactionDB},
     },
-    model::{GroupId, Money},
-    models::{DatabaseId, Transaction, TransactionType},
+    model::{GroupId, Money, Transaction, TransactionType},
+    models::DatabaseId,
     routes::user::CreateTransactionError,
 };
 

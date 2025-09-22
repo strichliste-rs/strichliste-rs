@@ -9,8 +9,7 @@ use crate::{
         core::{Group, User},
         database::{DBError, DatabaseType, TransactionDB},
     },
-    model::UserId,
-    models::{Transaction, TransactionDelta},
+    model::{Transaction, TransactionDelta, UserId},
 };
 
 impl Transaction {

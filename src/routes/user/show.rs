@@ -10,8 +10,8 @@ use tracing::error;
 use crate::backend::database::DBError;
 use crate::{
     backend::core::User,
-    model::{AudioPlayback, Money, UserId},
-    models::{play_sound, Transaction, TransactionType},
+    model::{AudioPlayback, Money, Transaction, TransactionType, UserId},
+    models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
 };
 

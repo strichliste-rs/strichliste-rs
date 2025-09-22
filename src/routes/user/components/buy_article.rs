@@ -4,14 +4,15 @@ use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn
 
 use crate::{
     backend::core::Article,
-    model::{AudioPlayback, Money, UserId},
-    models::{play_sound, Transaction},
+    model::{AudioPlayback, Money, Transaction, UserId},
+    models::play_sound,
     routes::{articles::get_all_articles, user::MoneyArgs},
 };
 
 #[cfg(feature = "ssr")]
 use {
     crate::backend::core::Group,
+    crate::model::TransactionType,
     crate::{backend::database::DBGROUP_SNACKBAR_ID, routes::articles::get_article},
     tracing::error,
 };
@@ -77,7 +78,7 @@ pub async fn buy_article_by_id(
         &mut *db_trans,
         user_group,
         DBGROUP_SNACKBAR_ID,
-        crate::models::TransactionType::Bought(article_id),
+        TransactionType::Bought(article_id),
         Some(article.name.clone()),
         article.cost,
         &state.settings,

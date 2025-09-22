@@ -1,47 +1,22 @@
-use chrono::{DateTime, Utc};
-use leptos::prelude::RwSignal;
-
 #[cfg(feature = "ssr")]
-use crate::backend::database::TransactionDB;
-use crate::model::{GroupId, Money};
-
-use super::DatabaseId;
+use crate::{
+    backend::database::TransactionDB,
+    model::{GroupId, Transaction},
+};
 
 #[cfg(feature = "ssr")]
 use {
     crate::backend::database::DBError,
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     itertools::Itertools,
+    leptos::prelude::RwSignal,
 };
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TransactionType {
-    Deposit,
-    Withdraw,
-    Bought(i64),
-    Received(GroupId),
-    Sent(GroupId),
-    SentAndReceived(GroupId), // sending group is stored as group_id in Transaction
-}
-
-#[cfg(feature = "ssr")]
-pub struct TransactionDelta {
-    pub(crate) amount_pre: i64,
-    pub(crate) delta: i64,
-}
-
-#[cfg(feature = "ssr")]
-impl TransactionDelta {
-    pub fn post_amount(&self) -> i64 {
-        self.amount_pre + self.delta
-    }
-}
-
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
 impl From<Transaction> for TransactionDB {
     fn from(value: Transaction) -> Self {
+        use crate::model::TransactionType;
+
         let Transaction {
             id,
             is_undone,
@@ -91,7 +66,7 @@ where
 {
     type Error = DBError;
     fn try_into(self: (TransactionDB, &'a Vec<T>)) -> Result<Transaction, DBError> {
-        use crate::backend::database::DBGROUP_AUFLADUNG_ID;
+        use crate::{backend::database::DBGROUP_AUFLADUNG_ID, model::Transaction};
 
         let (
             TransactionDB {
@@ -128,7 +103,7 @@ where
             },
             is_undone,
             t_type: {
-                use crate::backend::database::DBGROUP_SNACKBAR_ID;
+                use crate::{backend::database::DBGROUP_SNACKBAR_ID, model::TransactionType};
                 match (sender, receiver) {
                     (DBGROUP_AUFLADUNG_ID, _) => TransactionType::Deposit,
                     (_, DBGROUP_AUFLADUNG_ID) => TransactionType::Withdraw,
@@ -151,17 +126,4 @@ where
             is_undone_signal: RwSignal::new(is_undone), // might fail on server
         })
     }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Transaction {
-    pub id: DatabaseId,
-    /// used to look up name (for split transaction)
-    pub group_id: GroupId,
-    pub is_undone: bool,
-    pub t_type: TransactionType,
-    pub money: Money,
-    pub description: Option<String>,
-    pub timestamp: DateTime<Utc>,
-    pub is_undone_signal: RwSignal<bool>,
 }

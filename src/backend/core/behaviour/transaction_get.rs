@@ -4,8 +4,8 @@ use sqlx::Executor;
 
 use crate::{
     backend::database::{DBError, DatabaseResponse, DatabaseType, TransactionDB},
-    model::UserId,
-    models::{DatabaseId, Transaction},
+    model::{Transaction, UserId},
+    models::DatabaseId,
 };
 
 impl Transaction {

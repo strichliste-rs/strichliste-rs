@@ -2,8 +2,7 @@
 
 use crate::{
     backend::database::{ArticleDB, DatabaseResponse, TransactionDB, DB},
-    model::{Page, PageRequestParams, UserId},
-    models::{Transaction, TransactionType},
+    model::{Page, PageRequestParams, Transaction, TransactionType, UserId},
 };
 
 impl Transaction {

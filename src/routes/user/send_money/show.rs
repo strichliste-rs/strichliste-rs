@@ -10,8 +10,7 @@ use crate::{
 use {
     crate::backend::core::User,
     crate::backend::database::GroupDB,
-    crate::model::{GroupId, Money},
-    crate::models::Transaction,
+    crate::model::{GroupId, Money, Transaction, TransactionType},
     tracing::error,
 };
 
@@ -114,7 +113,7 @@ pub async fn send_money(
         &mut *db_trns,
         GroupId(sender_group),
         GroupId(recipient_group),
-        crate::models::TransactionType::Sent(GroupId(recipient_group)),
+        TransactionType::Sent(GroupId(recipient_group)),
         None,
         money,
         &state.settings,
