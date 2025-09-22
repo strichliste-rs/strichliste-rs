@@ -16,25 +16,6 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
 impl UserDB {
-    async fn set_name<T>(conn: &mut T, id: UserId, new_value: String) -> Result<(), DBError>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        query!(
-            "
-                update Users
-                set nickname = ?
-                where id = ?
-            ",
-            new_value,
-            id.0
-        )
-        .execute(&mut *conn)
-        .await
-        .map_err(From::from)
-        .map(|_| ())
-    }
-
     async fn set_card_number<T>(
         conn: &mut T,
         user_id: UserId,
