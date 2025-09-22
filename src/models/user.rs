@@ -15,31 +15,6 @@ use {
 
 #[cfg(feature = "ssr")]
 impl User {
-    pub async fn create(
-        db: &DB,
-        nickname: String,
-        card_number: Option<String>,
-    ) -> DatabaseResponse<UserId> {
-        use crate::backend::database::GroupDB;
-
-        let mut transaction = db.get_conn_transaction().await?;
-
-        let id = UserDB::insert(&mut *transaction, nickname).await?;
-
-        match card_number {
-            None => {}
-            Some(card_number) => {
-                UserDB::insert_card(&mut *transaction, id, card_number).await?;
-            }
-        }
-
-        let group = GroupDB::create(&mut *transaction).await?;
-        group.link_user(&mut *transaction, id).await?;
-
-        transaction.commit().await.map_err(DBError::new)?;
-        Ok(id)
-    }
-
     pub async fn get_all(db: &DB) -> Result<Vec<Self>, DBError> {
         let mut conn = db.get_conn().await?;
 

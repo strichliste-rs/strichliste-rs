@@ -10,6 +10,7 @@ pub mod group_get;
 pub mod group_get_group_id_for_multiple_users;
 pub mod group_get_groups;
 pub mod group_get_user_group_id;
+pub mod user_create;
 pub mod user_set_card_number;
 pub mod user_set_money;
 pub mod user_set_name;
