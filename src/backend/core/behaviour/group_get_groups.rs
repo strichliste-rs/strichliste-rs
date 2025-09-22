@@ -6,8 +6,7 @@ use crate::{
         core::Group,
         database::{DatabaseResponse, DatabaseType, GroupDB},
     },
-    model::UserId,
-    models::GroupId,
+    model::{GroupId, UserId},
 };
 
 impl Group {

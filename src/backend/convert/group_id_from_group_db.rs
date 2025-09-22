@@ -1,4 +1,4 @@
-use crate::{backend::database::GroupDB, models::GroupId};
+use crate::{backend::database::GroupDB, model::GroupId};
 
 impl From<GroupDB> for GroupId {
     fn from(val: GroupDB) -> Self {

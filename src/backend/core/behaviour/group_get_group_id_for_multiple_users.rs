@@ -5,7 +5,7 @@ use crate::{
     backend::{
         core::Group,
         database::{DatabaseResponse, DatabaseType, GroupDB},
-    }, model::UserId, models::GroupId
+    }, model::{GroupId, UserId}
 };
 
 impl Group {

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 
-use crate::model::Money;
+use crate::model::{GroupId, Money};
 #[cfg(feature = "ssr")]
 use crate::{
     backend::{
@@ -16,8 +16,7 @@ use crate::{
     routes::user::CreateTransactionError,
 };
 
-
-use super::{DatabaseId, GroupId};
+use super::DatabaseId;
 
 #[cfg(feature = "ssr")]
 use {

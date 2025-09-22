@@ -1,10 +1,8 @@
-use std::fmt;
 
 #[cfg(feature = "ssr")]
 use crate::model::Page;
-use crate::model::{Money, UserId};
+use crate::model::{GroupId, Money, UserId};
 
-use super::DatabaseId;
 
 #[cfg(feature = "ssr")]
 use {
@@ -15,14 +13,6 @@ use {
     sqlx::query_as,
     sqlx::Executor,
 };
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
-pub struct GroupId(pub DatabaseId);
-impl fmt::Display for GroupId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 impl From<i64> for GroupId {
     fn from(value: i64) -> Self {

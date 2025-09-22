@@ -1,5 +1,5 @@
 #![cfg(feature = "ssr")]
-use crate::models::{GroupId, UserDB};
+use crate::{model::GroupId, models::UserDB};
 
 #[derive(Debug)]
 pub struct Group {
