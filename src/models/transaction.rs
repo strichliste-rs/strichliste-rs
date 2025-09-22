@@ -10,11 +10,8 @@ use super::DatabaseId;
 #[cfg(feature = "ssr")]
 use {
     crate::backend::database::DBError,
-    crate::backend::database::{DatabaseResponse, DatabaseType},
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     itertools::Itertools,
-    sqlx::query,
-    sqlx::Executor,
 };
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -153,29 +150,6 @@ where
             timestamp,
             is_undone_signal: RwSignal::new(is_undone), // might fail on server
         })
-    }
-}
-
-#[cfg(feature = "ssr")]
-impl TransactionDB {
-    pub async fn set_undone<T>(conn: &mut T, id: i64, new_value: bool) -> DatabaseResponse<()>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        _ = query!(
-            "
-                update Transactions
-                set is_undone = ?
-                where id = ?
-            ",
-            new_value,
-            id
-        )
-        .execute(&mut *conn)
-        .await
-        .map_err(DBError::new)?;
-
-        Ok(())
     }
 }
 

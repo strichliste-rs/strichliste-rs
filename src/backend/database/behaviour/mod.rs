@@ -23,6 +23,7 @@ pub mod transaction_create;
 pub mod transaction_get;
 pub mod transaction_get_user_transactions;
 pub mod transaction_set_money;
+pub mod transaction_set_undone;
 pub mod user_get;
 pub mod user_get_all;
 pub mod user_get_by_nick;
