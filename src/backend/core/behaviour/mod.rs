@@ -10,6 +10,7 @@ pub mod group_get;
 pub mod group_get_group_id_for_multiple_users;
 pub mod group_get_groups;
 pub mod group_get_user_group_id;
+pub mod transaction_create;
 pub mod transaction_get;
 pub mod transaction_get_transaction_delta;
 pub mod transaction_get_user_transactions;
