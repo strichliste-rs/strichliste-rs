@@ -15,13 +15,6 @@ use {
 
 #[cfg(feature = "ssr")]
 impl User {
-    pub async fn set_money<T>(&mut self, conn: &mut T, new_value: i64) -> DatabaseResponse<()>
-    where
-        for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
-    {
-        UserDB::set_money(&mut *conn, self.id, new_value).await
-    }
-
     pub async fn set_name<T>(&mut self, conn: &mut T, new_value: String) -> DatabaseResponse<()>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
