@@ -1,13 +1,12 @@
-#[cfg(feature = "ssr")]
+#![cfg(feature = "ssr")]
+
 use crate::{backend::core::User, model::Money};
 
-#[cfg(feature = "ssr")]
 use {
     crate::backend::database::{DatabaseResponse, DatabaseType},
     sqlx::Executor,
 };
 
-#[cfg(feature = "ssr")]
 impl User {
     pub async fn add_money<T>(&mut self, conn: &mut T, money: Money) -> DatabaseResponse<()>
     where
