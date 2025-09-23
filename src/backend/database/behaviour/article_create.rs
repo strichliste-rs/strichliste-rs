@@ -3,7 +3,7 @@ use sqlx::{query, Transaction};
 
 use crate::{
     backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType},
-    models::DatabaseId,
+    model::DatabaseId,
 };
 
 impl ArticleDB {

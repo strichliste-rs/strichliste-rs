@@ -2,10 +2,7 @@
 use sqlx::Executor;
 
 #[cfg(feature = "ssr")]
-use crate::{
-    backend::database::{ArticleDB, DatabaseResponse, DatabaseType},
-    models::DatabaseId,
-};
+use crate::{backend::database::{ArticleDB, DatabaseResponse, DatabaseType}, model::DatabaseId};
 
 #[cfg(feature = "ssr")]
 impl ArticleDB {

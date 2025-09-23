@@ -2,7 +2,7 @@ use sqlx::{query_as, Executor};
 
 use crate::{
     backend::database::{DatabaseResponse, DatabaseType, GroupDB, UserDB},
-    models::DatabaseId,
+    model::DatabaseId,
 };
 
 impl GroupDB {

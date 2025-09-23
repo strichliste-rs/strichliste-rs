@@ -19,3 +19,5 @@ pub use page_request_params::*;
 pub use page_response_params::*;
 pub use transaction::*;
 pub use user_id::*;
+
+pub type DatabaseId = i64;

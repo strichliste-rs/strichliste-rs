@@ -2,10 +2,7 @@ use chrono::{DateTime, Utc};
 use leptos::prelude::RwSignal;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    model::{GroupId, Money},
-    models::DatabaseId,
-};
+use crate::model::{DatabaseId, GroupId, Money};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {

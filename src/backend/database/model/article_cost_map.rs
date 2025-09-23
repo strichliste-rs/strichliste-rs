@@ -1,9 +1,7 @@
 #![cfg(feature = "ssr")]
 
 use {
-    crate::models::DatabaseId,
-    chrono::{DateTime, Utc},
-    serde::{Deserialize, Serialize},
+    crate::model::DatabaseId, chrono::{DateTime, Utc}, serde::{Deserialize, Serialize}
 };
 
 #[allow(unused)] //clippy cannot find its use in the db schema + sql query

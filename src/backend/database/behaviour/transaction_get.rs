@@ -2,10 +2,9 @@
 
 use sqlx::{query_as, Executor};
 
-use crate::{
-    backend::database::{DBError, DatabaseResponse, DatabaseType, TransactionDB},
-    models::DatabaseId,
-};
+use crate::{backend::database::{
+    DBError,  DatabaseResponse, DatabaseType, TransactionDB,
+}, model::DatabaseId};
 
 use chrono::{DateTime, Utc};
 

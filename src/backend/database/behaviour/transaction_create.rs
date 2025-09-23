@@ -5,8 +5,7 @@ use sqlx::{query, Executor};
 
 use crate::{
     backend::database::{DatabaseResponse, DatabaseType, TransactionDB},
-    model::GroupId,
-    models::DatabaseId,
+    model::{DatabaseId, GroupId},
 };
 
 impl TransactionDB {

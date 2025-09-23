@@ -2,10 +2,7 @@
 
 use sqlx::{query, Executor};
 
-use crate::{
-    backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType},
-    models::DatabaseId,
-};
+use crate::{backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType}, model::DatabaseId};
 
 impl ArticleDB {
     pub async fn get_latest_cost<T>(conn: &mut T, article_id: DatabaseId) -> DatabaseResponse<i64>

@@ -1,9 +1,6 @@
 use sqlx::{query, Executor};
 
-use crate::{
-    backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB},
-    models::DatabaseId,
-};
+use crate::{backend::database::{DBError, DatabaseResponse, DatabaseType, GroupDB}, model::DatabaseId};
 
 impl GroupDB {
     pub async fn _create<T>(conn: &mut T, id: DatabaseId) -> DatabaseResponse<Self>
