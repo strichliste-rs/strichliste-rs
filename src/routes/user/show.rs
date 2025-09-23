@@ -17,10 +17,10 @@ use crate::{
 
 #[cfg(feature = "ssr")]
 use {
+    crate::backend::core::behaviour::article_get::get_article,
     crate::backend::core::Group,
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     crate::backend::database::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
-    crate::routes::articles::get_article,
     rand::seq::IndexedRandom,
     std::{path::PathBuf, str::FromStr},
 };

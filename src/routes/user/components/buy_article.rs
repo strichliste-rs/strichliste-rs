@@ -11,9 +11,9 @@ use crate::{
 
 #[cfg(feature = "ssr")]
 use {
-    crate::backend::core::Group,
+    crate::backend::core::{behaviour::article_get::get_article, Group},
+    crate::backend::database::DBGROUP_SNACKBAR_ID,
     crate::model::TransactionType,
-    crate::{backend::database::DBGROUP_SNACKBAR_ID, routes::articles::get_article},
     tracing::error,
 };
 

@@ -9,42 +9,7 @@ use {
     tracing::{debug, error},
 };
 
-use crate::backend::core::{Article, Barcode, BarcodeDiff};
-
-#[server]
-pub async fn get_article(article_id: i64) -> Result<Article, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let article = Article::get(&*state.db.lock().await, article_id).await;
-
-    let article = match article {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new(format!(
-                "Error getting article from db: {}",
-                e
-            )));
-        }
-    };
-
-    match article {
-        None => {
-            response_opts.set_status(StatusCode::BAD_REQUEST);
-            Err(ServerFnError::new(format!(
-                "Unknown Article id '{}'",
-                article_id
-            )))
-        }
-
-        Some(value) => Ok(value),
-    }
-}
+use crate::backend::core::{behaviour::article_get::get_article, Article, Barcode, BarcodeDiff};
 
 #[server]
 pub async fn update_article(
