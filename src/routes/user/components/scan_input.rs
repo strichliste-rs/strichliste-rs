@@ -3,7 +3,10 @@ use std::rc::Rc;
 use chrono::Utc;
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 
-use crate::routes::{articles::get_article_by_barcode, user::MoneyArgs};
+use crate::{
+    backend::core::behaviour::article_get_by_barcode::get_article_by_barcode,
+    routes::user::MoneyArgs,
+};
 
 use super::buy_article::buy_article;
 
