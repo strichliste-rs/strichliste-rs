@@ -4,5 +4,6 @@ pub mod create_transaction_error_from_db_error;
 pub mod group_db_from_database_id;
 pub mod group_id_from_group_db;
 pub mod group_id_from_group_db_ref;
+pub mod split_cost_error_from_db_error;
 pub mod transaction_db_from_transaction;
 pub mod transaction_try_from_transaction_db_vec_group_id;
