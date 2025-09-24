@@ -12,6 +12,7 @@ pub mod group_get_group_id_for_multiple_users;
 pub mod group_get_groups;
 pub mod group_get_user_group_id;
 pub mod send_money;
+pub mod split_cost;
 pub mod transaction_create;
 pub mod transaction_get;
 pub mod transaction_get_transaction_delta;

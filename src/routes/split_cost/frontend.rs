@@ -1,12 +1,12 @@
 use leptos::{prelude::*, task::spawn_local};
 
-use crate::routes::{
-    components::error_message::ErrorMessage,
-    split_cost::{
-        components::{
+use crate::{
+    backend::core::behaviour::split_cost::split_cost,
+    routes::{
+        components::error_message::ErrorMessage,
+        split_cost::components::{
             multi_user_selection::SelectMultiUser, single_user_selection::SelectSingleUser,
         },
-        split_cost,
     },
 };
 
