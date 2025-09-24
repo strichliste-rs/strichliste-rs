@@ -5,6 +5,7 @@ use leptos_router::{
     path,
 };
 
+use crate::frontend::route::{self};
 use crate::routes::{self, state::FrontendStore};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -58,7 +59,7 @@ pub fn App() -> impl IntoView {
                 />
                 <Route path=path!("/user/:id/send_money") view=routes::user::send_money::Show />
                 <Route path=path!("/articles") view=routes::articles::View />
-                <Route path=path!("/articles/create") view=routes::articles::Create />
+                <Route path=path!("/articles/create") view=route::articles::create::Create />
                 <Route path=path!("/articles/:article_id") view=routes::articles::Edit />
 
                 <Route path=path!("/split_cost") view=routes::split_cost::Show />
