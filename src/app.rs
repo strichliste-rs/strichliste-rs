@@ -49,7 +49,7 @@ pub fn App() -> impl IntoView {
             <Routes fallback=|| {
                 view! { <h1 class="text-white text-center bg-red-400">"Page not found!"</h1> }
             }>
-                <Route path=path!("/") view=routes::home::View />
+                <Route path=path!("/") view=route::home::View />
                 <Route path=path!("/user/create") view=routes::user::Create />
                 <Route path=path!("/user/:id") view=routes::user::ShowUser />
                 <Route path=path!("/user/:id/settings") view=routes::user::settings::Show />
