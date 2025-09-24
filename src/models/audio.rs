@@ -8,10 +8,10 @@ use leptos::{
 use reactive_stores::{Store, StoreField};
 
 use crate::{
-    frontend::model::money_args::MoneyArgs, model::AudioPlayback, routes::{
-        state::{FrontendStore, FrontendStoreStoreFields},
-        user::get_item_sound_url,
-    }
+    backend::core::behaviour::get_item_sound_url::get_item_sound_url,
+    frontend::model::money_args::MoneyArgs,
+    model::AudioPlayback,
+    routes::state::{FrontendStore, FrontendStoreStoreFields},
 };
 
 /*

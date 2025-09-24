@@ -3,8 +3,6 @@ use std::rc::Rc;
 use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 
-#[cfg(feature = "ssr")]
-use crate::backend::database::DBError;
 use crate::{
     backend::core::behaviour::{transaction_create::create_transaction, user_get::get_user},
     frontend::model::money_args::MoneyArgs,
@@ -14,91 +12,13 @@ use crate::{
 };
 
 #[cfg(feature = "ssr")]
-use {
-    crate::backend::core::behaviour::article_get::get_article,
-    rand::seq::IndexedRandom,
-    std::{path::PathBuf, str::FromStr},
-    tracing::error,
-};
+use rand::seq::IndexedRandom;
 
 use super::components::transaction_view::ShowTransactions;
 
 #[cfg(feature = "ssr")]
-impl From<DBError> for CreateTransactionError {
-    fn from(value: DBError) -> Self {
-        Self::StringMessage(value.to_string())
-    }
-}
-
-#[cfg(feature = "ssr")]
-fn choose_random_item(vec: &[String]) -> Option<&String> {
+pub fn choose_random_item(vec: &[String]) -> Option<&String> {
     vec.choose(&mut rand::rng())
-}
-
-#[server]
-pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<Vec<u8>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let state: ServerState = expect_context();
-
-    let sounds = &state.settings.sounds;
-
-    let file = match audio {
-        AudioPlayback::Failed => choose_random_item(&sounds.failed),
-        AudioPlayback::Undo => choose_random_item(&sounds.generic),
-        AudioPlayback::Deposit(_) => choose_random_item(&sounds.generic),
-        AudioPlayback::Sent(_) => choose_random_item(&sounds.generic),
-        AudioPlayback::Withdraw(_) => choose_random_item(&sounds.generic),
-        AudioPlayback::Bought(article_id) => {
-            let article = get_article(article_id).await?;
-
-            let sounds = match sounds.articles.get(&article.name) {
-                Some(sounds) => sounds,
-                None => &sounds.generic,
-            };
-
-            choose_random_item(sounds)
-        }
-    };
-
-    let path = PathBuf::from_str(match file {
-        Some(val) => val,
-        None => {
-            error!("Failed to choose a random sound file");
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to get sound file"));
-        }
-    });
-
-    let path = match path {
-        Ok(val) => val,
-        Err(e) => {
-            error!("Failed to create PathBuf: {e}");
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to get sound file"));
-        }
-    };
-
-    if !path.exists() {
-        error!("Path '{}' does not exists!", path.to_str().unwrap());
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        return Err(ServerFnError::new("Failed to get sound file"));
-    }
-
-    let file = match tokio::fs::read(&path).await {
-        Ok(val) => val,
-        Err(e) => {
-            error!("Failed to read file path '{}': {e}", path.to_str().unwrap());
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to get sound file"));
-        }
-    };
-
-    Ok(file)
 }
 
 #[component]
