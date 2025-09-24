@@ -1,6 +1,9 @@
 use leptos::{html, prelude::*};
 
-use crate::routes::{components::error_message::ErrorMessage, home::get_all_users};
+use crate::{
+    backend::core::behaviour::user_get_all::get_all_users,
+    routes::components::error_message::ErrorMessage,
+};
 
 const MAX_USER_DISPLAY_LIMIT: usize = 5;
 

@@ -2,9 +2,10 @@ use leptos::{html, leptos_dom::logging::console_log, prelude::*, task::spawn_loc
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    backend::core::behaviour::{send_money::send_money, user_get::get_user},
+    backend::core::behaviour::{
+        send_money::send_money, user_get::get_user, user_get_all::get_all_users,
+    },
     model::UserId,
-    routes::home::get_all_users,
 };
 
 #[component]
