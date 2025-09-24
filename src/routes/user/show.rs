@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use leptos::{prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
+use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
 
 #[cfg(feature = "ssr")]
@@ -22,19 +22,6 @@ use {
 };
 
 use super::components::transaction_view::ShowTransactions;
-
-impl FromServerFnError for CreateTransactionError {
-    type Encoder = server_fn::codec::JsonEncoding;
-    fn from_server_fn_error(value: ServerFnErrorErr) -> Self {
-        Self::ServerFn(value)
-    }
-}
-
-impl From<ServerFnError> for CreateTransactionError {
-    fn from(value: ServerFnError) -> Self {
-        Self::StringMessage(value.to_string())
-    }
-}
 
 #[cfg(feature = "ssr")]
 impl From<DBError> for CreateTransactionError {
