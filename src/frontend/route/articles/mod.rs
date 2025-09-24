@@ -1,4 +1,7 @@
 pub mod create;
+pub mod edit;
+
+pub use edit::*;
 
 use leptos::prelude::*;
 
