@@ -2,16 +2,13 @@ use std::rc::Rc;
 
 use leptos::{prelude::*, server_fn::error::ServerFnErrorErr, task::spawn_local};
 use leptos_router::hooks::use_params_map;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use tracing::error;
 
 #[cfg(feature = "ssr")]
 use crate::backend::database::DBError;
 use crate::{
     backend::core::behaviour::{transaction_create::create_transaction, user_get::get_user},
     frontend::model::money_args::MoneyArgs,
-    model::{AudioPlayback, Money, Transaction, TransactionType, UserId},
+    model::{AudioPlayback, CreateTransactionError, Money, Transaction, TransactionType, UserId},
     models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
 };
@@ -21,30 +18,10 @@ use {
     crate::backend::core::behaviour::article_get::get_article,
     rand::seq::IndexedRandom,
     std::{path::PathBuf, str::FromStr},
+    tracing::error,
 };
 
 use super::components::transaction_view::ShowTransactions;
-
-#[derive(Error, Debug, Clone, Deserialize, Serialize)]
-pub enum CreateTransactionError {
-    #[error("the following users have too little money: {}", .0.join(", "))]
-    TooLittleMoneyError(Vec<String>),
-
-    #[error("the following users have too much money: {}", .0.join(", "))]
-    TooMuchMoneyError(Vec<String>),
-
-    #[error("Failed to create transaction: {0}")]
-    StringMessage(String),
-
-    #[error("server fn error: {0}")]
-    ServerFn(ServerFnErrorErr),
-}
-
-impl CreateTransactionError {
-    pub fn new(value: &str) -> Self {
-        Self::StringMessage(value.to_string())
-    }
-}
 
 impl FromServerFnError for CreateTransactionError {
     type Encoder = server_fn::codec::JsonEncoding;

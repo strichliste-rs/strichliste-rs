@@ -1,9 +1,6 @@
 use leptos::prelude::*;
 
-use crate::{
-    model::{Money, Transaction, TransactionType, UserId},
-    routes::user::CreateTransactionError,
-};
+use crate::model::{CreateTransactionError, Money, Transaction, TransactionType, UserId};
 
 #[cfg(feature = "ssr")]
 use {

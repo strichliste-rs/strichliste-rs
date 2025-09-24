@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::{model::SplitCostError, routes::user::CreateTransactionError};
+use crate::model::{CreateTransactionError, SplitCostError};
 
 #[cfg(feature = "ssr")]
 use crate::backend::database::DBError;
