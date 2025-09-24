@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::routes::split_cost::SplitCostError;
+use crate::model::SplitCostError;
 
 #[server]
 pub async fn split_cost(
