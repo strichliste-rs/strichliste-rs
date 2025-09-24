@@ -1,13 +1,5 @@
-use crate::model::{CreateTransactionError, SplitCostError};
-
 #[cfg(feature = "ssr")]
-use crate::backend::database::DBError;
-
-impl From<CreateTransactionError> for SplitCostError {
-    fn from(value: CreateTransactionError) -> Self {
-        Self::CreateTransactionError(value.to_string())
-    }
-}
+use crate::{backend::database::DBError, model::SplitCostError};
 
 #[cfg(feature = "ssr")]
 impl From<DBError> for SplitCostError {
