@@ -5,7 +5,7 @@ pub use edit::*;
 
 use leptos::prelude::*;
 
-use crate::routes::articles::ShowArticles;
+use crate::frontend::component::article::ShowArticles;
 
 #[component]
 pub fn View() -> impl IntoView {
