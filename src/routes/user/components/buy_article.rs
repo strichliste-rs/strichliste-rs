@@ -3,10 +3,10 @@ use std::rc::Rc;
 use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 
 use crate::{
-    backend::core::Article,
+    backend::core::{behaviour::article_get_all::get_all_articles, Article},
     model::{AudioPlayback, Money, Transaction, UserId},
     models::play_sound,
-    routes::{articles::get_all_articles, user::MoneyArgs},
+    routes::user::MoneyArgs,
 };
 
 #[cfg(feature = "ssr")]

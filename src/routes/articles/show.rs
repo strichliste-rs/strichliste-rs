@@ -1,26 +1,6 @@
 use leptos::prelude::*;
-#[cfg(feature = "ssr")]
-use tracing::error;
 
-use crate::backend::core::Article;
-
-#[server]
-pub async fn get_all_articles(limit: Option<i64>) -> Result<Vec<Article>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let articles = Article::get_all(&*state.db.lock().await, limit).await;
-    articles.map_err(|e| {
-        let err = e.to_string();
-        error!("Could not fetch articles {}", err);
-        response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-        ServerFnError::new(err)
-    })
-}
+use crate::backend::core::behaviour::article_get_all::get_all_articles;
 
 #[component]
 pub fn View() -> impl IntoView {
