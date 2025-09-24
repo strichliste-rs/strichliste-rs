@@ -5,9 +5,8 @@ use leptos_router::hooks::use_params_map;
 
 use crate::{
     backend::core::behaviour::{transaction_create::create_transaction, user_get::get_user},
-    frontend::model::money_args::MoneyArgs,
+    frontend::{model::money_args::MoneyArgs, shared::play_sound},
     model::{AudioPlayback, CreateTransactionError, Money, Transaction, TransactionType, UserId},
-    models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
 };
 
