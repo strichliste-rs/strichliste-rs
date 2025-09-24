@@ -12,9 +12,8 @@ pub async fn send_money(
     let state: ServerState = expect_context();
 
     use crate::{
-        backend::database::GroupDB,
+        backend::{core::behaviour::user_get::get_user, database::GroupDB},
         model::{GroupId, Money, Transaction, TransactionType},
-        routes::user::get_user,
     };
     use axum::http::StatusCode;
     use leptos_axum::redirect;

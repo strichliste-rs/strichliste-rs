@@ -8,9 +8,10 @@ pub async fn update_user(
     nickname: String,
     card_number: String,
 ) -> Result<(), ServerFnError> {
+    use crate::backend::core::behaviour::user_get::get_user;
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();
-    use crate::{backend::core::User, routes::user::get_user};
+    use crate::backend::core::User;
     use axum::http::StatusCode;
     use leptos_axum::redirect;
     use leptos_axum::ResponseOptions;

@@ -9,7 +9,7 @@ use tracing::error;
 #[cfg(feature = "ssr")]
 use crate::backend::database::DBError;
 use crate::{
-    backend::core::User,
+    backend::core::behaviour::user_get::get_user,
     model::{AudioPlayback, Money, Transaction, TransactionType, UserId},
     models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
@@ -20,7 +20,6 @@ use {
     crate::backend::core::behaviour::article_get::get_article,
     crate::backend::core::Group,
     crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
-    crate::backend::database::{DBUSER_AUFLADUNG_ID, DBUSER_SNACKBAR_ID},
     rand::seq::IndexedRandom,
     std::{path::PathBuf, str::FromStr},
 };
@@ -34,42 +33,6 @@ pub struct MoneyArgs {
     pub error: RwSignal<String>,
     pub transactions: RwSignal<Vec<Transaction>>,
     pub audio_ref: NodeRef<leptos::html::Audio>,
-}
-
-#[server]
-pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let db = state.db.lock().await;
-    let mut conn = match db.get_conn().await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to create database transaction: {}", e);
-            return Err(ServerFnError::new("Failed to create database transaction"));
-        }
-    };
-
-    if id == DBUSER_AUFLADUNG_ID || id == DBUSER_SNACKBAR_ID {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::new("Failed to fetch user"));
-    }
-
-    let user = match User::get(&mut *conn, id).await {
-        Ok(value) => value,
-        Err(e) => {
-            error!("Failed to fetch user: {}", e);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new(e));
-        }
-    };
-
-    Ok(user)
 }
 
 #[derive(Error, Debug, Clone, Deserialize, Serialize)]

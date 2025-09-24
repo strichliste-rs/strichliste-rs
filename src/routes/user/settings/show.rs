@@ -2,7 +2,8 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 
 use crate::{
-    backend::core::behaviour::update_user::UpdateUser, model::UserId, routes::user::get_user,
+    backend::core::behaviour::{update_user::UpdateUser, user_get::get_user},
+    model::UserId,
 };
 
 #[component]

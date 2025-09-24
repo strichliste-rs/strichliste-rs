@@ -21,9 +21,8 @@ impl Transaction {
 #[server]
 pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<(), ServerFnError> {
     use crate::backend::core::ServerState;
-    use crate::routes::user::get_user;
     use crate::{
-        backend::core::{Group, User},
+        backend::core::{behaviour::user_get::get_user, Group, User},
         model::{GroupId, Money},
     };
     use tracing::{debug, error, trace, warn};
