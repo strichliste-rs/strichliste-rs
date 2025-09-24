@@ -1,7 +1,8 @@
 use leptos::prelude::*;
 
 use crate::{
-    backend::core::behaviour::article_get::get_article, routes::articles::SingleArticleView,
+    backend::core::behaviour::article_get::get_article,
+    frontend::component::article::SingleArticleView,
 };
 
 #[component]
