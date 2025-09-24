@@ -19,6 +19,7 @@ pub mod transaction_get_user_transactions;
 pub mod transaction_set_money;
 pub mod transaction_set_undone;
 pub mod update_article;
+pub mod update_user;
 pub mod user_add_money;
 pub mod user_create;
 pub mod user_get;
