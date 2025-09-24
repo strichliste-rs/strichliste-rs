@@ -1,40 +1,13 @@
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
-#[cfg(feature = "ssr")]
-use tracing::{debug, error};
 
 use crate::{
-    backend::core::{behaviour::user_get_all::get_all_users, User},
+    backend::core::{
+        behaviour::{user_get_all::get_all_users, user_get_by_card_number::get_user_by_barcode},
+        User,
+    },
     model::Money,
 };
-
-#[server]
-pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    debug!("Attempting to fetch a user by barcode '{}'", barcode_string);
-
-    if barcode_string.is_empty() {
-        return Ok(None);
-    }
-
-    let user = match User::get_by_card_number(&*state.db.lock().await, barcode_string).await {
-        Ok(user) => user,
-        Err(err) => {
-            let err = err.to_string();
-            error!("Could not fetch user: {}", err);
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to fetch user"));
-        }
-    };
-
-    Ok(user)
-}
 
 #[component]
 pub fn View() -> impl IntoView {
