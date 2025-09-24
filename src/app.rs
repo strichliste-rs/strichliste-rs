@@ -58,7 +58,7 @@ pub fn App() -> impl IntoView {
                     view=route::user::extra_transactions::Show
                 />
                 <Route path=path!("/user/:id/send_money") view=route::user::send_money::Show />
-                <Route path=path!("/articles") view=routes::articles::View />
+                <Route path=path!("/articles") view=route::articles::View />
                 <Route path=path!("/articles/create") view=route::articles::create::Create />
                 <Route path=path!("/articles/:article_id") view=routes::articles::Edit />
 
