@@ -3,7 +3,13 @@ use std::rc::Rc;
 use leptos::{ev, html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 
 use crate::{
-    backend::core::{behaviour::article_get_all::get_all_articles, Article},
+    backend::core::{
+        behaviour::{
+            article_get_all::get_all_articles,
+            article_get_articles_for_users::get_articles_per_user,
+        },
+        Article,
+    },
     model::{AudioPlayback, Money, Transaction, UserId},
     models::play_sound,
     routes::user::MoneyArgs,
@@ -16,28 +22,6 @@ use {
     crate::model::TransactionType,
     tracing::error,
 };
-
-#[server]
-pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let response_opts: ResponseOptions = expect_context();
-
-    let db = state.db.lock().await;
-
-    match Article::get_articles_for_user(&db, user_id).await {
-        Ok(value) => Ok(value),
-
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to fetch per user articles: {}", e);
-            Err(ServerFnError::new("Failed to fetch per user articles!"))
-        }
-    }
-}
 
 #[server]
 pub async fn buy_article_by_id(

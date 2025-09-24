@@ -1,11 +1,12 @@
-#![cfg(feature = "ssr")]
-
-use crate::{
-    backend::{
-        core::Article,
-        database::{ArticleDB, DatabaseResponse, DB},
-    }, model::UserId,
+use {
+    crate::{backend::core::Article, model::UserId},
+    leptos::prelude::*,
 };
+
+#[cfg(feature = "ssr")]
+use crate::backend::database::{ArticleDB, DatabaseResponse, DB};
+
+#[cfg(feature = "ssr")]
 impl Article {
     pub async fn get_articles_for_user(db: &DB, user_id: UserId) -> DatabaseResponse<Vec<Self>> {
         let mut conn = db.get_conn().await?;
@@ -39,5 +40,28 @@ impl Article {
         }
 
         Ok(articles)
+    }
+}
+
+#[server]
+pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
+    use crate::backend::core::ServerState;
+    let state: ServerState = expect_context();
+    use axum::http::StatusCode;
+    use leptos_axum::ResponseOptions;
+    use tracing::error;
+
+    let response_opts: ResponseOptions = expect_context();
+
+    let db = state.db.lock().await;
+
+    match Article::get_articles_for_user(&db, user_id).await {
+        Ok(value) => Ok(value),
+
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to fetch per user articles: {}", e);
+            Err(ServerFnError::new("Failed to fetch per user articles!"))
+        }
     }
 }
