@@ -10,9 +10,9 @@ use crate::{
         },
         Article,
     },
+    frontend::model::money_args::MoneyArgs,
     model::{AudioPlayback, Money, Transaction, UserId},
     models::play_sound,
-    routes::user::MoneyArgs,
 };
 
 pub fn buy_article(

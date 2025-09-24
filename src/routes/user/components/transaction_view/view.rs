@@ -10,11 +10,10 @@ use crate::{
         group_get::get_group_members, transaction_get_user_transactions::get_user_transactions,
         transaction_set_undone::UndoTransaction,
     },
+    frontend::model::money_args::MoneyArgs,
     model::{Money, PageRequestParams, PageResponseParams, Transaction, TransactionType, UserId},
     routes::user::components::icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
 };
-
-use crate::routes::user::MoneyArgs;
 
 #[component]
 pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {

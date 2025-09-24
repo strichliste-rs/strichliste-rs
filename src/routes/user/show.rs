@@ -10,6 +10,7 @@ use tracing::error;
 use crate::backend::database::DBError;
 use crate::{
     backend::core::behaviour::{transaction_create::create_transaction, user_get::get_user},
+    frontend::model::money_args::MoneyArgs,
     model::{AudioPlayback, Money, Transaction, TransactionType, UserId},
     models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
@@ -23,15 +24,6 @@ use {
 };
 
 use super::components::transaction_view::ShowTransactions;
-
-#[derive(Debug, Clone)]
-pub struct MoneyArgs {
-    pub user_id: UserId,
-    pub money: RwSignal<Money>,
-    pub error: RwSignal<String>,
-    pub transactions: RwSignal<Vec<Transaction>>,
-    pub audio_ref: NodeRef<leptos::html::Audio>,
-}
 
 #[derive(Error, Debug, Clone, Deserialize, Serialize)]
 pub enum CreateTransactionError {
