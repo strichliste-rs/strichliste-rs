@@ -9,7 +9,7 @@ use tracing::error;
 #[cfg(feature = "ssr")]
 use crate::backend::database::DBError;
 use crate::{
-    backend::core::behaviour::user_get::get_user,
+    backend::core::behaviour::{transaction_create::create_transaction, user_get::get_user},
     model::{AudioPlayback, Money, Transaction, TransactionType, UserId},
     models::play_sound,
     routes::user::components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
@@ -18,8 +18,6 @@ use crate::{
 #[cfg(feature = "ssr")]
 use {
     crate::backend::core::behaviour::article_get::get_article,
-    crate::backend::core::Group,
-    crate::backend::database::{DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID},
     rand::seq::IndexedRandom,
     std::{path::PathBuf, str::FromStr},
 };
@@ -74,94 +72,6 @@ impl From<DBError> for CreateTransactionError {
     fn from(value: DBError) -> Self {
         Self::StringMessage(value.to_string())
     }
-}
-
-#[server]
-pub async fn create_transaction(
-    user_id: UserId,
-    money: Money,
-    transaction_type: TransactionType,
-) -> Result<Transaction, CreateTransactionError> {
-    type Error = CreateTransactionError;
-    use crate::backend::core::ServerState;
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-
-    let state: ServerState = expect_context();
-
-    let response_opts: ResponseOptions = expect_context();
-
-    if money.value < 0 {
-        response_opts.set_status(StatusCode::BAD_REQUEST);
-        return Err(Error::new("Money may not be negative"));
-    }
-
-    let db = state.db.lock().await;
-    let mut db_trans = match db.get_conn_transaction().await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get database handle: {}", e);
-            return Err(Error::new("Failed to get database handle!"));
-        }
-    };
-
-    let user_group = match Group::get_user_group_id(&mut *db_trans, user_id).await {
-        Ok(value) => value,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to get user group: {}", e);
-            return Err(Error::new("Failed to get user group"));
-        }
-    };
-
-    let (sender_group_id, receiver_group_id) = match transaction_type {
-        TransactionType::Deposit => (DBGROUP_AUFLADUNG_ID, user_group),
-        TransactionType::Withdraw => (user_group, DBGROUP_AUFLADUNG_ID),
-        TransactionType::Bought(_) => (user_group, DBGROUP_SNACKBAR_ID),
-
-        _ => return Err(Error::new("Invalid state")),
-    };
-
-    let transaction_id = Transaction::create(
-        &mut *db_trans,
-        sender_group_id,
-        receiver_group_id,
-        transaction_type,
-        None,
-        money,
-        &state.settings,
-    )
-    .await?;
-
-    let transaction = match Transaction::get(&mut *db_trans, transaction_id, user_id).await {
-        Ok(val) => val,
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to find transaction during DB-lookup: {}", e);
-            return Err(Error::new("Failed to find transaction!"));
-        }
-    };
-
-    let transaction = match transaction {
-        Some(val) => val,
-        None => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to find transaction");
-            return Err(Error::new("Failed to find transaction!"));
-        }
-    };
-
-    match db_trans.commit().await {
-        Ok(_) => {}
-        Err(e) => {
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            error!("Failed to commit transaction: {}", e);
-            return Err(Error::new("Failed to commit transaction!"));
-        }
-    }
-
-    Ok(transaction)
 }
 
 #[cfg(feature = "ssr")]
