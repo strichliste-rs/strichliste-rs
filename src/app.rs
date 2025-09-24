@@ -62,7 +62,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/articles/create") view=route::articles::create::Create />
                 <Route path=path!("/articles/:article_id") view=route::articles::Edit />
 
-                <Route path=path!("/split_cost") view=routes::split_cost::Show />
+                <Route path=path!("/split_cost") view=route::split_cost::Show />
             </Routes>
         </Router>
     }
