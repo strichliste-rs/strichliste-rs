@@ -6,11 +6,13 @@ use leptos_router::hooks::use_params_map;
 use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
-    backend::core::behaviour::group_get::get_group_members,
+    backend::core::behaviour::{
+        group_get::get_group_members, transaction_get_user_transactions::get_user_transactions,
+    },
     model::{Money, PageRequestParams, PageResponseParams, Transaction, TransactionType, UserId},
     routes::user::components::{
         icons::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
-        transaction_view::{server::get_user_transactions, UndoTransaction},
+        transaction_view::UndoTransaction,
     },
 };
 

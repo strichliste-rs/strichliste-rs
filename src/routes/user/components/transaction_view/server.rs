@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::model::{Page, PageRequestParams, Transaction, UserId};
+use crate::model::UserId;
 
 #[cfg(feature = "ssr")]
 use {
@@ -13,35 +13,6 @@ use {
     },
     tracing::{debug, error, trace, warn},
 };
-
-#[server]
-pub async fn get_user_transactions(
-    user_id: UserId,
-    page_request_params: PageRequestParams,
-) -> Result<Page<Transaction>, ServerFnError> {
-    use crate::backend::core::ServerState;
-    let state: ServerState = expect_context();
-    use axum::http::StatusCode;
-    use leptos_axum::ResponseOptions;
-    let response_opts: ResponseOptions = expect_context();
-
-    let transactions = match Transaction::get_user_transactions(
-        &*state.db.lock().await,
-        user_id,
-        page_request_params,
-    )
-    .await
-    {
-        Ok(transactions) => transactions,
-        Err(err) => {
-            error!("Failed to fetch transactions: {}", err.to_string());
-            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
-            return Err(ServerFnError::new("Failed to fetch transactions!"));
-        }
-    };
-
-    Ok(transactions)
-}
 
 #[server]
 pub async fn undo_transaction(user_id: UserId, transaction_id: i64) -> Result<(), ServerFnError> {
