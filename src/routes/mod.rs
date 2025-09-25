@@ -1,4 +1,3 @@
-pub mod home;
 pub mod navbar;
 pub mod split_cost;
 pub mod user;

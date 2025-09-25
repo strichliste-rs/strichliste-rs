@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
-use crate::{backend::core::behaviour::user_get_all::get_all_users, routes::home::UserPreview};
+use crate::{
+    backend::core::behaviour::user_get_all::get_all_users, frontend::component::user::UserPreview,
+};
 
 #[component]
 pub fn ShowUsers() -> impl IntoView {
