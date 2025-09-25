@@ -5,8 +5,11 @@ use leptos_router::{
     path,
 };
 
-use crate::frontend::route::{self};
-use crate::routes::{self, state::FrontendStore};
+use crate::frontend::{
+    component,
+    route::{self},
+};
+use crate::routes::state::FrontendStore;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -42,7 +45,7 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="Strichliste-rs" />
 
-        {routes::navbar::View()}
+        {component::navbar::View()}
 
         // content for this welcome page
         <Router>
