@@ -1,8 +1,6 @@
 use leptos::prelude::*;
 
-use crate::{
-    frontend::component::invisible_scan_input::InvisibleScanInput, routes::home::ShowUsers,
-};
+use crate::frontend::component::{invisible_scan_input::InvisibleScanInput, user::ShowUsers};
 
 #[component]
 pub fn View() -> impl IntoView {
