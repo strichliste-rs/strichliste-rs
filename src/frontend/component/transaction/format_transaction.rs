@@ -5,9 +5,8 @@ use crate::{
     backend::core::behaviour::{
         group_get::get_group_members, transaction_set_undone::UndoTransaction,
     },
-    frontend::component::icon::{LeftArrowIcon, RightArrowIcon},
+    frontend::component::icon::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
     model::{Money, Transaction, TransactionType, UserId},
-    routes::user::components::icons::ArticleBasketIcon,
 };
 
 pub fn format_transaction(
