@@ -5,7 +5,7 @@ use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local
 
 use crate::{
     backend::core::behaviour::article_get_by_barcode::get_article_by_barcode,
-    frontend::model::money_args::MoneyArgs, routes::user::components::buy_article::buy_article,
+    frontend::{model::money_args::MoneyArgs, shared::buy_article},
 };
 
 pub fn invisible_scan_input(

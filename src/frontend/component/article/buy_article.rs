@@ -4,8 +4,10 @@ use leptos::prelude::*;
 
 use crate::{
     backend::core::{behaviour::article_get_articles_for_users::get_articles_per_user, Article},
-    frontend::{component::article::search_article::ArticleSearch, model::money_args::MoneyArgs},
-    routes::user::components::buy_article::buy_article,
+    frontend::{
+        component::article::search_article::ArticleSearch, model::money_args::MoneyArgs,
+        shared::buy_article,
+    },
 };
 
 #[component]

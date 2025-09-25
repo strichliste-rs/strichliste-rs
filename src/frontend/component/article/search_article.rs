@@ -4,8 +4,7 @@ use leptos::{ev, html, prelude::*};
 
 use crate::{
     backend::core::{behaviour::article_get_all::get_all_articles, Article},
-    frontend::model::money_args::MoneyArgs,
-    routes::user::components::buy_article::buy_article,
+    frontend::{model::money_args::MoneyArgs, shared::buy_article},
 };
 
 #[component]
