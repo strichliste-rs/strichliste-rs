@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use reactive_stores::Store;
-
 use crate::model::AudioPlayback;
+use reactive_stores::Store;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default, Store)]
 pub struct FrontendStore {

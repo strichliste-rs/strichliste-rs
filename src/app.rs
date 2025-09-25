@@ -7,9 +7,9 @@ use leptos_router::{
 
 use crate::frontend::{
     component,
+    model::frontend_store::FrontendStore,
     route::{self},
 };
-use crate::routes::state::FrontendStore;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
