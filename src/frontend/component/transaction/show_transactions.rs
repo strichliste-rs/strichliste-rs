@@ -6,9 +6,8 @@ use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
     backend::core::behaviour::transaction_get_user_transactions::get_user_transactions,
-    frontend::model::money_args::MoneyArgs,
+    frontend::{component::transaction::format_transaction, model::money_args::MoneyArgs},
     model::{PageRequestParams, PageResponseParams, Transaction, UserId},
-    routes::user::components::transaction_view::format_transaction,
 };
 
 #[component]
