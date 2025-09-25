@@ -7,15 +7,13 @@ use crate::{
     backend::core::behaviour::user_get::get_user,
     frontend::{
         component::{
-            change_money_button::change_money_button, scan_input::invisible_scan_input,
-            transaction::ShowTransactions,
+            article::buy_article::BuyArticle, change_money_button::change_money_button,
+            scan_input::invisible_scan_input, transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
     },
     model::{Transaction, UserId},
-    routes::user::{
-        components::buy_article::BuyArticle, on_custom_money_button_click, SettingsIcon,
-    },
+    routes::user::{on_custom_money_button_click, SettingsIcon},
 };
 
 #[component]
