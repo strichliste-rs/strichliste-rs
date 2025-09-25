@@ -7,14 +7,14 @@
 }:
 let
   src = lib.fileset.toSource {
-    root = ./.;
+    root = ../.;
     fileset = lib.fileset.unions [
-      ./Cargo.toml
-      ./Cargo.lock
-      ./src
-      ./public
-      ./migrations
-      ./.sqlx
+      ../Cargo.toml
+      ../Cargo.lock
+      ../src
+      ../public
+      ../migrations
+      ../.sqlx
     ];
   };
 

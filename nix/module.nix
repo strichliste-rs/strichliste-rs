@@ -69,12 +69,12 @@ in
       sounds = mkSubmoduleOption {
         failed = mkSoundListOption {
           description = "Sounds that play when a transaction fails";
-          default = [ ./public/sounds/wobble.wav ];
+          default = [ ../public/sounds/wobble.wav ];
         };
 
         generic = mkSoundListOption {
           description = "Sounds that play when a transaction succeeds";
-          default = [ ./public/sounds/kaching.wav ];
+          default = [ ../public/sounds/kaching.wav ];
         };
 
         articles = mkOption {

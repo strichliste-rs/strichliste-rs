@@ -52,7 +52,7 @@
           };
 
         treeFmtEval = inputs.treefmt-nix.lib.evalModule pkgs formattingConfig;
-        crane_pkg = pkgs.callPackage ./pkg_crane.nix {
+        crane_pkg = pkgs.callPackage ./nix/pkg_crane.nix {
           inherit
             name
             version
@@ -63,7 +63,7 @@
       in
       {
         nixosModules = rec {
-          default = import ./module.nix self system;
+          default = import ./nix/module.nix self system;
           strichliste = default;
         };
         devShells.default = pkgs.mkShell {
