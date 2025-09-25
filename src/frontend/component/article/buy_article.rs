@@ -32,12 +32,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                             .get()
                             .map(|article| {
                                 let article = match article {
-                                    Ok(value) => {
-                                        value
-                                            .into_iter()
-                                            .take(9)
-                                            .collect::<Vec<Article>>()
-                                    }
+                                    Ok(value) => value.into_iter().take(9).collect::<Vec<Article>>(),
                                     Err(e) => {
                                         let msg = match e {
                                             ServerFnError::ServerError(msg) => msg,

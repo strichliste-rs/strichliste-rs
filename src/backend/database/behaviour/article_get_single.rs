@@ -2,7 +2,10 @@
 
 use sqlx::{query_as, Executor};
 
-use crate::{backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType}, model::DatabaseId};
+use crate::{
+    backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType},
+    model::DatabaseId,
+};
 impl ArticleDB {
     pub async fn get_single<T>(
         conn: &mut T,
