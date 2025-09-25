@@ -1,5 +1,7 @@
+pub mod arrow_left;
 pub mod delete_button;
 pub mod settings_icon;
 
+pub use arrow_left::*;
 pub use delete_button::*;
 pub use settings_icon::*;
