@@ -5,10 +5,12 @@ use leptos_router::hooks::use_params_map;
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
-    frontend::{component::transaction::ShowTransactions, model::money_args::MoneyArgs},
+    frontend::{
+        component::{change_money_button::change_money_button, transaction::ShowTransactions},
+        model::money_args::MoneyArgs,
+    },
     model::{Transaction, UserId},
     routes::user::{
-        change_money_button,
         components::{buy_article::BuyArticle, scan_input::invisible_scan_input},
         on_custom_money_button_click, SettingsIcon,
     },

@@ -52,22 +52,8 @@ pub fn SettingsIcon() -> impl IntoView {
     }
 }
 
-pub fn change_money_button(money: i64, args: Rc<MoneyArgs>) -> impl IntoView {
-    view! {
-        <a
-            on:click=move |_| change_money(money.into(), args.clone())
-            href="#"
-            class="p-5 text-white rounded-[10px] text-center text-[1.25em]"
-            class=("bg-emerald-600", move || money > 0)
-            class=("bg-red-400", move || money < 0)
-        >
-            {Money::format_eur_diff_value(money)}
-        </a>
-    }
-}
-
 // fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
-fn change_money(money: Money, args: Rc<MoneyArgs>) {
+pub fn change_money(money: Money, args: Rc<MoneyArgs>) {
     // this only runs in the main user view
     spawn_local(async move {
         let mut fixed_money = money;
