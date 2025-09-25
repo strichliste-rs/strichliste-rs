@@ -2,7 +2,10 @@ use std::rc::Rc;
 
 use leptos::prelude::*;
 
-use crate::{frontend::model::money_args::MoneyArgs, model::Money, routes::user::change_money};
+use crate::{
+    frontend::{model::money_args::MoneyArgs, shared::change_money},
+    model::Money,
+};
 
 pub fn change_money_button(money: i64, args: Rc<MoneyArgs>) -> impl IntoView {
     view! {
