@@ -2,11 +2,9 @@ use leptos::{prelude::*, task::spawn_local};
 
 use crate::{
     backend::core::behaviour::split_cost::split_cost,
-    routes::{
-        components::error_message::ErrorMessage,
-        split_cost::components::{
-            multi_user_selection::SelectMultiUser, single_user_selection::SelectSingleUser,
-        },
+    frontend::component::error_message::ErrorMessage,
+    routes::split_cost::components::{
+        multi_user_selection::SelectMultiUser, single_user_selection::SelectSingleUser,
     },
 };
 
