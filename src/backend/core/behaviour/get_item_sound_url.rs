@@ -4,9 +4,8 @@ use crate::model::AudioPlayback;
 
 #[server]
 pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<Vec<u8>, ServerFnError> {
-    use crate::{
-        backend::core::{behaviour::article_get::get_article, ServerState},
-        routes::user::choose_random_item,
+    use crate::backend::core::{
+        behaviour::article_get::get_article, misc::choose_random_item, ServerState,
     };
     use axum::http::StatusCode;
     use leptos_axum::ResponseOptions;
