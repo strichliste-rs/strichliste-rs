@@ -59,7 +59,7 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
             }
         });
     };
-    return view! {
+    view! {
         {move || {
             let msg = error_signal.get();
             match msg.len() {
@@ -219,5 +219,5 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
             </div>
         </div>
     }
-    .into_any();
+    .into_any()
 }
