@@ -3,9 +3,8 @@ use leptos_router::hooks::use_params_map;
 
 use crate::{
     backend::core::behaviour::transaction_get_user_transactions::get_user_transactions,
-    frontend::component::transaction::format_transaction,
+    frontend::component::transaction::{format_transaction, ShowNavigationButtons},
     model::{Money, PageRequestParams, Transaction, UserId},
-    routes::user::extra_transactions::ShowNavigationButtons,
 };
 
 #[component]
