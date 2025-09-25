@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::{frontend::component::single_user_selection::SelectSingleUser, routes::components::icons::DeleteIcon};
+use crate::frontend::component::{icon::DeleteIcon, single_user_selection::SelectSingleUser};
 
 #[component]
 pub fn SelectMultiUser(
