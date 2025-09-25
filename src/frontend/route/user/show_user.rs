@@ -8,13 +8,12 @@ use crate::{
     frontend::{
         component::{
             article::buy_article::BuyArticle, change_money_button::change_money_button,
-            scan_input::invisible_scan_input, transaction::ShowTransactions,
+            icon::SettingsIcon, scan_input::invisible_scan_input, transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
         shared::on_custom_money_button_click,
     },
     model::{Transaction, UserId},
-    routes::user::SettingsIcon,
 };
 
 #[component]
