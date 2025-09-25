@@ -11,9 +11,10 @@ use crate::{
             scan_input::invisible_scan_input, transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
+        shared::on_custom_money_button_click,
     },
     model::{Transaction, UserId},
-    routes::user::{on_custom_money_button_click, SettingsIcon},
+    routes::user::SettingsIcon,
 };
 
 #[component]
