@@ -83,6 +83,8 @@ This step is needed in order for the build instructions to work. This step shoul
         > a interaction with the database that can be performed i.e.: create_user.rs send_money.rs
       - misc
         > things that don´t fit into either models or behaviours
+      - convert
+        > conversion between foreign or database only types
     - convert
       > conversion between database types and backend types \
       > prefer implementing the [From](https://doc.rust-lang.org/std/convert/trait.From.html) \

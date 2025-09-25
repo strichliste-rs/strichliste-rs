@@ -16,8 +16,3 @@ impl Display for DBError {
         write!(f, "{}", self.0)
     }
 }
-impl From<sqlx::Error> for DBError {
-    fn from(value: sqlx::Error) -> Self {
-        DBError::new(value)
-    }
-}
