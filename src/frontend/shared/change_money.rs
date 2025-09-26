@@ -4,7 +4,10 @@ use leptos::{prelude::*, task::spawn_local};
 
 use crate::{
     backend::core::behaviour::transaction_create::create_transaction,
-    frontend::{model::money_args::MoneyArgs, shared::play_sound},
+    frontend::{
+        model::money_args::MoneyArgs,
+        shared::{play_sound, throw_error},
+    },
     model::{AudioPlayback, CreateTransactionError, Money, TransactionType},
 };
 // fn change_money_logic_raw(money: Money, user_id: UserId, money_signal: RwSignal<Money>, error_signal: RwSignal<String>, transaction_signal: RwSignal<Vec<Transaction>>){
@@ -23,19 +26,15 @@ pub fn change_money(money: Money, args: Rc<MoneyArgs>) {
             Ok(transaction) => {
                 args.money
                     .update(|money_struct| money_struct.value += money.value);
-                args.error.set(String::new());
                 args.transactions.write().insert(0, transaction.clone());
-                play_sound(
-                    args.clone(),
-                    match transaction.t_type {
-                        TransactionType::Bought(id) => AudioPlayback::Bought(id),
-                        TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
-                        TransactionType::Withdraw => AudioPlayback::Withdraw(transaction.money),
-                        TransactionType::Received(_) => return,
-                        TransactionType::SentAndReceived(_) => return,
-                        TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money),
-                    },
-                );
+                play_sound(match transaction.t_type {
+                    TransactionType::Bought(id) => AudioPlayback::Bought(id),
+                    TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
+                    TransactionType::Withdraw => AudioPlayback::Withdraw(transaction.money),
+                    TransactionType::Received(_) => return,
+                    TransactionType::SentAndReceived(_) => return,
+                    TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money),
+                });
             }
             Err(e) => {
                 let msg = match e {
@@ -48,8 +47,8 @@ pub fn change_money(money: Money, args: Rc<MoneyArgs>) {
                     CreateTransactionError::StringMessage(msg) => msg,
                     CreateTransactionError::ServerFn(server_fn) => server_fn.to_string(),
                 };
-                args.error.set(msg);
-                play_sound(args.clone(), AudioPlayback::Failed);
+                throw_error(msg);
+                play_sound(AudioPlayback::Failed);
             }
         };
     })

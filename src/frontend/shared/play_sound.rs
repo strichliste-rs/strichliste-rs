@@ -1,17 +1,15 @@
-use std::rc::Rc;
-
 use leptos::{
     leptos_dom::logging::console_log,
-    prelude::{expect_context, GetUntracked, Set},
+    prelude::{expect_context, GetUntracked},
     task::spawn_local,
 };
 use reactive_stores::{Store, StoreField};
 
 use crate::{
     backend::core::behaviour::get_item_sound_url::get_item_sound_url,
-    frontend::model::{
-        frontend_store::{FrontendStore, FrontendStoreStoreFields},
-        money_args::MoneyArgs,
+    frontend::{
+        model::frontend_store::{FrontendStore, FrontendStoreStoreFields},
+        shared::throw_error,
     },
     model::AudioPlayback,
 };
@@ -28,18 +26,17 @@ use crate::{
     let _ = audio.add_event_listener_with_callback("error", error_callback.as_ref().unchecked_ref());
 */
 
-pub fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback) {
+pub fn play_sound(audio_playback: AudioPlayback) {
+    let store = expect_context::<Store<FrontendStore>>();
+    let audio = match store.audio_ref().get_untracked().get_untracked() {
+        Some(v) => v,
+        None => {
+            throw_error("Failed to get audio node");
+            return;
+        }
+    };
     use leptos::web_sys::{js_sys, Url};
     spawn_local(async move {
-        let store = expect_context::<Store<FrontendStore>>();
-        let audio = match args.audio_ref.get_untracked() {
-            Some(val) => val,
-            None => {
-                console_log("Failed to get audio node");
-                return;
-            }
-        };
-
         let mut cached_sounds = store.cached_sounds().writer().unwrap();
 
         let url = match cached_sounds.get(&audio_playback) {
@@ -48,7 +45,7 @@ pub fn play_sound(args: Rc<MoneyArgs>, audio_playback: AudioPlayback) {
                 let sound = match get_item_sound_url(audio_playback).await {
                     Ok(value) => value,
                     Err(e) => {
-                        args.error.set(format!("Failed to fetch sound: {e}"));
+                        throw_error(format!("Failed to fetch sound: {e}"));
                         return;
                     }
                 };

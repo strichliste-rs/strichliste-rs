@@ -12,9 +12,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
     let MoneyArgs {
         user_id,
         money,
-        error,
         transactions,
-        audio_ref,
     } = *money_args;
     let articles_resource = OnceResource::new(get_all_articles(None));
 
@@ -106,14 +104,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                         .map(|elem| {
                             view! {
                                 <button on:click=move |_| {
-                                    buy_article(
-                                        user_id,
-                                        elem.id,
-                                        money,
-                                        error,
-                                        transactions,
-                                        audio_ref,
-                                    );
+                                    buy_article(user_id, elem.id, money, transactions);
                                     search_term.set(String::new());
                                 }>
                                     <div class="p-2 m-2 rounded text-white bg-gray-700">

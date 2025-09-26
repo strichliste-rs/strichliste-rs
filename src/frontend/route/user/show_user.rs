@@ -33,11 +33,7 @@ pub fn ShowUser() -> impl IntoView {
 
     let error_signal = RwSignal::new(String::new());
 
-    let audio_ref = NodeRef::<leptos::html::Audio>::new();
-
     view! {
-        <audio node_ref=audio_ref />
-
         {move || {
             let error = error_signal.get();
             if !error.is_empty() {
@@ -100,9 +96,7 @@ pub fn ShowUser() -> impl IntoView {
                                 let m_args = MoneyArgs {
                                     user_id,
                                     money: money_signal,
-                                    error: error_signal,
                                     transactions,
-                                    audio_ref,
                                 };
                                 let args1 = m_args.clone();
                                 let args2 = m_args.clone();

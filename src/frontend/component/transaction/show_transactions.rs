@@ -34,7 +34,6 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
         OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
 
     let transaction_signal = arguments.transactions;
-    let error_signal = arguments.error;
     let money_signal = arguments.money;
 
     view! {
@@ -106,7 +105,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                             )
                             let:child
                         >
-                            {format_transaction(&child, user_id, error_signal, money_signal)}
+                            {format_transaction(&child, user_id, money_signal)}
                         </For>
 
                     </div>
