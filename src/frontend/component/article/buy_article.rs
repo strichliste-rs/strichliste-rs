@@ -16,9 +16,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
     let MoneyArgs {
         user_id,
         money,
-        error,
         transactions,
-        audio_ref,
     } = *args;
     let personal_articles = OnceResource::new(get_articles_per_user(user_id));
     view! {
@@ -55,14 +53,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                                             <button
                                                 class="bg-gray-700 rounded p-2"
                                                 on:click=move |_| {
-                                                    buy_article(
-                                                        user_id,
-                                                        id,
-                                                        money,
-                                                        error,
-                                                        transactions,
-                                                        audio_ref,
-                                                    );
+                                                    buy_article(user_id, id, money, transactions);
                                                 }
                                             >
                                                 <div>{name}" | "{cost.format_eur()}</div>

@@ -5,14 +5,16 @@ use crate::{
     backend::core::behaviour::{
         group_get::get_group_members, transaction_set_undone::UndoTransaction,
     },
-    frontend::component::icon::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
+    frontend::{
+        component::icon::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
+        shared::throw_error,
+    },
     model::{Money, Transaction, TransactionType, UserId},
 };
 
 pub fn format_transaction(
     transaction: &Transaction,
     user_id: UserId,
-    error_write: RwSignal<String>,
     money_signal: RwSignal<Money>,
 ) -> impl IntoView {
     let now: DateTime<Utc> = Utc::now();
@@ -182,14 +184,13 @@ pub fn format_transaction(
                             undo_signal.set(true);
                             money_signal.update(|value| value.value -= money);
                             console_log("Set signal to true");
-                            error_write.set(String::new());
                         }
                         Err(e) => {
                             let msg = match e {
                                 ServerFnError::ServerError(msg) => msg,
                                 _ => e.to_string(),
                             };
-                            error_write.set(msg);
+                            throw_error(msg);
                         }
                     }
                 }

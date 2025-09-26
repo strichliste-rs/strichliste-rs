@@ -60,9 +60,7 @@ pub fn invisible_scan_input(
                             money_args_clone.user_id,
                             value.id,
                             money_args_clone.money,
-                            money_args_clone.error,
                             money_args_clone.transactions,
-                            money_args_clone.audio_ref,
                         );
                     }
                 }

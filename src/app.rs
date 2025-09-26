@@ -5,27 +5,31 @@ use leptos_router::{
     path,
 };
 
+use thaw::ssr::SSRMountStyleProvider;
+
 use crate::frontend::{
-    component,
+    component::{self, error_popup::ErrorDisplay},
     model::frontend_store::FrontendStore,
     route::{self},
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <AutoReload options=options.clone() />
-                <HydrationScripts options />
-                <MetaTags />
-            </head>
-            <body class="bg-[#25333f]">
-                <App />
-            </body>
-        </html>
+        <SSRMountStyleProvider>
+            <!DOCTYPE html>
+            <html lang="en">
+                <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <AutoReload options=options.clone() />
+                    <HydrationScripts options />
+                    <MetaTags />
+                </head>
+                <body class="bg-[#25333f]">
+                    <App />
+                </body>
+            </html>
+        </SSRMountStyleProvider>
     }
 }
 
@@ -35,7 +39,13 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     use reactive_stores::Store;
-    provide_context(Store::new(FrontendStore::default()));
+    let audio_ref = NodeRef::<leptos::html::Audio>::new();
+    let store = Store::new(FrontendStore {
+        cached_sounds: Default::default(),
+        audio_ref,
+        error: Default::default(),
+    });
+    provide_context(store);
 
     view! {
         // injects a stylesheet into the document <head>
@@ -46,6 +56,8 @@ pub fn App() -> impl IntoView {
         <Title text="Strichliste-rs" />
 
         {component::navbar::View()}
+        <ErrorDisplay />
+        <audio node_ref=audio_ref />
 
         // content for this welcome page
         <Router>
