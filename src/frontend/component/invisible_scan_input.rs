@@ -1,7 +1,10 @@
-use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
+use leptos::{ev, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
 
-use crate::backend::core::behaviour::user_get_by_card_number::get_user_by_barcode;
+use crate::{
+    backend::core::behaviour::user_get_by_card_number::get_user_by_barcode,
+    frontend::shared::throw_error,
+};
 
 #[component]
 pub fn InvisibleScanInput() -> impl IntoView {
@@ -20,7 +23,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
                 let user = match get_user_by_barcode(scan_input.clone()).await {
                     Ok(user) => user,
                     Err(err) => {
-                        console_log(&format!("Failed to fetch user by barcode: {}", err));
+                        throw_error(format!("Failed to fetch user by barcode: {}", err));
                         return;
                     }
                 };
@@ -28,7 +31,7 @@ pub fn InvisibleScanInput() -> impl IntoView {
                 let user = match user {
                     Some(user) => user,
                     None => {
-                        console_log(&format!("There is no user with barcode \"{scan_input}\""));
+                        throw_error(format!("There is no user with barcode \"{scan_input}\""));
                         return;
                     }
                 };

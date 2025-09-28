@@ -6,7 +6,10 @@ use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 
 use crate::{
     backend::core::behaviour::transaction_get_user_transactions::get_user_transactions,
-    frontend::{component::transaction::format_transaction, model::money_args::MoneyArgs},
+    frontend::{
+        component::transaction::format_transaction, model::money_args::MoneyArgs,
+        shared::throw_error_none_view,
+    },
     model::{PageRequestParams, PageResponseParams, Transaction, UserId},
 };
 
@@ -16,15 +19,16 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     let user_id_string = match params.read_untracked().get("id") {
         Some(s) => s,
         None => {
-            return view! { <p class="text-red-500">"Failed to obtain id from url"</p> }.into_any();
+            return throw_error_none_view("Failed to obtain id from url");
         }
     };
 
     let user_id = match user_id_string.parse::<i64>() {
         Ok(user_id) => UserId(user_id),
         Err(_) => {
-            return view! { <p class="text-red-500">"Failed to convert id to a number!"</p> }
-                .into_any();
+            return throw_error_none_view(format!(
+                "Failed to convert id to a number!: {user_id_string}"
+            ))
         }
     };
 
@@ -44,12 +48,7 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                 let transactions = match transaction_data.get() {
                     Some(transactions) => transactions,
                     None => {
-                        return view! {
-                            <p class="text-white bg-red-400 text-center">
-                                "Failed to fetch transactions"
-                            </p>
-                        }
-                            .into_any();
+                        return ().into_any();
                     }
                 };
                 let mut transactions = match transactions {
@@ -59,12 +58,9 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
                             ServerFnError::ServerError(msg) => msg,
                             _ => "Failed to fetch transactions".to_string(),
                         };
-                        return view! {
-                            <p class="text-white text-center bg-red-400">
-                                "Failed to fetch users because: "{msg}
-                            </p>
-                        }
-                            .into_any();
+                        return throw_error_none_view(
+                            format!("Failed to fetch users because: {msg}"),
+                        );
                     }
                 };
                 transactions.sort_by(|a, b| { b.timestamp.cmp(&a.timestamp) });

@@ -3,6 +3,7 @@ use leptos_router::hooks::use_params_map;
 
 use crate::{
     backend::core::behaviour::{update_user::UpdateUser, user_get::get_user},
+    frontend::shared::throw_error_none_view,
     model::UserId,
 };
 
@@ -14,8 +15,9 @@ pub fn Show() -> impl IntoView {
     let user_id = match user_id_string.parse::<i64>() {
         Ok(user_id) => UserId(user_id),
         Err(_) => {
-            return view! { <p class="text-red-500">"Failed to convert id to a number!"</p> }
-                .into_any();
+            return throw_error_none_view(format!(
+                "Failed to convert id: {user_id_string} to a number!"
+            ));
         }
     };
 
@@ -30,29 +32,23 @@ pub fn Show() -> impl IntoView {
                 let user = match user_resource.get() {
                     Some(user) => user,
                     None => {
-                        return view! { <p class="text-red-500">"Failed to fetch user"</p> }
-                            .into_any();
+                        return ().into_any();
                     }
                 };
                 let user = match user {
                     Ok(user) => user,
                     Err(err) => {
-                        let err = err.to_string();
-                        return view! {
-                            <p class="text-red-500">"Failed to fetch user because: "{err}</p>
-                        }
-                            .into_any();
+                        return throw_error_none_view(
+                            format!("Failed to fetch user because: {err}"),
+                        );
                     }
                 };
                 let user = match user {
                     Some(user) => user,
                     None => {
-                        return view! {
-                            <p class="text-red-500">
-                                "No user with the id "{user_id.0}" has been found!"
-                            </p>
-                        }
-                            .into_any();
+                        return throw_error_none_view(
+                            format!("No user with the id {} has been found!", user_id.0),
+                        );
                     }
                 };
 
@@ -63,13 +59,7 @@ pub fn Show() -> impl IntoView {
                                 ServerFnError::ServerError(msg) => msg,
                                 _ => e.to_string(),
                             };
-
-                            view! {
-                                <p class="p-3 bg-red-400 text-white text-center">
-                                    "Failed to update user: "{msg}
-                                </p>
-                            }
-                                .into_any()
+                            throw_error_none_view(format!("Failed to update user: {msg}"))
                         }
                         _ => ().into_any(),
                     }}

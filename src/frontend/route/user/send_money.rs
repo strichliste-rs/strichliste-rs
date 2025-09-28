@@ -5,6 +5,7 @@ use crate::{
     backend::core::behaviour::{
         send_money::send_money, user_get::get_user, user_get_all::get_all_users,
     },
+    frontend::shared::throw_error_none_view,
     model::UserId,
 };
 
@@ -16,8 +17,9 @@ pub fn Show() -> impl IntoView {
     let user_id = match user_id_string.parse::<i64>() {
         Ok(value) => value,
         Err(_e) => {
-            return view! { <p class="text-red-500">"Failed to convert id to a number!"</p> }
-                .into_any();
+            return throw_error_none_view(format!(
+                "Failed to convert id: {user_id_string} to a number!"
+            ));
         }
     };
 
@@ -42,35 +44,21 @@ pub fn Show() -> impl IntoView {
                         let user = match user {
                             Ok(value) => value,
                             Err(e) => {
-                                let e = e.to_string();
-                                return view! {
-                                    <p class="bg-red-400 text-white text-center">
-                                        "Failed to fetch user: "{e}
-                                    </p>
-                                }
-                                    .into_any();
+                                return throw_error_none_view(format!("Failed to fetch user: {e}"));
                             }
                         };
                         let user = match user {
                             Some(value) => value,
                             None => {
-                                return view! {
-                                    <p class="bg-red-400 text-white text-center">
-                                        "No such user with id '"{user_id.0}"' exists!"
-                                    </p>
-                                }
-                                    .into_any();
+                                return throw_error_none_view(
+                                    format!("No such user with id '{}' exists!", user_id.0),
+                                );
                             }
                         };
                         let all_users = match all_users_resource.get() {
                             Some(Ok(value)) => value,
                             _ => {
-                                return view! {
-                                    <p class="bg-red-400 text-white text-center">
-                                        "Failed to fetch all users!"
-                                    </p>
-                                }
-                                    .into_any();
+                                return ().into_any();
                             }
                         };
 
@@ -167,10 +155,9 @@ pub fn Show() -> impl IntoView {
                                             0 => ().into_any(),
                                             _ => {
                                                 let msg = error_result.get();
-                                                view! {
-                                                    <p class="text-red-900">"Failed to send money:  "{msg}</p>
-                                                }
-                                                    .into_any()
+                                                throw_error_none_view(
+                                                    format!("Failed to send money:  {msg}"),
+                                                )
                                             }
                                         }}
                                     </div>

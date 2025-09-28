@@ -1,6 +1,9 @@
 use leptos::prelude::*;
 
-use crate::backend::core::behaviour::article_get_all::get_all_articles;
+use crate::{
+    backend::core::behaviour::article_get_all::get_all_articles,
+    frontend::shared::throw_error_none_view,
+};
 
 #[component]
 pub fn ShowArticles() -> impl IntoView {
@@ -19,10 +22,7 @@ pub fn ShowArticles() -> impl IntoView {
                                     ServerFnError::ServerError(msg) => msg,
                                     _ => err.to_string(),
                                 };
-                                view! {
-                                    <p class="text-red-900">"Failed to fetch article: " {msg}</p>
-                                }
-                                    .into_any()
+                                throw_error_none_view(format!("Failed to fetch article: {msg}"))
                             }
                             Ok(mut articles) => {
                                 view! {

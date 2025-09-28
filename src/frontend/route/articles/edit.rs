@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 use crate::{
     backend::core::behaviour::article_get::get_article,
-    frontend::component::article::SingleArticleView,
+    frontend::{component::article::SingleArticleView, shared::throw_error_none_view},
 };
 
 #[component]
@@ -18,12 +18,7 @@ pub fn Edit() -> impl IntoView {
     let article_id = match article_id {
         Ok(value) => value,
         Err(err) => {
-            return view! {
-                <p class="text-red-400 text-center">
-                    "Failed to get id from params map: "{err.to_string()}
-                </p>
-            }
-            .into_any();
+            return throw_error_none_view(format!("Failed to get id from params map: {err}"));
         }
     };
 
@@ -40,12 +35,9 @@ pub fn Edit() -> impl IntoView {
                             ServerFnError::ServerError(msg) => msg,
                             _ => e.to_string(),
                         };
-                        return view! {
-                            <p class="text-red-400 text-center">
-                                "Failed to load Article: "{error_msg}
-                            </p>
-                        }
-                            .into_any();
+                        return throw_error_none_view(
+                            format!("Failed to load Article: {error_msg}"),
+                        );
                     }
                 };
 

@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
-use crate::backend::core::behaviour::article_new::CreateArticle;
+use crate::{
+    backend::core::behaviour::article_new::CreateArticle, frontend::shared::throw_error_none_view,
+};
 
 #[component]
 pub fn Create() -> impl IntoView {
@@ -38,9 +40,7 @@ pub fn Create() -> impl IntoView {
                                 ServerFnError::ServerError(msg) => msg,
                                 _ => e.to_string(),
                             };
-
-                            view! { <p class="text-red-900">"Failed to create article: "{msg}</p> }
-                                .into_any()
+                            throw_error_none_view(format!("Failed to create article: {msg}"))
                         }
                         _ => ().into_any(),
                     }}
