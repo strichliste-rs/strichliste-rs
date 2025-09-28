@@ -148,8 +148,8 @@ pub fn Show() -> impl IntoView {
                                                     console_log("Need to send_money ()");
                                                     match send_money(
                                                             user_id,
-                                                            receiver_input.get(),
-                                                            amount_input.get(),
+                                                            receiver_input.get_untracked(),
+                                                            amount_input.get_untracked(),
                                                         )
                                                         .await
                                                     {
