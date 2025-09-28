@@ -18,7 +18,6 @@ pub mod transaction_create;
 pub mod transaction_get;
 pub mod transaction_get_transaction_delta;
 pub mod transaction_get_user_transactions;
-pub mod transaction_set_money;
 pub mod transaction_set_undone;
 pub mod update_article;
 pub mod update_user;
