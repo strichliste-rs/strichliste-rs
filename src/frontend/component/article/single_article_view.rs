@@ -4,8 +4,9 @@ use leptos::{
     task::spawn_local,
 };
 
-use crate::backend::core::{
-    behaviour::update_article::update_article, Article, Barcode, BarcodeDiff,
+use crate::{
+    backend::core::{behaviour::update_article::update_article, Article, Barcode, BarcodeDiff},
+    frontend::shared::throw_error_none_view,
 };
 
 #[component]
@@ -64,15 +65,7 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
             let msg = error_signal.get();
             match msg.len() {
                 0 => ().into_any(),
-                _ => {
-
-                    view! {
-                        <div class="bg-red-400 p-5">
-                            <p class="text-white text-center">"Failed to update article: "{msg}</p>
-                        </div>
-                    }
-                        .into_any()
-                }
+                _ => throw_error_none_view(msg),
             }
         }}
         <div class="flex flex-col items-center pt-5 gap-10 text-[1.25em]">

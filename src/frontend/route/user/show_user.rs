@@ -11,7 +11,7 @@ use crate::{
             icon::SettingsIcon, scan_input::invisible_scan_input, transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
-        shared::on_custom_money_button_click,
+        shared::{on_custom_money_button_click, throw_error_none_view},
     },
     model::{Transaction, UserId},
 };
@@ -24,32 +24,13 @@ pub fn ShowUser() -> impl IntoView {
     let user_id = match user_id_string.parse::<i64>() {
         Ok(id) => UserId(id),
         Err(e) => {
-            return view! { <p class="text-red-500">"Failed to convert id to a number: "{e.to_string()}</p> }
-            .into_any();
+            return throw_error_none_view(format!("Failed to convert id to a number: {e}"));
         }
     };
 
     let user_resource = OnceResource::new(get_user(user_id));
 
-    let error_signal = RwSignal::new(String::new());
-
     view! {
-        {move || {
-            let error = error_signal.get();
-            if !error.is_empty() {
-
-                view! {
-                    <div>
-                        <p class="text-white bg-red-400 p-5 text-center">
-                            "An error has occurred: "{error}
-                        </p>
-                    </div>
-                }
-                    .into_any()
-            } else {
-                ().into_any()
-            }
-        }}
         {move || {
             {
 
@@ -62,33 +43,23 @@ pub fn ShowUser() -> impl IntoView {
                                 let user = match user_resource.get() {
                                     Some(user) => user,
                                     None => {
-                                        return view! {
-                                            <p class="text-red-500">"Failed to fetch user"</p>
-                                        }
-                                            .into_any();
+                                        return ().into_any();
                                     }
                                 };
                                 let user = match user {
                                     Ok(user) => user,
-                                    Err(err) => {
-                                        let err = err.to_string();
-                                        return view! {
-                                            <p class="text-red-500">
-                                                "Failed to fetch user because: "{err}
-                                            </p>
-                                        }
-                                            .into_any();
+                                    Err(e) => {
+                                        return throw_error_none_view(
+                                            format!("Failed to fetch user because {e}"),
+                                        );
                                     }
                                 };
                                 let user = match user {
                                     Some(user) => user,
                                     None => {
-                                        return view! {
-                                            <p class="text-red-500">
-                                                "No user with the id "{user_id.0}" has been found!"
-                                            </p>
-                                        }
-                                            .into_any();
+                                        return throw_error_none_view(
+                                            format!("No user with the id {} has been found!", user_id.0),
+                                        );
                                     }
                                 };
                                 let money_signal = RwSignal::new(user.money);
@@ -105,11 +76,7 @@ pub fn ShowUser() -> impl IntoView {
                                 let custom_money_is_focused = RwSignal::new(false);
 
                                 view! {
-                                    {invisible_scan_input(
-                                        custom_money_is_focused,
-                                        error_signal,
-                                        args.clone(),
-                                    )}
+                                    {invisible_scan_input(custom_money_is_focused, args.clone())}
                                     <div class="grid grid-cols-2">
                                         <div class="pt-5">
                                             // left side (show user statistics)

@@ -4,7 +4,10 @@ use leptos::{ev, html, prelude::*};
 
 use crate::{
     backend::core::{behaviour::article_get_all::get_all_articles, Article},
-    frontend::{model::money_args::MoneyArgs, shared::buy_article},
+    frontend::{
+        model::money_args::MoneyArgs,
+        shared::{buy_article, throw_error_none_view},
+    },
 };
 
 #[component]
@@ -56,13 +59,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                                 ServerFnError::ServerError(msg) => msg,
                                 _ => e.to_string(),
                             };
-
-                            view! {
-                                <p class="bg-red-400 text-white text-center">
-                                    {format!("Failed to fetch articles: {}", msg)}
-                                </p>
-                            }
-                                .into_any()
+                            throw_error_none_view(format!("Failed to fetch articles: {}", msg))
                         }
                     }
                 })

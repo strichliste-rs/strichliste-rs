@@ -1,7 +1,8 @@
 use leptos::prelude::*;
 
 use crate::{
-    backend::core::behaviour::user_get_all::get_all_users, frontend::component::user::UserPreview,
+    backend::core::behaviour::user_get_all::get_all_users,
+    frontend::{component::user::UserPreview, shared::throw_error_none_view},
 };
 
 #[component]
@@ -21,20 +22,13 @@ pub fn ShowUsers() -> impl IntoView {
                 let users = match user_data.get() {
                     Some(users) => users,
                     None => {
-                        return view! {
-                            <p class="bg-red-400 text-white text-center">"Failed to fetch users"</p>
-                        }
-                            .into_any();
+                        return ().into_any();
                     }
                 };
                 let users = match users {
                     Ok(users) => users,
                     Err(err) => {
-                        let error = err.to_string();
-                        return view! {
-                            <p class="text-red-900">"Failed to fetch users: "{error}</p>
-                        }
-                            .into_any();
+                        return throw_error_none_view(format!("Failed to fetch users: {err}"));
                     }
                 };
 

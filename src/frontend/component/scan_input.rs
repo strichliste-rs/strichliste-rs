@@ -5,12 +5,14 @@ use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local
 
 use crate::{
     backend::core::behaviour::article_get_by_barcode::get_article_by_barcode,
-    frontend::{model::money_args::MoneyArgs, shared::buy_article},
+    frontend::{
+        model::money_args::MoneyArgs,
+        shared::{buy_article, throw_error},
+    },
 };
 
 pub fn invisible_scan_input(
     is_focused_signal: RwSignal<bool>,
-    error_signal: RwSignal<String>,
     money_args: Rc<MoneyArgs>,
 ) -> impl IntoView {
     let input_signal = RwSignal::new(String::new());
@@ -42,14 +44,14 @@ pub fn invisible_scan_input(
                 let article = match article {
                     Ok(value) => value,
                     Err(e) => {
-                        error_signal.set(format!("Failed to fetch article from server: {e}"));
+                        throw_error(format!("Failed to fetch article from server: {e}"));
                         return;
                     }
                 };
 
                 match article {
                     None => {
-                        console_log(&format!(
+                        throw_error(format!(
                             "No article could be found with barcode '{scan_input}'"
                         ));
                     }

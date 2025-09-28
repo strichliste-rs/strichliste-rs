@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
-use crate::backend::core::behaviour::user_create::CreateUser;
+use crate::{
+    backend::core::behaviour::user_create::CreateUser, frontend::shared::throw_error_none_view,
+};
 
 #[component]
 pub fn Create() -> impl IntoView {
@@ -35,9 +37,7 @@ pub fn Create() -> impl IntoView {
                                 ServerFnError::ServerError(msg) => msg,
                                 _ => e.to_string(),
                             };
-
-                            view! { <p class="text-red-900">"Failed to create user: "{msg}</p> }
-                                .into_any()
+                            throw_error_none_view(format!("Failed to create user: {msg}"))
                         }
                         _ => ().into_any(),
                     }}

@@ -7,7 +7,7 @@ use crate::{
     },
     frontend::{
         component::icon::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
-        shared::throw_error,
+        shared::{throw_error, throw_error_none_view},
     },
     model::{Money, Transaction, TransactionType, UserId},
 };
@@ -139,13 +139,9 @@ pub fn format_transaction(
                                                     ServerFnError::ServerError(msg) => msg,
                                                     _ => error.to_string(),
                                                 };
-
-                                                view! {
-                                                    <p class="text-red-400">
-                                                        "Failed to fetch members: "{message}
-                                                    </p>
-                                                }
-                                                    .into_any()
+                                                throw_error_none_view(
+                                                    format!("Failed to fetch members: {message}"),
+                                                )
                                             }
                                         }
                                     })
