@@ -1,6 +1,7 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use leptos::{ev, html, prelude::*};
+use thaw::ToasterInjection;
 
 use crate::{
     backend::core::{behaviour::article_get_all::get_all_articles, Article},
@@ -18,6 +19,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
         transactions,
     } = *money_args;
     let articles_resource = OnceResource::new(get_all_articles(None));
+    let toaster = ToasterInjection::expect_context();
 
     let dropdown_div = NodeRef::<html::Div>::new();
     let search_term = RwSignal::new(String::new());
@@ -99,13 +101,20 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                         .get()
                         .into_iter()
                         .map(|elem| {
+                            let elem_clone = Arc::new(elem.clone());
                             view! {
                                 <button on:click=move |_| {
-                                    buy_article(user_id, elem.id, money, transactions);
+                                    buy_article(
+                                        user_id,
+                                        elem_clone.as_ref().clone(),
+                                        money,
+                                        transactions,
+                                        toaster,
+                                    );
                                     search_term.set(String::new());
                                 }>
                                     <div class="p-2 m-2 rounded text-white bg-gray-700">
-                                        <p>{elem.name.clone()}" | "{elem.cost.format_eur()}</p>
+                                        <p>{elem.name}" | "{elem.cost.format_eur()}</p>
                                     </div>
                                 </button>
                             }

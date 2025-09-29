@@ -5,7 +5,7 @@ use leptos_router::{
     path,
 };
 
-use thaw::ssr::SSRMountStyleProvider;
+use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, ToasterProvider};
 
 use crate::frontend::{
     component::{self, error_popup::ErrorDisplay},
@@ -60,21 +60,33 @@ pub fn App() -> impl IntoView {
         <audio node_ref=audio_ref />
 
         // content for this welcome page
-        <Router>
-            <Routes fallback=|| {
-                view! { <h1 class="text-white text-center bg-red-400">"Page not found!"</h1> }
-            }>
-                <Route path=path!("/") view=route::home::View />
-                <Route path=path!("/user/create") view=route::user::Create />
-                <Route path=path!("/user/:id") view=route::user::ShowUser />
-                <Route path=path!("/user/:id/settings") view=route::user::settings::Show />
-                <Route path=path!("/user/:id/send_money") view=route::user::send_money::Show />
-                <Route path=path!("/articles") view=route::articles::View />
-                <Route path=path!("/articles/create") view=route::articles::create::Create />
-                <Route path=path!("/articles/:article_id") view=route::articles::Edit />
+        <ConfigProvider>
+            <ToasterProvider>
+                <Router>
+                    <Routes fallback=|| {
+                        view! {
+                            <h1 class="text-white text-center bg-red-400">"Page not found!"</h1>
+                        }
+                    }>
+                        <Route path=path!("/") view=route::home::View />
+                        <Route path=path!("/user/create") view=route::user::Create />
+                        <Route path=path!("/user/:id") view=route::user::ShowUser />
+                        <Route path=path!("/user/:id/settings") view=route::user::settings::Show />
+                        <Route
+                            path=path!("/user/:id/send_money")
+                            view=route::user::send_money::Show
+                        />
+                        <Route path=path!("/articles") view=route::articles::View />
+                        <Route
+                            path=path!("/articles/create")
+                            view=route::articles::create::Create
+                        />
+                        <Route path=path!("/articles/:article_id") view=route::articles::Edit />
 
-                <Route path=path!("/split_cost") view=route::split_cost::Show />
-            </Routes>
-        </Router>
+                        <Route path=path!("/split_cost") view=route::split_cost::Show />
+                    </Routes>
+                </Router>
+            </ToasterProvider>
+        </ConfigProvider>
     }
 }
