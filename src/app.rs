@@ -5,7 +5,7 @@ use leptos_router::{
     path,
 };
 
-use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, ToasterProvider};
+use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
     component::{self, error_popup::ErrorDisplay},
@@ -46,6 +46,11 @@ pub fn App() -> impl IntoView {
         error: Default::default(),
     });
     provide_context(store);
+    let mut theme = Theme::light();
+    theme
+        .color
+        .set_color_neutral_background_1("#25333f".to_string());
+    let theme = RwSignal::new(theme);
 
     view! {
         // injects a stylesheet into the document <head>
@@ -60,7 +65,7 @@ pub fn App() -> impl IntoView {
         <audio node_ref=audio_ref />
 
         // content for this welcome page
-        <ConfigProvider>
+        <ConfigProvider theme>
             <ToasterProvider>
                 <Router>
                     <Routes fallback=|| {
