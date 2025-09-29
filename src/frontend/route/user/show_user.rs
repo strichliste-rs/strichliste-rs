@@ -75,7 +75,8 @@ pub fn ShowUser() -> impl IntoView {
                                 let custom_money_change = RwSignal::new(String::new());
                                 let custom_money_is_focused = RwSignal::new(false);
 
-                                view! { {invisible_scan_input(custom_money_is_focused, args.clone())}
+                                view! {
+                                    {invisible_scan_input(custom_money_is_focused, args.clone())}
                                     <div class="grid grid-cols-2">
                                         <div class="pt-5">
                                             // left side (show user statistics)
