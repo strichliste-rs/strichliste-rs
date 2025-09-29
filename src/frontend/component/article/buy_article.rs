@@ -1,6 +1,7 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use leptos::prelude::*;
+use thaw::ToasterInjection;
 
 use crate::{
     backend::core::{behaviour::article_get_articles_for_users::get_articles_per_user, Article},
@@ -20,6 +21,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
         transactions,
     } = *args;
     let personal_articles = OnceResource::new(get_articles_per_user(user_id));
+    let toaster = ToasterInjection::expect_context();
     view! {
         <div>
             <Suspense fallback=move || {
@@ -29,7 +31,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                     {move || {
                         personal_articles
                             .get()
-                            .map(|article| {
+                            .map(move |article| {
                                 let article = match article {
                                     Ok(value) => value.into_iter().take(9).collect::<Vec<Article>>(),
                                     Err(e) => {
@@ -44,14 +46,21 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                                 };
                                 article
                                     .into_iter()
-                                    .map(|article| {
-                                        let Article { id, name, cost, sounds: _, barcodes: _ } = article;
+                                    .map(move |article| {
+                                        let Article { name, cost, .. } = article.clone();
+                                        let article_clone = Arc::new(article);
 
                                         view! {
                                             <button
                                                 class="bg-gray-700 rounded p-2"
                                                 on:click=move |_| {
-                                                    buy_article(user_id, id, money, transactions);
+                                                    buy_article(
+                                                        user_id,
+                                                        article_clone.as_ref().clone(),
+                                                        money,
+                                                        transactions,
+                                                        toaster,
+                                                    );
                                                 }
                                             >
                                                 <div>{name}" | "{cost.format_eur()}</div>

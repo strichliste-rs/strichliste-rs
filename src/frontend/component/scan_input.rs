@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use chrono::Utc;
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
+use thaw::ToasterInjection;
 
 use crate::{
     backend::core::behaviour::article_get_by_barcode::get_article_by_barcode,
@@ -19,6 +20,7 @@ pub fn invisible_scan_input(
     let last_input = RwSignal::new(Utc::now());
 
     let timediff = move || (Utc::now() - last_input.get()).num_seconds() > 30;
+    let toaster = ToasterInjection::expect_context();
 
     let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
         "Enter" => {
@@ -60,9 +62,10 @@ pub fn invisible_scan_input(
                         console_log(&format!("Need to buy article: {}", value.name));
                         buy_article(
                             money_args_clone.user_id,
-                            value.id,
+                            value,
                             money_args_clone.money,
                             money_args_clone.transactions,
+                            toaster,
                         );
                     }
                 }
