@@ -1,5 +1,6 @@
 use leptos::{html, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_params_map;
+use thaw::{Toast, ToastBody, ToastTitle, ToasterInjection};
 
 use crate::{
     backend::core::behaviour::{
@@ -12,6 +13,7 @@ use crate::{
 #[component]
 pub fn Show() -> impl IntoView {
     let params = use_params_map();
+    let toaster = ToasterInjection::expect_context();
     let user_id_string = params.read_untracked().get("id").unwrap_or_default();
 
     let user_id = match user_id_string.parse::<i64>() {
@@ -141,7 +143,23 @@ pub fn Show() -> impl IntoView {
                                                         )
                                                         .await
                                                     {
-                                                        Ok(_) => {}
+                                                        Ok(_) => {
+                                                            toaster
+                                                                .dispatch_toast(
+                                                                    move || {
+                                                                        view! {
+                                                                            <Toast>
+                                                                                <ToastTitle>"Money sent"</ToastTitle>
+                                                                                <ToastBody>
+                                                                                    "You sent "{amount_input.get_untracked()}" to "
+                                                                                    {receiver_input.get_untracked()}
+                                                                                </ToastBody>
+                                                                            </Toast>
+                                                                        }
+                                                                    },
+                                                                    Default::default(),
+                                                                );
+                                                        }
                                                         Err(e) => {
                                                             error_result.set(e.to_string());
                                                         }
