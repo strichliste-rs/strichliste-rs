@@ -74,19 +74,19 @@ let
     }
   );
 
-  serverArtifacts = craneLib.buildDepsOnly (
+  backendArtifacts = craneLib.buildDepsOnly (
     commonArgs
     // {
-      pname = "${name}-server";
+      pname = "${name}-backend";
       doCheck = false;
     }
   );
 
-  server = craneLib.buildPackage (
+  backend = craneLib.buildPackage (
     commonArgs
     // {
-      pname = "${name}-server";
-      cargoArtifacts = serverArtifacts;
+      pname = "${name}-backend";
+      cargoArtifacts = backendArtifacts;
 
       doNotPostBuildInstallCargoBinaries = true;
       buildPhaseCargoCommand = ''
@@ -105,11 +105,11 @@ let
   package = pkgs.stdenv.mkDerivation {
     inherit name version;
 
-    src = server; # some what arbitrarily, but has to be set to something
+    src = backend; # some what arbitrarily, but has to be set to something
     installPhase = ''
       mkdir -p $out/bin/site
 
-      cp ${server}/bin/* $out/bin
+      cp ${backend}/bin/* $out/bin
       cp -r ${frontend}/site $out/bin/
     '';
   };
@@ -121,10 +121,10 @@ let
       cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
     }
   );
-  clippyServer = craneLib.cargoClippy (
+  clippybackend = craneLib.cargoClippy (
     commonArgs
     // {
-      cargoArtifacts = serverArtifacts;
+      cargoArtifacts = backendArtifacts;
       cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
     }
   );
@@ -132,6 +132,6 @@ in
 {
   packages.default = package;
   checks = {
-    inherit clippyFrontend clippyServer;
+    inherit clippyFrontend clippybackend;
   };
 }
