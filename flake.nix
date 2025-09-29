@@ -52,7 +52,7 @@
           };
 
         treeFmtEval = inputs.treefmt-nix.lib.evalModule pkgs formattingConfig;
-        crane_pkg = pkgs.callPackage ./nix/pkg_crane.nix {
+        crane_pkg = pkgs.callPackage ./nix/pkg.nix {
           inherit
             name
             version
