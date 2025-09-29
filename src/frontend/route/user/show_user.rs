@@ -75,31 +75,31 @@ pub fn ShowUser() -> impl IntoView {
                                 let custom_money_change = RwSignal::new(String::new());
                                 let custom_money_is_focused = RwSignal::new(false);
 
-                                view! {
-                                    {invisible_scan_input(custom_money_is_focused, args.clone())}
+                                view! { {invisible_scan_input(custom_money_is_focused, args.clone())}
                                     <div class="grid grid-cols-2">
                                         <div class="pt-5">
                                             // left side (show user statistics)
                                             <div class="grid grid-cols-3">
                                                 <div class="col-span-2">
-                                                    <p class="text-center text-white text-[2em]">
-                                                        {user.nickname.clone()}
-                                                    </p>
-                                                    <p
-                                                        class="text-center text-[2em]"
-                                                        class=(
-                                                            "text-red-500",
-                                                            move || (money_signal.get()).value < 0,
-                                                        )
-                                                        class=(
-                                                            "text-green-500",
-                                                            move || (money_signal.get()).value >= 0,
-                                                        )
-                                                    >
+                                                    <div class="flex place-content-evenly flex-col gap-[1.5em]">
+                                                        <p class="text-center text-white text-[2em]">
+                                                            {user.nickname.clone()}
+                                                        </p>
+                                                        <p
+                                                            class="text-center text-[2em]"
+                                                            class=(
+                                                                "text-red-500",
+                                                                move || (money_signal.get()).value < 0,
+                                                            )
+                                                            class=(
+                                                                "text-green-500",
+                                                                move || (money_signal.get()).value >= 0,
+                                                            )
+                                                        >
 
-                                                        {move || (money_signal.get()).format_eur_diff()}
-                                                    </p>
-                                                    <div class="flex place-content-evenly"></div>
+                                                            {move || (money_signal.get()).format_eur_diff()}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <div class="col-span-1">
                                                     <div class="flex justify-evenly">
