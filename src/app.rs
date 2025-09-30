@@ -49,7 +49,8 @@ pub fn App() -> impl IntoView {
     let mut theme = Theme::light();
     theme
         .color
-        .set_color_neutral_background_1("#25333f".to_string());
+        .set_color_neutral_background_1("#25333f".to_string())
+        .set_color_neutral_foreground_1("white".to_string()); // sets text to white
     let theme = RwSignal::new(theme);
 
     view! {
