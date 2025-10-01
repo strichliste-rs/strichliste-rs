@@ -59,14 +59,7 @@ pub fn invisible_scan_input(
                     }
 
                     Some(value) => {
-                        console_log(&format!("Need to buy article: {}", value.name));
-                        buy_article(
-                            money_args_clone.user_id,
-                            value,
-                            money_args_clone.money,
-                            money_args_clone.transactions,
-                            toaster,
-                        );
+                        buy_article(value.id, value.cost, money_args_clone.clone(), toaster);
                     }
                 }
             });

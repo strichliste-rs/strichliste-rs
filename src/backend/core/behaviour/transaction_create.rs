@@ -6,7 +6,7 @@ use crate::model::{CreateTransactionError, Money, Transaction, TransactionType, 
 use {
     crate::{
         backend::{
-            core::{Group, Settings},
+            core::{Article, Group, Settings},
             database::{DatabaseType, TransactionDB},
         },
         model::{DatabaseId, GroupId},
@@ -161,12 +161,29 @@ pub async fn create_transaction(
         _ => return Err(Error::new("Invalid state")),
     };
 
+    let description = match transaction_type {
+        TransactionType::Deposit => None,
+        TransactionType::Withdraw => None,
+        TransactionType::Bought(article_id) => {
+            // this will result in a race-condition, because we have the db lock
+            // let article = get_article(article_id).await?;
+
+            match Article::get(&db, article_id).await? {
+                None => return Err(CreateTransactionError::ArticleDoesNotExist(article_id)),
+                Some(article) => Some(article.name),
+            }
+        }
+        TransactionType::Received(_) => None,
+        TransactionType::Sent(_) => None,
+        TransactionType::SentAndReceived(_) => None,
+    };
+
     let transaction_id = Transaction::create(
         &mut *db_trans,
         sender_group_id,
         receiver_group_id,
         transaction_type,
-        None,
+        description,
         money,
         &state.settings,
     )

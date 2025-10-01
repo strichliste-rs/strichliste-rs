@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use leptos::prelude::*;
+use thaw::ToasterInjection;
 
 use crate::{
     frontend::{
@@ -10,7 +11,12 @@ use crate::{
     model::Money,
 };
 
-pub fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs) {
+pub fn on_custom_money_button_click(
+    add: bool,
+    value: RwSignal<String>,
+    args: &MoneyArgs,
+    toaster: ToasterInjection,
+) {
     let string = value.get_untracked();
 
     if string.is_empty() {
@@ -33,7 +39,7 @@ pub fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &M
         money.value = -money.value;
     }
 
-    change_money(money, Rc::new(args.clone()));
+    change_money(money, Rc::new(args.clone()), toaster);
 
     value.set(String::new());
 }
