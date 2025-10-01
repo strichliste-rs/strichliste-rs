@@ -20,8 +20,15 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
         money,
         transactions,
     } = *args;
-    let personal_articles = OnceResource::new(get_articles_per_user(user_id));
     let toaster = ToasterInjection::expect_context();
+
+    let arc_clone = Arc::new(MoneyArgs {
+        user_id,
+        money,
+        transactions,
+    });
+
+    let personal_articles = OnceResource::new(get_articles_per_user(args.user_id));
     view! {
         <div>
             <Suspense fallback=move || {
@@ -29,6 +36,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
             }>
                 <div class="grid grid-cols-3 text-white text-center gap-2 text-[1.25em] p-2 pt-4">
                     {move || {
+                        let arc_clone = arc_clone.clone();
                         personal_articles
                             .get()
                             .map(move |article| {
@@ -46,19 +54,22 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                                 };
                                 article
                                     .into_iter()
-                                    .map(move |article| {
-                                        let Article { name, cost, .. } = article.clone();
-                                        let article_clone = Arc::new(article);
-
+                                    .map(|article| {
+                                        let Article { id, name, cost, sounds: _, barcodes: _ } = article;
+                                        let arc_clone = arc_clone.clone();
                                         view! {
                                             <button
                                                 class="bg-gray-700 rounded p-2"
                                                 on:click=move |_| {
+                                                    let MoneyArgs { user_id, money, transactions } = *arc_clone;
                                                     buy_article(
-                                                        user_id,
-                                                        article_clone.as_ref().clone(),
-                                                        money,
-                                                        transactions,
+                                                        id,
+                                                        cost,
+                                                        Rc::new(MoneyArgs {
+                                                            user_id,
+                                                            money,
+                                                            transactions,
+                                                        }),
                                                         toaster,
                                                     );
                                                 }

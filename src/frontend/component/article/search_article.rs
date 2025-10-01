@@ -46,6 +46,12 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
         };
     };
 
+    let arc_args = Arc::new(MoneyArgs {
+        user_id,
+        money,
+        transactions,
+    });
+
     view! {
         {move || {
             articles_resource
@@ -97,18 +103,23 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
             </div>
             <div node_ref=dropdown_div class=("hidden", move || search_term.get().is_empty())>
                 {move || {
+                    let money_args = arc_args.clone();
                     filtered_articles
                         .get()
                         .into_iter()
                         .map(|elem| {
-                            let elem_clone = Arc::new(elem.clone());
+                            let money_args = money_args.clone();
                             view! {
                                 <button on:click=move |_| {
+                                    let MoneyArgs { user_id, money, transactions } = *money_args;
                                     buy_article(
-                                        user_id,
-                                        elem_clone.as_ref().clone(),
-                                        money,
-                                        transactions,
+                                        elem.id,
+                                        elem.cost,
+                                        Rc::new(MoneyArgs {
+                                            user_id,
+                                            money,
+                                            transactions,
+                                        }),
                                         toaster,
                                     );
                                     search_term.set(String::new());

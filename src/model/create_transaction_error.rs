@@ -2,6 +2,8 @@ use leptos::prelude::ServerFnErrorErr;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::model::DatabaseId;
+
 #[derive(Error, Debug, Clone, Deserialize, Serialize)]
 pub enum CreateTransactionError {
     #[error("the following users have too little money: {}", .0.join(", "))]
@@ -15,6 +17,9 @@ pub enum CreateTransactionError {
 
     #[error("server fn error: {0}")]
     ServerFn(ServerFnErrorErr),
+
+    #[error("The article with id {0} does not exist!")]
+    ArticleDoesNotExist(DatabaseId),
 }
 
 impl CreateTransactionError {
