@@ -28,6 +28,7 @@ pub enum TransactionType {
 }
 
 #[cfg(feature = "ssr")]
+#[derive(Debug, Clone, Copy)]
 pub struct TransactionDelta {
     pub(crate) amount_pre: i64,
     pub(crate) delta: i64,

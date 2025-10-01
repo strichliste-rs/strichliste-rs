@@ -2,7 +2,7 @@ use leptos::prelude::ServerFnErrorErr;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::model::DatabaseId;
+use crate::model::{DatabaseId, UserId};
 
 #[derive(Error, Debug, Clone, Deserialize, Serialize)]
 pub enum CreateTransactionError {
@@ -20,6 +20,9 @@ pub enum CreateTransactionError {
 
     #[error("The article with id {0} does not exist!")]
     ArticleDoesNotExist(DatabaseId),
+
+    #[error("The user with id {0} does not exist!")]
+    UserDoesNotExist(UserId),
 }
 
 impl CreateTransactionError {

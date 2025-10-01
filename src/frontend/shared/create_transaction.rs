@@ -30,46 +30,33 @@ pub fn create_transaction(
 
     spawn_local(async move {
         match server_create_transaction(user_args.user_id, money, transaction_type).await {
-            Ok(transaction) => {
-                let money_added = match transaction_type {
-                    TransactionType::Deposit => money,
-                    TransactionType::Withdraw => -money,
-                    TransactionType::Bought(_) => -money,
-                    TransactionType::Received(_) => money,
-                    TransactionType::Sent(_) => -money,
-                    TransactionType::SentAndReceived(_) => {
-                        //welp
-                        -money
-                    }
-                };
+            Ok((transaction, user_diff)) => {
                 user_args
                     .money
-                    .update(|money_prev| money_prev.value += money_added.value);
+                    .update(|money_prev| *money_prev += user_diff);
 
                 user_args
                     .transactions
                     .write()
                     .insert(0, transaction.clone());
 
-                match transaction.t_type {
-                    TransactionType::Bought(_) => {
-                        toaster.dispatch_toast(
-                            move || {
-                                view! {
-                                    <Toast>
-                                        <ToastTitle>"Item Bought"</ToastTitle>
-                                        <ToastBody>
-                                            "You bought "{transaction.description}" for " {transaction.money.format_eur()}
-                                        </ToastBody>
-                                    </Toast>
-                                }
-                            },
-                            Default::default(),
-                        );
-                    }
-
-                    _ => {}
+                if let TransactionType::Bought(_) = transaction.t_type {
+                    toaster.dispatch_toast(
+                        move || {
+                            view! {
+                                <Toast>
+                                    <ToastTitle>"Item Bought"</ToastTitle>
+                                    <ToastBody>
+                                        "You bought "{transaction.description}" for "
+                                        {transaction.money.format_eur()}
+                                    </ToastBody>
+                                </Toast>
+                            }
+                        },
+                        Default::default(),
+                    );
                 }
+
                 play_sound(match transaction.t_type {
                     TransactionType::Bought(id) => AudioPlayback::Bought(id),
                     TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
