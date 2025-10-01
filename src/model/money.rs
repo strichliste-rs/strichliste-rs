@@ -1,4 +1,4 @@
-use std::ops::{Neg, Sub};
+use std::ops::{AddAssign, Neg, Sub};
 
 use serde::{Deserialize, Serialize};
 
@@ -53,5 +53,11 @@ impl Neg for Money {
 
     fn neg(self) -> Self::Output {
         Money { value: -self.value }
+    }
+}
+
+impl AddAssign for Money {
+    fn add_assign(&mut self, rhs: Self) {
+        self.value += rhs.value
     }
 }
