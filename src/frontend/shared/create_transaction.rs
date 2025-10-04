@@ -4,9 +4,7 @@ use leptos::{
     leptos_dom::logging::console_log,
     prelude::{Update, Write},
     reactive::spawn_local,
-    view,
 };
-use thaw::{Toast, ToastBody, ToastTitle, ToasterInjection};
 
 use crate::{
     backend::core::behaviour::transaction_create::create_transaction as server_create_transaction,
@@ -14,14 +12,14 @@ use crate::{
         model::money_args::MoneyArgs,
         shared::{play_sound, throw_error},
     },
-    model::{AudioPlayback, CreateTransactionError, Money, TransactionType},
+    model::{AudioPlayback, CreateTransactionError, Money, Transaction, TransactionType},
 };
 
 pub fn create_transaction(
     user_args: Rc<MoneyArgs>,
     money: Money,
     transaction_type: TransactionType,
-    toaster: ToasterInjection,
+    on_success: Option<impl Fn(Transaction) + Send + Sync + 'static>,
 ) {
     if (money.value) < 0 {
         console_log("Money may not be negative!");
@@ -40,23 +38,6 @@ pub fn create_transaction(
                     .write()
                     .insert(0, transaction.clone());
 
-                if let TransactionType::Bought(_) = transaction.t_type {
-                    toaster.dispatch_toast(
-                        move || {
-                            view! {
-                                <Toast>
-                                    <ToastTitle>"Item Bought"</ToastTitle>
-                                    <ToastBody>
-                                        "You bought "{transaction.description}" for "
-                                        {transaction.money.format_eur()}
-                                    </ToastBody>
-                                </Toast>
-                            }
-                        },
-                        Default::default(),
-                    );
-                }
-
                 play_sound(match transaction.t_type {
                     TransactionType::Bought(id) => AudioPlayback::Bought(id),
                     TransactionType::Deposit => AudioPlayback::Deposit(transaction.money),
@@ -65,6 +46,10 @@ pub fn create_transaction(
                     TransactionType::SentAndReceived(_) => return,
                     TransactionType::Sent(_) => AudioPlayback::Sent(transaction.money),
                 });
+
+                if let Some(on_success_fn) = on_success {
+                    on_success_fn(transaction)
+                }
             }
 
             Err(e) => {
