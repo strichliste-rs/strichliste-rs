@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use thaw::ToasterInjection;
+use leptos::view;
+use thaw::{Toast, ToastBody, ToastTitle, ToasterInjection};
 
 use crate::{
     frontend::{model::money_args::MoneyArgs, shared::create_transaction},
@@ -12,6 +13,21 @@ pub fn buy_article(article_id: i64, money: Money, args: Rc<MoneyArgs>, toaster: 
         args,
         money,
         crate::model::TransactionType::Bought(article_id),
-        toaster,
+        Some(move |transaction: crate::model::Transaction| {
+            toaster.dispatch_toast(
+                move || {
+                    view! {
+                        <Toast>
+                            <ToastTitle>"Item Bought"</ToastTitle>
+                            <ToastBody>
+                                "You bought "{transaction.description}" for "
+                                {transaction.money.format_eur()}
+                            </ToastBody>
+                        </Toast>
+                    }
+                },
+                Default::default(),
+            );
+        }),
     );
 }

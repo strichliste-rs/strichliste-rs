@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use thaw::ToasterInjection;
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
@@ -30,8 +29,6 @@ pub fn ShowUser() -> impl IntoView {
     };
 
     let user_resource = OnceResource::new(get_user(user_id));
-
-    let toaster = ToasterInjection::expect_context();
 
     view! {
         {move || {
@@ -150,13 +147,13 @@ pub fn ShowUser() -> impl IntoView {
                                             // right side (put in money)
                                             <div class="flex flex-col gap-3 bg-gray-500 p-3 rounded-[10px]">
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    {change_money_button(50, args.clone(), toaster)}
-                                                    {change_money_button(100, args.clone(), toaster)}
-                                                    {change_money_button(200, args.clone(), toaster)}
-                                                    {change_money_button(500, args.clone(), toaster)}
-                                                    {change_money_button(1000, args.clone(), toaster)}
-                                                    {change_money_button(2000, args.clone(), toaster)}
-                                                    {change_money_button(5000, args.clone(), toaster)}
+                                                    {change_money_button(50, args.clone())}
+                                                    {change_money_button(100, args.clone())}
+                                                    {change_money_button(200, args.clone())}
+                                                    {change_money_button(500, args.clone())}
+                                                    {change_money_button(1000, args.clone())}
+                                                    {change_money_button(2000, args.clone())}
+                                                    {change_money_button(5000, args.clone())}
 
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-3">
@@ -167,7 +164,6 @@ pub fn ShowUser() -> impl IntoView {
                                                             false,
                                                             custom_money_change,
                                                             &args1,
-                                                            toaster,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"-"</div>
@@ -187,20 +183,19 @@ pub fn ShowUser() -> impl IntoView {
                                                             true,
                                                             custom_money_change,
                                                             &args2,
-                                                            toaster,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"+"</div>
                                                     </a>
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    {change_money_button(-50, args.clone(), toaster)}
-                                                    {change_money_button(-100, args.clone(), toaster)}
-                                                    {change_money_button(-200, args.clone(), toaster)}
-                                                    {change_money_button(-500, args.clone(), toaster)}
-                                                    {change_money_button(-1000, args.clone(), toaster)}
-                                                    {change_money_button(-2000, args.clone(), toaster)}
-                                                    {change_money_button(-5000, args.clone(), toaster)}
+                                                    {change_money_button(-50, args.clone())}
+                                                    {change_money_button(-100, args.clone())}
+                                                    {change_money_button(-200, args.clone())}
+                                                    {change_money_button(-500, args.clone())}
+                                                    {change_money_button(-1000, args.clone())}
+                                                    {change_money_button(-2000, args.clone())}
+                                                    {change_money_button(-5000, args.clone())}
 
                                                 </div>
                                             </div>
