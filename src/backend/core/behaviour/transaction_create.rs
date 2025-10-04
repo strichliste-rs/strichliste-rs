@@ -1,12 +1,17 @@
+#[cfg(feature = "ssr")]
+use std::collections::HashMap;
+
 use leptos::prelude::*;
 
 use crate::model::{CreateTransactionError, Money, Transaction, TransactionType, UserId};
+#[cfg(feature = "ssr")]
+use crate::{backend::core::User, model::TransactionDelta};
 
 #[cfg(feature = "ssr")]
 use {
     crate::{
         backend::{
-            core::{Group, Settings},
+            core::{Article, Group, Settings},
             database::{DatabaseType, TransactionDB},
         },
         model::{DatabaseId, GroupId},
@@ -24,7 +29,7 @@ impl Transaction {
         description: Option<String>,
         money: Money,
         settings: &Settings,
-    ) -> Result<DatabaseId, CreateTransactionError>
+    ) -> Result<(DatabaseId, HashMap<User, TransactionDelta>), CreateTransactionError>
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
@@ -101,21 +106,24 @@ impl Transaction {
             return Err(CreateTransactionError::TooMuchMoneyError(users_too_high));
         }
 
+        let deltas_clone = deltas.clone();
+
         for (mut key, value) in deltas.into_iter() {
             key.add_money(&mut *conn, Money { value: value.delta })
                 .await?;
         }
 
-        Ok(transaction_db.id)
+        Ok((transaction_db.id, deltas_clone))
     }
 }
 
+/// Creates a Transaction. Returns the transaction and the money delta for the creating user
 #[server]
 pub async fn create_transaction(
     user_id: UserId,
     money: Money,
     transaction_type: TransactionType,
-) -> Result<Transaction, CreateTransactionError> {
+) -> Result<(Transaction, Money), CreateTransactionError> {
     type Error = CreateTransactionError;
     use crate::backend::{
         core::ServerState,
@@ -144,6 +152,22 @@ pub async fn create_transaction(
         }
     };
 
+    let user = match User::get(&mut *db_trans, user_id).await {
+        Ok(value) => match value {
+            None => {
+                response_opts.set_status(StatusCode::BAD_REQUEST);
+                return Err(Error::UserDoesNotExist(user_id));
+            }
+
+            Some(value) => value,
+        },
+        Err(e) => {
+            response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Failed to lookup user: {e}");
+            return Err(Error::new("Failed to lookup user!"));
+        }
+    };
+
     let user_group = match Group::get_user_group_id(&mut *db_trans, user_id).await {
         Ok(value) => value,
         Err(e) => {
@@ -161,12 +185,29 @@ pub async fn create_transaction(
         _ => return Err(Error::new("Invalid state")),
     };
 
-    let transaction_id = Transaction::create(
+    let description = match transaction_type {
+        TransactionType::Deposit => None,
+        TransactionType::Withdraw => None,
+        TransactionType::Bought(article_id) => {
+            // this will result in a race-condition, because we have the db lock
+            // let article = get_article(article_id).await?;
+
+            match Article::get(&db, article_id).await? {
+                None => return Err(CreateTransactionError::ArticleDoesNotExist(article_id)),
+                Some(article) => Some(article.name),
+            }
+        }
+        TransactionType::Received(_) => None,
+        TransactionType::Sent(_) => None,
+        TransactionType::SentAndReceived(_) => None,
+    };
+
+    let (transaction_id, deltas) = Transaction::create(
         &mut *db_trans,
         sender_group_id,
         receiver_group_id,
         transaction_type,
-        None,
+        description,
         money,
         &state.settings,
     )
@@ -199,5 +240,13 @@ pub async fn create_transaction(
         }
     }
 
-    Ok(transaction)
+    let user_delta = match deltas.get(&user) {
+        Some(value) => value,
+        None => {
+            error!("Failed to find user in deltas!");
+            return Err(Error::new("Failed to lookup deltas!"));
+        }
+    };
+
+    Ok((transaction, user_delta.delta.into()))
 }
