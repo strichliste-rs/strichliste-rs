@@ -112,6 +112,12 @@ let
       cp ${backend}/bin/* $out/bin
       cp -r ${frontend}/site $out/bin/
     '';
+
+    meta = {
+      description = "A digital tally sheet";
+      license = lib.licenses.agpl3Only;
+      platforms = lib.platforms.all;
+    };
   };
   cargoClippyExtraArgsCommon = "--all-targets -- --deny warnings";
   clippyFrontend = craneLib.cargoClippy (
@@ -131,7 +137,5 @@ let
 in
 {
   packages.default = package;
-  checks = {
-    inherit clippyFrontend clippybackend;
-  };
+  checks = { inherit clippyFrontend clippybackend; };
 }
