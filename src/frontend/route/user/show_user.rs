@@ -169,7 +169,7 @@ pub fn ShowUser() -> impl IntoView {
                                                         <div class="pad-5 text-center">"-"</div>
                                                     </a>
                                                     <input
-                                                        class="text-center rounded-[10px]"
+                                                        class="text-center text-black rounded-[10px]"
                                                         placeholder="Euros"
                                                         bind:value=custom_money_change
                                                         value="00.00"
