@@ -6,6 +6,7 @@ pub mod icon;
 pub mod invisible_scan_input;
 pub mod multi_user_selection;
 pub mod navbar;
+pub mod return_to;
 pub mod scan_input;
 pub mod single_user_selection;
 pub mod transaction;

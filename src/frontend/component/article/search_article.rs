@@ -11,6 +11,8 @@ use crate::{
     },
 };
 
+const ARTICLE_SEARCH_DISPLAY_LIMIT: usize = 5;
+
 #[component]
 pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
     let MoneyArgs {
@@ -39,7 +41,7 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
                             .to_lowercase()
                             .contains(&search_term.get().to_lowercase())
                     })
-                    .take(5)
+                    .take(ARTICLE_SEARCH_DISPLAY_LIMIT)
                     .cloned()
                     .collect::<Vec<Article>>();
             }),
