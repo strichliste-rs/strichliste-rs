@@ -8,13 +8,16 @@ use crate::{
     frontend::{
         component::{
             article::buy_article::BuyArticle, change_money_button::change_money_button,
-            icon::SettingsIcon, scan_input::invisible_scan_input, transaction::ShowTransactions,
+            icon::SettingsIcon, return_to::ReturnTo, scan_input::invisible_scan_input,
+            transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
         shared::{on_custom_money_button_click, throw_error_none_view},
     },
     model::{Transaction, UserId},
 };
+
+pub const RETURN_TO_MAIN_VIEW_TIMEOUT_SEC: u64 = 15;
 
 #[component]
 pub fn ShowUser() -> impl IntoView {
@@ -31,6 +34,7 @@ pub fn ShowUser() -> impl IntoView {
     let user_resource = OnceResource::new(get_user(user_id));
 
     view! {
+        <ReturnTo after=RETURN_TO_MAIN_VIEW_TIMEOUT_SEC route="/" />
         {move || {
             {
 

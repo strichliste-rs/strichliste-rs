@@ -3,7 +3,10 @@ use leptos_router::hooks::use_params_map;
 
 use crate::{
     backend::core::behaviour::{update_user::UpdateUser, user_get::get_user},
-    frontend::shared::throw_error_none_view,
+    frontend::{
+        component::return_to::ReturnTo, route::user::RETURN_TO_MAIN_VIEW_TIMEOUT_SEC,
+        shared::throw_error_none_view,
+    },
     model::UserId,
 };
 
@@ -25,6 +28,7 @@ pub fn Show() -> impl IntoView {
 
     let update_action = ServerAction::<UpdateUser>::new();
     view! {
+        <ReturnTo after=RETURN_TO_MAIN_VIEW_TIMEOUT_SEC route="/" />
         <Suspense fallback=move || {
             view! { <p class="text-white text-center pt-5">"Loading User..."</p> }
         }>
