@@ -1,5 +1,3 @@
-use std::{rc::Rc, sync::Arc};
-
 use leptos::prelude::*;
 use thaw::ToasterInjection;
 
@@ -13,22 +11,10 @@ use crate::{
 };
 
 #[component]
-pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
-    let m_clone = args.clone();
-    let MoneyArgs {
-        user_id,
-        money,
-        transactions,
-    } = *args;
+pub fn BuyArticle(args: RwSignal<MoneyArgs>) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
-    let arc_clone = Arc::new(MoneyArgs {
-        user_id,
-        money,
-        transactions,
-    });
-
-    let personal_articles = OnceResource::new(get_articles_per_user(args.user_id));
+    let personal_articles = OnceResource::new(get_articles_per_user(args.get_untracked().user_id));
     view! {
         <div>
             <Suspense fallback=move || {
@@ -36,7 +22,6 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
             }>
                 <div class="grid grid-cols-3 text-white text-center gap-2 text-[1.25em] p-2 pt-4">
                     {move || {
-                        let arc_clone = arc_clone.clone();
                         personal_articles
                             .get()
                             .map(move |article| {
@@ -56,22 +41,11 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                                     .into_iter()
                                     .map(|article| {
                                         let Article { id, name, cost, sounds: _, barcodes: _ } = article;
-                                        let arc_clone = arc_clone.clone();
                                         view! {
                                             <button
                                                 class="bg-gray-700 rounded p-2"
                                                 on:click=move |_| {
-                                                    let MoneyArgs { user_id, money, transactions } = *arc_clone;
-                                                    buy_article(
-                                                        id,
-                                                        cost,
-                                                        Rc::new(MoneyArgs {
-                                                            user_id,
-                                                            money,
-                                                            transactions,
-                                                        }),
-                                                        toaster,
-                                                    );
+                                                    buy_article(id, cost, args, toaster);
                                                 }
                                             >
                                                 <div>{name}" | "{cost.format_eur()}</div>
@@ -84,7 +58,7 @@ pub fn BuyArticle(args: Rc<MoneyArgs>) -> impl IntoView {
                     }}
                 </div>
             </Suspense>
-            <ArticleSearch money_args=m_clone.clone() />
+            <ArticleSearch money_args=args />
         </div>
     }
 }

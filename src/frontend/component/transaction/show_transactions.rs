@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
 use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
@@ -14,7 +12,7 @@ use crate::{
 };
 
 #[component]
-pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
+pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
     let params = use_params_map();
     let user_id_string = match params.read_untracked().get("id") {
         Some(s) => s,
@@ -37,8 +35,8 @@ pub fn ShowTransactions(arguments: Rc<MoneyArgs>) -> impl IntoView {
     let transaction_data =
         OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
 
-    let transaction_signal = arguments.transactions;
-    let money_signal = arguments.money;
+    let transaction_signal = arguments.get_untracked().transactions;
+    let money_signal = arguments.get_untracked().money;
 
     view! {
         <Suspense fallback=move || {

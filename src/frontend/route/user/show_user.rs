@@ -1,7 +1,8 @@
-use std::rc::Rc;
+use std::str::FromStr;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
+use thaw::Input;
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
@@ -68,19 +69,18 @@ pub fn ShowUser() -> impl IntoView {
                                 };
                                 let money_signal = RwSignal::new(user.money);
                                 let transactions = RwSignal::new(Vec::<Transaction>::new());
-                                let m_args = MoneyArgs {
+                                let money_args = RwSignal::new(MoneyArgs {
                                     user_id,
                                     money: money_signal,
                                     transactions,
-                                };
-                                let args1 = m_args.clone();
-                                let args2 = m_args.clone();
-                                let args = Rc::new(m_args);
-                                let custom_money_change = RwSignal::new(String::new());
+                                });
+                                let custom_money_change = RwSignal::new(
+                                    String::from_str("0.00").unwrap(),
+                                );
                                 let custom_money_is_focused = RwSignal::new(false);
 
                                 view! {
-                                    {invisible_scan_input(custom_money_is_focused, args.clone())}
+                                    {invisible_scan_input(custom_money_is_focused, money_args)}
                                     <div class="grid grid-cols-2">
                                         <div class="pt-5">
                                             // left side (show user statistics)
@@ -145,20 +145,19 @@ pub fn ShowUser() -> impl IntoView {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <BuyArticle args=args.clone() />
+                                            <BuyArticle args=money_args />
                                         </div>
                                         <div>
                                             // right side (put in money)
                                             <div class="flex flex-col gap-3 bg-gray-500 p-3 rounded-[10px]">
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    {change_money_button(50, args.clone())}
-                                                    {change_money_button(100, args.clone())}
-                                                    {change_money_button(200, args.clone())}
-                                                    {change_money_button(500, args.clone())}
-                                                    {change_money_button(1000, args.clone())}
-                                                    {change_money_button(2000, args.clone())}
-                                                    {change_money_button(5000, args.clone())}
-
+                                                    <ChangeMoneyButton money=50 args=money_args />
+                                                    <ChangeMoneyButton money=100 args=money_args />
+                                                    <ChangeMoneyButton money=200 args=money_args />
+                                                    <ChangeMoneyButton money=500 args=money_args />
+                                                    <ChangeMoneyButton money=1000 args=money_args />
+                                                    <ChangeMoneyButton money=2000 args=money_args />
+                                                    <ChangeMoneyButton money=5000 args=money_args />
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-3">
                                                     <a
@@ -167,16 +166,17 @@ pub fn ShowUser() -> impl IntoView {
                                                         on:click=move |_| on_custom_money_button_click(
                                                             false,
                                                             custom_money_change,
-                                                            &args1,
+                                                            money_args,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"-"</div>
                                                     </a>
-                                                    <input
-                                                        class="text-center rounded-[10px]"
+                                                    <Input
+                                                        class="text-center"
                                                         placeholder="Euros"
-                                                        bind:value=custom_money_change
-                                                        value="00.00"
+                                                        // cannot autofocus, since we might want to scan a barcode
+                                                        autofocus=false
+                                                        value=custom_money_change
                                                         on:focus=move |_| { custom_money_is_focused.set(true) }
                                                         on:blur=move |_| { custom_money_is_focused.set(false) }
                                                     />
@@ -186,27 +186,27 @@ pub fn ShowUser() -> impl IntoView {
                                                         on:click=move |_| on_custom_money_button_click(
                                                             true,
                                                             custom_money_change,
-                                                            &args2,
+                                                            money_args,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"+"</div>
                                                     </a>
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    {change_money_button(-50, args.clone())}
-                                                    {change_money_button(-100, args.clone())}
-                                                    {change_money_button(-200, args.clone())}
-                                                    {change_money_button(-500, args.clone())}
-                                                    {change_money_button(-1000, args.clone())}
-                                                    {change_money_button(-2000, args.clone())}
-                                                    {change_money_button(-5000, args.clone())}
+                                                    <ChangeMoneyButton money=-50 args=money_args />
+                                                    <ChangeMoneyButton money=-100 args=money_args />
+                                                    <ChangeMoneyButton money=-200 args=money_args />
+                                                    <ChangeMoneyButton money=-500 args=money_args />
+                                                    <ChangeMoneyButton money=-1000 args=money_args />
+                                                    <ChangeMoneyButton money=-2000 args=money_args />
+                                                    <ChangeMoneyButton money=-5000 args=money_args />
 
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="pt-5">
-                                        <ShowTransactions arguments=args.clone() />
+                                        <ShowTransactions arguments=money_args />
                                     </div>
                                 }
                                     .into_any()

@@ -1,8 +1,6 @@
-use std::rc::Rc;
-
 use leptos::{
     leptos_dom::logging::console_log,
-    prelude::{Update, Write},
+    prelude::{GetUntracked, RwSignal, Update, Write},
     reactive::spawn_local,
 };
 
@@ -16,7 +14,7 @@ use crate::{
 };
 
 pub fn create_transaction(
-    user_args: Rc<MoneyArgs>,
+    user_args: RwSignal<MoneyArgs>,
     money: Money,
     transaction_type: TransactionType,
     on_success: Option<impl Fn(Transaction) + Send + Sync + 'static>,
@@ -27,13 +25,17 @@ pub fn create_transaction(
     }
 
     spawn_local(async move {
-        match server_create_transaction(user_args.user_id, money, transaction_type).await {
+        match server_create_transaction(user_args.get_untracked().user_id, money, transaction_type)
+            .await
+        {
             Ok((transaction, user_diff)) => {
                 user_args
+                    .get_untracked()
                     .money
                     .update(|money_prev| *money_prev += user_diff);
 
                 user_args
+                    .get_untracked()
                     .transactions
                     .write()
                     .insert(0, transaction.clone());
