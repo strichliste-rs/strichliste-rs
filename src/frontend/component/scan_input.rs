@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use chrono::Utc;
 use leptos::{ev, leptos_dom::logging::console_log, prelude::*, task::spawn_local};
 use thaw::ToasterInjection;
@@ -14,7 +12,7 @@ use crate::{
 
 pub fn invisible_scan_input(
     is_focused_signal: RwSignal<bool>,
-    money_args: Rc<MoneyArgs>,
+    money_args: RwSignal<MoneyArgs>,
 ) -> impl IntoView {
     let input_signal = RwSignal::new(String::new());
     let last_input = RwSignal::new(Utc::now());
@@ -37,8 +35,6 @@ pub fn invisible_scan_input(
                 return;
             }
 
-            let money_args_clone = money_args.clone();
-
             spawn_local(async move {
                 console_log(&format!("Input {scan_input}"));
                 let article = get_article_by_barcode(scan_input.clone()).await;
@@ -59,7 +55,7 @@ pub fn invisible_scan_input(
                     }
 
                     Some(value) => {
-                        buy_article(value.id, value.cost, money_args_clone.clone(), toaster);
+                        buy_article(value.id, value.cost, money_args, toaster);
                     }
                 }
             });

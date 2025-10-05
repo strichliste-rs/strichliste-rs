@@ -27,7 +27,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                     <HydrationScripts options />
                     <MetaTags />
                 </head>
-                <body class="bg-[#25333f]"> // otherwise the sceen will flash white when loading a user for example
+                // otherwise the sceen will flash white when loading a user for example
+                <body class="bg-[#25333f]">
                     <App />
                 </body>
             </html>
@@ -67,9 +68,9 @@ pub fn App() -> impl IntoView {
         (160, "#D7D7DD"),
     ]));
     let mut theme = Theme::custom_dark(&colors.get_untracked());
-    // theme
-    //     .color
-    //     .set_color_brand_background("#25333f".to_string());
+    theme
+        .color
+        .set_color_neutral_background_1("#25333f".to_string());
     let theme = RwSignal::new(theme);
 
     view! {

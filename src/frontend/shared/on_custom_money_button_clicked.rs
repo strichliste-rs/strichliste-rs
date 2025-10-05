@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use leptos::prelude::*;
 
 use crate::{
@@ -10,7 +8,7 @@ use crate::{
     model::Money,
 };
 
-pub fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &MoneyArgs) {
+pub fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: RwSignal<MoneyArgs>) {
     let string = value.get_untracked();
 
     if string.is_empty() {
@@ -33,7 +31,7 @@ pub fn on_custom_money_button_click(add: bool, value: RwSignal<String>, args: &M
         money.value = -money.value;
     }
 
-    change_money(money, Rc::new(args.clone()));
+    change_money(money, args);
 
     value.set(String::new());
 }

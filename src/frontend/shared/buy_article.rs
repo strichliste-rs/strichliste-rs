@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use leptos::view;
+use leptos::{prelude::RwSignal, view};
 use thaw::{Toast, ToastBody, ToastTitle, ToasterInjection};
 
 use crate::{
@@ -8,7 +6,12 @@ use crate::{
     model::Money,
 };
 
-pub fn buy_article(article_id: i64, money: Money, args: Rc<MoneyArgs>, toaster: ToasterInjection) {
+pub fn buy_article(
+    article_id: i64,
+    money: Money,
+    args: RwSignal<MoneyArgs>,
+    toaster: ToasterInjection,
+) {
     create_transaction(
         args,
         money,
