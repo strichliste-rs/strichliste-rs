@@ -5,7 +5,7 @@ use crate::frontend::component::{invisible_scan_input::InvisibleScanInput, user:
 #[component]
 pub fn View() -> impl IntoView {
     view! {
-        <div class="grid grid-cols-10 gap-10 py-10">
+        <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
                 <a href="/user/create" class="inline-block">
                     <div class="flex justify-center">
