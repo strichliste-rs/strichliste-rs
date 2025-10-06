@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use thaw::{Table, TableBody, TableCell, TableHeader, TableRow};
 
 use crate::{
     backend::core::behaviour::article_get_all::get_all_articles,
@@ -26,36 +27,37 @@ pub fn ShowArticles() -> impl IntoView {
                             }
                             Ok(mut articles) => {
                                 view! {
-                                    <table class="w-full text-white p-2">
-                                        <thead>
+                                    // <table class="w-full text-white p-2">
+                                    <Table>
+                                        <TableHeader>
                                             <tr class="bg-black">
                                                 <th>"Name"</th>
                                                 <th>"Preis"</th>
                                                 <th></th>
                                             </tr>
-                                        </thead>
-                                        <tbody>
+                                        </TableHeader>
+                                        <TableBody>
                                             {
                                                 articles.sort_by(|a, b| a.name.cmp(&b.name));
                                                 articles
                                                     .into_iter()
                                                     .map(|article| {
                                                         view! {
-                                                            <tr class="even:bg-gray-700 odd:bg-gray-500">
-                                                                <td class="p-2 text-center">{article.name}</td>
-                                                                <td class="p-2 text-center">{article.cost.format_eur()}</td>
-                                                                <td class="bg-green-700 p-2">
+                                                            <TableRow class="even:bg-gray-700 odd:bg-gray-500">
+                                                                <TableCell class="text-center">{article.name}</TableCell>
+                                                                <TableCell class="text-center">{article.cost.format_eur()}</TableCell>
+                                                                <TableCell class="bg-green-700 p-2">
                                                                     <a href=format!("/articles/{}", article.id)>
                                                                         <p class="text-center">"Edit"</p>
                                                                     </a>
-                                                                </td>
-                                                            </tr>
+                                                                </TableCell>
+                                                            </TableRow>
                                                         }
                                                     })
                                                     .collect_view()
                                             }
-                                        </tbody>
-                                    </table>
+                                        </TableBody>
+                                    </Table>
                                 }
                                     .into_any()
                             }

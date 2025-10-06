@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use thaw::ToasterInjection;
+use thaw::{Button, ToasterInjection};
 
 use crate::{
     backend::core::{behaviour::article_get_articles_for_users::get_articles_per_user, Article},
@@ -42,14 +42,14 @@ pub fn BuyArticle(args: RwSignal<MoneyArgs>) -> impl IntoView {
                                     .map(|article| {
                                         let Article { id, name, cost, sounds: _, barcodes: _ } = article;
                                         view! {
-                                            <button
+                                            <Button
                                                 class="bg-gray-700 rounded p-2"
-                                                on:click=move |_| {
+                                                on_click=move |_| {
                                                     buy_article(id, cost, args, toaster);
                                                 }
                                             >
                                                 <div>{name}" | "{cost.format_eur()}</div>
-                                            </button>
+                                            </Button>
                                         }
                                     })
                                     .collect_view()
