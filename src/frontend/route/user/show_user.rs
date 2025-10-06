@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use thaw::Input;
+use thaw::{Button, Input, InputSuffix};
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
@@ -160,37 +160,38 @@ pub fn ShowUser() -> impl IntoView {
                                                     <ChangeMoneyButton money=5000 args=money_args />
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-3">
-                                                    <a
-                                                        href="#"
+                                                    <Button
                                                         class="bg-red-400 text-white rounded-full p-5"
-                                                        on:click=move |_| on_custom_money_button_click(
+                                                        on_click=move |_| on_custom_money_button_click(
                                                             false,
                                                             custom_money_change,
                                                             money_args,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"-"</div>
-                                                    </a>
+                                                    </Button>
                                                     <Input
-                                                        class="text-center"
+                                                        // class="text-center"
                                                         placeholder="Euros"
                                                         // cannot autofocus, since we might want to scan a barcode
                                                         autofocus=false
                                                         value=custom_money_change
                                                         on:focus=move |_| { custom_money_is_focused.set(true) }
                                                         on:blur=move |_| { custom_money_is_focused.set(false) }
-                                                    />
-                                                    <a
-                                                        href="#"
+                                                    >
+                                                        // has some stupid border for some reason
+                                                        // <InputSuffix slot>"€"</InputSuffix>
+                                                    </Input>
+                                                    <Button
                                                         class="bg-emerald-600 text-white rounded-full p-5"
-                                                        on:click=move |_| on_custom_money_button_click(
+                                                        on_click=move |_| on_custom_money_button_click(
                                                             true,
                                                             custom_money_change,
                                                             money_args,
                                                         )
                                                     >
                                                         <div class="pad-5 text-center">"+"</div>
-                                                    </a>
+                                                    </Button>
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
                                                     <ChangeMoneyButton money=-50 args=money_args />

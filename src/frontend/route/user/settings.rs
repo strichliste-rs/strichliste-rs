@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
+use thaw::{Input, Label};
 
 use crate::{
     backend::core::behaviour::{update_user::UpdateUser, user_get::get_user},
@@ -70,20 +71,18 @@ pub fn Show() -> impl IntoView {
                     <ActionForm action=update_action>
                         <div class="flex flex-col items-center gap-5">
                             <div class="flex flex-col items-center">
-                                <label class="text-white text-[1.25em]">"Nickname"</label>
-                                <input
+                                <Label class="text-white text-[1.25em]">"Nickname"</Label>
+                                <Input
                                     class="text-[1.25em]"
-                                    type="text"
                                     value=user.nickname
                                     name="nickname"
                                 />
                             </div>
                             <div class="flex flex-col items-center">
-                                <label class="text-white text-[1.25em]">"Card number"</label>
-                                <input
+                                <Label class="text-white text-[1.25em]">"Card number"</Label>
+                                <Input
                                     class="text-[1.25em]"
-                                    type="text"
-                                    value=user.card_number
+                                    value=user.card_number.unwrap_or(String::new())
                                     name="card_number"
                                 />
                             </div>
