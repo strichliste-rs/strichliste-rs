@@ -72,7 +72,7 @@ pub fn Show() -> impl IntoView {
                             <div class="flex flex-col items-center">
                                 <label class="text-white text-[1.25em]">"Nickname"</label>
                                 <input
-                                    class="text-[1.25em]"
+                                    class="text-[1.25em] text-black"
                                     type="text"
                                     value=user.nickname
                                     name="nickname"
@@ -81,7 +81,7 @@ pub fn Show() -> impl IntoView {
                             <div class="flex flex-col items-center">
                                 <label class="text-white text-[1.25em]">"Card number"</label>
                                 <input
-                                    class="text-[1.25em]"
+                                    class="text-[1.25em] text-black"
                                     type="text"
                                     value=user.card_number
                                     name="card_number"
