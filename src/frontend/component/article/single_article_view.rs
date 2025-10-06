@@ -3,6 +3,7 @@ use leptos::{
     prelude::*,
     task::spawn_local,
 };
+use thaw::{Flex, FlexAlign, Input, Label};
 
 use crate::{
     backend::core::{behaviour::update_article::update_article, Article, Barcode, BarcodeDiff},
@@ -11,8 +12,8 @@ use crate::{
 
 #[component]
 pub fn SingleArticleView(article: Article) -> impl IntoView {
-    let name_node = NodeRef::<html::Input>::new();
-    let cost_node = NodeRef::<html::Input>::new();
+    let name = RwSignal::new(article.name.clone());
+    let cost = RwSignal::new(article.cost.format());
 
     let new_barcode_node = NodeRef::<html::Input>::new();
 
@@ -28,7 +29,7 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
 
     let on_click = move |_| {
         let mut article = clone.clone();
-        article.name = name_node.get().unwrap().value();
+        article.name = name.get();
         // console_log("Hello");
 
         spawn_local(async move {
@@ -40,17 +41,15 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
                 barcodes: _,
             } = article;
 
-            let name = name_node
-                .get_untracked()
-                .expect("name input should be mounted")
-                .value();
-            let cost = cost_node
-                .get_untracked()
-                .expect("name input should be mounted")
-                .value();
-
             let barcodes = barcodes_diff_signal.get_untracked();
-            if let Err(e) = update_article(id, name, cost, Some(barcodes)).await {
+            if let Err(e) = update_article(
+                id,
+                name.get_untracked(),
+                cost.get_untracked(),
+                Some(barcodes),
+            )
+            .await
+            {
                 let msg = match e {
                     ServerFnError::ServerError(msg) => msg,
                     _ => e.to_string(),
@@ -69,22 +68,33 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
             }
         }}
         <div class="flex flex-col items-center pt-5 gap-10 text-[1.25em]">
-            <div class="flex justify-center pt-5">
-                <div class=format!("{} items-end", { class_css })>
-                    <a class="text-white">"Name:"</a>
-                    <a class="text-white">"Cost:"</a>
-
-                </div>
-                <div class=format!("{} items-center", { class_css })>
-                    <input class=input_css type="text" value=article.name node_ref=name_node />
-                    <input
+            <Flex>
+                <Flex vertical=true align=FlexAlign::Center style=format!("{} items-center", class_css)>
+                    <Label>"Name: "</Label>
+                    <Label>"Cost: "</Label>
+                </Flex>
+                <Flex vertical=true align=FlexAlign::Center style=format!("{} items-center", class_css)>
+                    <Input class=input_css value=name />
+                    <Input
                         class=input_css
-                        type="text"
-                        value=article.cost.format()
-                        node_ref=cost_node
+                        value=cost
                     />
-                </div>
-            </div>
+                </Flex>
+            </Flex>
+            // <div class="flex justify-center pt-5">
+            //     <div class=format!("{} items-end", { class_css })>
+            //         <a class="text-white">"Name:"</a>
+            //         <a class="text-white">"Cost:"</a>
+
+            //     </div>
+            //     <div class=format!("{} items-center", { class_css })>
+            //         <Input class=input_css value=name />
+            //         <Input
+            //             class=input_css
+            //             value=cost
+            //         />
+            //     </div>
+            // </div>
             <div>
                 <table class="w-full text-white border-collapse border-spacing-5">
                     <tr class="bg-black">
