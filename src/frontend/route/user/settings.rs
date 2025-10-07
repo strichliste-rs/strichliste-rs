@@ -1,7 +1,3 @@
-use leptos::prelude::*;
-use leptos_router::hooks::use_params_map;
-use thaw::{Input, Label};
-
 use crate::{
     backend::core::behaviour::{update_user::UpdateUser, user_get::get_user},
     frontend::{
@@ -9,6 +5,12 @@ use crate::{
         shared::throw_error_none_view,
     },
     model::UserId,
+};
+use leptos::{ev, prelude::*};
+use leptos_router::hooks::use_params_map;
+use thaw::{
+    Button, ButtonSize, ButtonType, Field, FieldContextInjection, FieldContextProvider, Flex,
+    FlexAlign, FlexGap, FlexJustify, Input, InputRule, Label,
 };
 
 #[component]
@@ -69,30 +71,36 @@ pub fn Show() -> impl IntoView {
                         _ => ().into_any(),
                     }}
                     <ActionForm action=update_action>
-                        <div class="flex flex-col items-center gap-5">
-                            <div class="flex flex-col items-center">
-                                <Label class="text-white text-[1.25em]">"Nickname"</Label>
-                                <Input
-                                    class="text-[1.25em]"
-                                    value=user.nickname
-                                    name="nickname"
-                                />
+                        <FieldContextProvider>
+                            <div class="pt-5">
+                                <Flex justify=FlexJustify::Center align=FlexAlign::Center gap=FlexGap::Medium vertical=true>
+                                    <Field label="Nickname" required=true name="nickname">
+                                        <Input value=user.nickname rules=vec![InputRule::required(true.into())]/>
+                                    </Field>
+
+                                    <Field label="Card number" name="card_number">
+                                        <Input value=user.card_number.unwrap_or(String::new()) />
+                                    </Field>
+
+                                    <input type="hidden" value=user.id.0 name="id" />
+
+                                    <Button
+                                        size=ButtonSize::Medium
+                                        button_type=ButtonType::Submit
+                                        on_click = {
+                                            let field_context = FieldContextInjection::expect_context();
+                                            move |e: ev::MouseEvent| {
+                                                if !field_context.validate() {
+                                                    e.prevent_default()
+                                                }
+                                            }
+                                        }
+                                    >
+                                        "Update user"
+                                    </Button>
+                                </Flex>
                             </div>
-                            <div class="flex flex-col items-center">
-                                <Label class="text-white text-[1.25em]">"Card number"</Label>
-                                <Input
-                                    class="text-[1.25em]"
-                                    value=user.card_number.unwrap_or(String::new())
-                                    name="card_number"
-                                />
-                            </div>
-                            <input type="hidden" value=user.id.0 name="id" />
-                            <input
-                                class="text-white hover:bg-pink-700 bg-emerald-700 rounded-full text-[1.25em] p-2"
-                                type="submit"
-                                value="Update user"
-                            />
-                        </div>
+                        </FieldContextProvider>
                     </ActionForm>
                 }
                     .into_any()

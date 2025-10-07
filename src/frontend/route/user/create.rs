@@ -1,48 +1,54 @@
-use leptos::prelude::*;
-
-use crate::{
-    backend::core::behaviour::user_create::CreateUser, frontend::shared::throw_error_none_view,
+use leptos::{ev, prelude::*};
+use thaw::{
+    Button, ButtonSize, ButtonType, Field, FieldContextInjection, FieldContextProvider,
+    FieldOrientation, Flex, FlexAlign, FlexGap, FlexJustify, Input, InputRule, InputSize,
 };
+
+use crate::{backend::core::behaviour::user_create::CreateUser, frontend::shared::throw_error};
 
 #[component]
 pub fn Create() -> impl IntoView {
     let create_user_action = ServerAction::<CreateUser>::new();
+
+    Effect::new(move || {
+        if let Some(Err(e)) = create_user_action.value().get() {
+            let msg = match e {
+                ServerFnError::ServerError(msg) => msg,
+                _ => e.to_string(),
+            };
+            throw_error(format!("Failed to create user: {msg}"))
+        }
+    });
+
     view! {
-        <div class="flex h-screen bg-gray-900">
-            <div class="w-full max-w-xs m-auto bg-indigo-100 rounded p-5">
-                <ActionForm action=create_user_action>
-                    <div>
-                        <label class="block mb-2 text-indigo-500" for="username">
-                            Nickname
-                        </label>
-                        <input
-                            autocomplete="off"
-                            class="w-full p-2 mb-6 text-indigo-700 border-b-2 border-indigo-500 outline-none focus:bg-gray-300"
-                            type="text"
-                            name="username"
-                        />
-                    </div>
-                    <div>
-                        <input
-                            class="w-full bg-indigo-700 hover:bg-pink-700 text-white font-bold py-2 px-4 mb-6 rounded"
-                            type="submit"
-                            value="Create Account"
-                        />
-                    </div>
-                </ActionForm>
-                <div>
-                    {move || match create_user_action.value().get() {
-                        Some(Err(e)) => {
-                            let msg = match e {
-                                ServerFnError::ServerError(msg) => msg,
-                                _ => e.to_string(),
-                            };
-                            throw_error_none_view(format!("Failed to create user: {msg}"))
-                        }
-                        _ => ().into_any(),
-                    }}
+        <Flex justify=FlexJustify::Center>
+            <Flex align=FlexAlign::Center vertical=true>
+                <div class="pt-4">
+                    <ActionForm action=create_user_action>
+                        <FieldContextProvider>
+                            <Flex align=FlexAlign::Center vertical=true justify=FlexJustify::Center gap=FlexGap::Medium>
+                                <Field label="Username" name="username" class="text-center" required=true orientation=FieldOrientation::Vertical>
+                                    <Input rules=vec![InputRule::required(true.into())] autocomplete="off" size=InputSize::Medium name="username"/>
+                                </Field>
+                                <Button
+                                    size=ButtonSize::Medium
+                                    button_type=ButtonType::Submit
+                                    on_click={
+                                        let field_context = FieldContextInjection::expect_context();
+                                        move |e: ev::MouseEvent| {
+                                            if !field_context.validate() {
+                                                e.prevent_default()
+                                            }
+                                        }
+                                    }
+                                >
+                                    "Create User"
+                                </Button>
+                            </Flex>
+                        </FieldContextProvider>
+                    </ActionForm>
                 </div>
-            </div>
-        </div>
+            </Flex>
+        </Flex>
     }
 }
