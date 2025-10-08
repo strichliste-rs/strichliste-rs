@@ -2,13 +2,22 @@ use leptos::{ev, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
 
 use crate::{
-    backend::core::behaviour::user_get_by_card_number::get_user_by_barcode,
+    backend::core::{behaviour::user_get_by_card_number::get_user_by_barcode, User},
     frontend::shared::throw_error,
 };
 
 #[component]
-pub fn InvisibleScanInput() -> impl IntoView {
+pub fn ScanUserBarcodeListener() -> impl IntoView {
     let input_signal = RwSignal::new(String::new());
+
+    let found_user_signal = RwSignal::new(None::<User>);
+
+    Effect::new(move || {
+        if let Some(user) = found_user_signal.get() {
+            let navigate = use_navigate();
+            navigate(&format!("/user/{}", user.id), Default::default());
+        }
+    });
 
     let handle = window_event_listener(ev::keypress, move |ev| match ev.key().as_str() {
         "Enter" => {
@@ -28,16 +37,12 @@ pub fn InvisibleScanInput() -> impl IntoView {
                     }
                 };
 
-                let user = match user {
-                    Some(user) => user,
+                match user {
+                    Some(user) => found_user_signal.set(Some(user)),
                     None => {
                         throw_error(format!("There is no user with barcode \"{scan_input}\""));
-                        return;
                     }
                 };
-
-                let navigate = use_navigate();
-                navigate(&format!("/user/{}", user.id), Default::default());
             });
         }
 

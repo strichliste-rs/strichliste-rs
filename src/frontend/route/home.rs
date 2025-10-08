@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::frontend::component::{invisible_scan_input::InvisibleScanInput, user::ShowUsers};
+use crate::frontend::component::{invisible_scan_input::ScanUserBarcodeListener, user::ShowUsers};
 
 #[component]
 pub fn View() -> impl IntoView {
@@ -16,7 +16,7 @@ pub fn View() -> impl IntoView {
                     </div>
                 </a>
             </div>
-            {InvisibleScanInput()}
+            {ScanUserBarcodeListener()}
             <div class="col-span-9 pr-7">{ShowUsers()}</div>
         </div>
     }
