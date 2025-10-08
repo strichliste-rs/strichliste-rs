@@ -73,9 +73,17 @@ pub fn Show() -> impl IntoView {
                     <ActionForm action=update_action>
                         <FieldContextProvider>
                             <div class="pt-5">
-                                <Flex justify=FlexJustify::Center align=FlexAlign::Center gap=FlexGap::Medium vertical=true>
+                                <Flex
+                                    justify=FlexJustify::Center
+                                    align=FlexAlign::Center
+                                    gap=FlexGap::Medium
+                                    vertical=true
+                                >
                                     <Field label="Nickname" required=true name="nickname">
-                                        <Input value=user.nickname rules=vec![InputRule::required(true.into())]/>
+                                        <Input
+                                            value=user.nickname
+                                            rules=vec![InputRule::required(true.into())]
+                                        />
                                     </Field>
 
                                     <Field label="Card number" name="card_number">
@@ -87,7 +95,7 @@ pub fn Show() -> impl IntoView {
                                     <Button
                                         size=ButtonSize::Medium
                                         button_type=ButtonType::Submit
-                                        on_click = {
+                                        on_click={
                                             let field_context = FieldContextInjection::expect_context();
                                             move |e: ev::MouseEvent| {
                                                 if !field_context.validate() {
