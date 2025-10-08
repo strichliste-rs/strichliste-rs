@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -25,6 +27,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                     <HydrationScripts options />
                     <MetaTags />
                 </head>
+                // otherwise the sceen will flash white when loading a user for example
                 <body class="bg-[#25333f]">
                     <App />
                 </body>
@@ -46,11 +49,28 @@ pub fn App() -> impl IntoView {
         error: Default::default(),
     });
     provide_context(store);
-    let mut theme = Theme::light();
+    let colors = RwSignal::new(HashMap::from([
+        (10, "#010304"),
+        (20, "#0F181E"),
+        (30, "#192731"),
+        (40, "#25333F"),
+        (50, "#323F4C"),
+        (60, "#3F4B59"),
+        (70, "#4D5866"),
+        (80, "#5B6573"),
+        (90, "#6A7280"),
+        (100, "#79808D"),
+        (110, "#888D9B"),
+        (120, "#979CA8"),
+        (130, "#A7AAB5"),
+        (140, "#B7B9C3"),
+        (150, "#C7C8D0"),
+        (160, "#D7D7DD"),
+    ]));
+    let mut theme = Theme::custom_dark(&colors.get_untracked());
     theme
         .color
-        .set_color_neutral_background_1("#25333f".to_string())
-        .set_color_neutral_foreground_1("white".to_string()); // sets text to white
+        .set_color_neutral_background_1("#25333f".to_string());
     let theme = RwSignal::new(theme);
 
     view! {
@@ -75,7 +95,6 @@ pub fn App() -> impl IntoView {
                         }
                     }>
                         <Route path=path!("/") view=route::home::View />
-                        <Route path=path!("/user/create") view=route::user::Create />
                         <Route path=path!("/user/:id") view=route::user::ShowUser />
                         <Route path=path!("/user/:id/settings") view=route::user::settings::Show />
                         <Route

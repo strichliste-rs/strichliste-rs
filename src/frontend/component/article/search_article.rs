@@ -1,5 +1,3 @@
-use std::{rc::Rc, sync::Arc};
-
 use leptos::{ev, html, prelude::*};
 use thaw::ToasterInjection;
 
@@ -14,12 +12,7 @@ use crate::{
 const ARTICLE_SEARCH_DISPLAY_LIMIT: usize = 5;
 
 #[component]
-pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
-    let MoneyArgs {
-        user_id,
-        money,
-        transactions,
-    } = *money_args;
+pub fn ArticleSearch(money_args: RwSignal<MoneyArgs>) -> impl IntoView {
     let articles_resource = OnceResource::new(get_all_articles(None));
     let toaster = ToasterInjection::expect_context();
 
@@ -47,12 +40,6 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
             }),
         };
     };
-
-    let arc_args = Arc::new(MoneyArgs {
-        user_id,
-        money,
-        transactions,
-    });
 
     view! {
         {move || {
@@ -105,25 +92,13 @@ pub fn ArticleSearch(money_args: Rc<MoneyArgs>) -> impl IntoView {
             </div>
             <div node_ref=dropdown_div class=("hidden", move || search_term.get().is_empty())>
                 {move || {
-                    let money_args = arc_args.clone();
                     filtered_articles
                         .get()
                         .into_iter()
                         .map(|elem| {
-                            let money_args = money_args.clone();
                             view! {
                                 <button on:click=move |_| {
-                                    let MoneyArgs { user_id, money, transactions } = *money_args;
-                                    buy_article(
-                                        elem.id,
-                                        elem.cost,
-                                        Rc::new(MoneyArgs {
-                                            user_id,
-                                            money,
-                                            transactions,
-                                        }),
-                                        toaster,
-                                    );
+                                    buy_article(elem.id, elem.cost, money_args, toaster);
                                     search_term.set(String::new());
                                 }>
                                     <div class="p-2 m-2 rounded text-white bg-gray-700">
