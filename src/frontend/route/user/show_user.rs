@@ -2,13 +2,13 @@ use std::str::FromStr;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use thaw::{Button, Input, InputSuffix};
+use thaw::{Button, Input};
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
     frontend::{
         component::{
-            article::buy_article::BuyArticle, change_money_button::change_money_button,
+            article::buy_article::BuyArticle, change_money_button::ChangeMoneyButton,
             icon::SettingsIcon, return_to::ReturnTo, scan_input::invisible_scan_input,
             transaction::ShowTransactions,
         },

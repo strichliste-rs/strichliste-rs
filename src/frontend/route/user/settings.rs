@@ -10,7 +10,7 @@ use leptos::{ev, prelude::*};
 use leptos_router::hooks::use_params_map;
 use thaw::{
     Button, ButtonSize, ButtonType, Field, FieldContextInjection, FieldContextProvider, Flex,
-    FlexAlign, FlexGap, FlexJustify, Input, InputRule, Label,
+    FlexAlign, FlexGap, FlexJustify, Input, InputRule,
 };
 
 #[component]
