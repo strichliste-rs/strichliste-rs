@@ -26,9 +26,25 @@ pub fn Create() -> impl IntoView {
                 <div class="pt-4">
                     <ActionForm action=create_user_action>
                         <FieldContextProvider>
-                            <Flex align=FlexAlign::Center vertical=true justify=FlexJustify::Center gap=FlexGap::Medium>
-                                <Field label="Username" name="username" class="text-center" required=true orientation=FieldOrientation::Vertical>
-                                    <Input rules=vec![InputRule::required(true.into())] autocomplete="off" size=InputSize::Medium name="username"/>
+                            <Flex
+                                align=FlexAlign::Center
+                                vertical=true
+                                justify=FlexJustify::Center
+                                gap=FlexGap::Medium
+                            >
+                                <Field
+                                    label="Username"
+                                    name="username"
+                                    class="text-center"
+                                    required=true
+                                    orientation=FieldOrientation::Vertical
+                                >
+                                    <Input
+                                        rules=vec![InputRule::required(true.into())]
+                                        autocomplete="off"
+                                        size=InputSize::Medium
+                                        name="username"
+                                    />
                                 </Field>
                                 <Button
                                     size=ButtonSize::Medium

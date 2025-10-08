@@ -69,31 +69,36 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
         }}
         <div class="flex flex-col items-center pt-5 gap-10 text-[1.25em]">
             <Flex>
-                <Flex vertical=true align=FlexAlign::Center style=format!("{} items-center", class_css)>
+                <Flex
+                    vertical=true
+                    align=FlexAlign::Center
+                    style=format!("{} items-center", class_css)
+                >
                     <Label>"Name: "</Label>
                     <Label>"Cost: "</Label>
                 </Flex>
-                <Flex vertical=true align=FlexAlign::Center style=format!("{} items-center", class_css)>
+                <Flex
+                    vertical=true
+                    align=FlexAlign::Center
+                    style=format!("{} items-center", class_css)
+                >
                     <Input class=input_css value=name />
-                    <Input
-                        class=input_css
-                        value=cost
-                    />
+                    <Input class=input_css value=cost />
                 </Flex>
             </Flex>
             // <div class="flex justify-center pt-5">
-            //     <div class=format!("{} items-end", { class_css })>
-            //         <a class="text-white">"Name:"</a>
-            //         <a class="text-white">"Cost:"</a>
+            // <div class=format!("{} items-end", { class_css })>
+            // <a class="text-white">"Name:"</a>
+            // <a class="text-white">"Cost:"</a>
 
-            //     </div>
-            //     <div class=format!("{} items-center", { class_css })>
-            //         <Input class=input_css value=name />
-            //         <Input
-            //             class=input_css
-            //             value=cost
-            //         />
-            //     </div>
+            // </div>
+            // <div class=format!("{} items-center", { class_css })>
+            // <Input class=input_css value=name />
+            // <Input
+            // class=input_css
+            // value=cost
+            // />
+            // </div>
             // </div>
             <div>
                 <table class="w-full text-white border-collapse border-spacing-5">
