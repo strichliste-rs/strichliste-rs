@@ -28,6 +28,10 @@ pub fn ScanUserBarcodeListener(ignore_input: RwSignal<bool>) -> impl IntoView {
                 return;
             }
 
+            if ignore_input.get_untracked() {
+                return;
+            }
+
             spawn_local(async move {
                 let user = match get_user_by_barcode(scan_input.clone()).await {
                     Ok(user) => user,
