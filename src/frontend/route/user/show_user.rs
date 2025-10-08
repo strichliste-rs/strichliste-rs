@@ -178,9 +178,8 @@ pub fn ShowUser() -> impl IntoView {
                                                         value=custom_money_change
                                                         on:focus=move |_| { custom_money_is_focused.set(true) }
                                                         on:blur=move |_| { custom_money_is_focused.set(false) }
-                                                    >
-                                                        // has some stupid border for some reason
-                                                        // <InputSuffix slot>"€"</InputSuffix>
+                                                    >// has some stupid border for some reason
+                                                    // <InputSuffix slot>"€"</InputSuffix>
                                                     </Input>
                                                     <Button
                                                         class="bg-emerald-600 text-white rounded-full p-5"

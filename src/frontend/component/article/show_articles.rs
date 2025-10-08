@@ -45,7 +45,9 @@ pub fn ShowArticles() -> impl IntoView {
                                                         view! {
                                                             <TableRow class="even:bg-gray-700 odd:bg-gray-500">
                                                                 <TableCell class="text-center">{article.name}</TableCell>
-                                                                <TableCell class="text-center">{article.cost.format_eur()}</TableCell>
+                                                                <TableCell class="text-center">
+                                                                    {article.cost.format_eur()}
+                                                                </TableCell>
                                                                 <TableCell class="bg-green-700 p-2">
                                                                     <a href=format!("/articles/{}", article.id)>
                                                                         <p class="text-center">"Edit"</p>
