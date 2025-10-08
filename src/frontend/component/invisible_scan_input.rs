@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[component]
-pub fn ScanUserBarcodeListener() -> impl IntoView {
+pub fn ScanUserBarcodeListener(ignore_input: RwSignal<bool>) -> impl IntoView {
     let input_signal = RwSignal::new(String::new());
 
     let found_user_signal = RwSignal::new(None::<User>);
@@ -25,6 +25,10 @@ pub fn ScanUserBarcodeListener() -> impl IntoView {
             input_signal.write_only().set(String::new());
 
             if scan_input.is_empty() {
+                return;
+            }
+
+            if ignore_input.get_untracked() {
                 return;
             }
 
@@ -47,6 +51,10 @@ pub fn ScanUserBarcodeListener() -> impl IntoView {
         }
 
         _ => {
+            if ignore_input.get_untracked() {
+                return;
+            }
+
             let mut prev = input_signal.read_untracked().clone();
             prev.push_str(&ev.key());
             input_signal.write_only().set(prev);
