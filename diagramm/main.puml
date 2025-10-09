@@ -85,7 +85,7 @@ $schema("STRICHLISTE", "strichliste") {
 	$table("ArticleCostMap", "article_cost_map") {
 	    $fk("article_id"): integer not null
 	    $column("cost"): integer not null
-	    $column("effective_since"): date not null
+	    $pk("effective_since"): date not null
 	}
 }
 
