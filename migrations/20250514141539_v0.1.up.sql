@@ -71,7 +71,7 @@ create table ArticleSoundMap (
 create table ArticleCostMap (
   article_id integer not null,
   cost integer not null,
-  effective_since date not null,
+  key effective_since date not null,
   foreign key (article_id) references Articles (id)
 );
 
