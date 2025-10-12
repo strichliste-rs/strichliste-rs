@@ -26,7 +26,7 @@ impl User {
     }
 }
 
-#[server]
+#[server(output=server_fn::codec::Cbor)]
 pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();
