@@ -3,6 +3,7 @@ use {
     leptos::prelude::*,
 };
 
+use crate::backend::core::misc::custom_binary_encoding::Binary;
 #[cfg(feature = "ssr")]
 use crate::backend::database::{ArticleDB, DatabaseResponse, DB};
 
@@ -43,7 +44,7 @@ impl Article {
     }
 }
 
-#[server]
+#[server(input=Binary, output=Binary)]
 pub async fn get_articles_per_user(user_id: UserId) -> Result<Vec<Article>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();

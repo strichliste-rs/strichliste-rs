@@ -1,5 +1,6 @@
 use {crate::backend::core::User, leptos::prelude::*};
 
+use crate::backend::core::misc::custom_binary_encoding::Binary;
 #[cfg(feature = "ssr")]
 use crate::{
     backend::database::{DBError, UserDB, DB},
@@ -26,7 +27,7 @@ impl User {
     }
 }
 
-#[server(output=server_fn::codec::Cbor)]
+#[server(input=Binary, output=Binary)]
 pub async fn get_all_users() -> Result<Vec<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();

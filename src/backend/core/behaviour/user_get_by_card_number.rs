@@ -1,5 +1,6 @@
 use {crate::backend::core::User, leptos::prelude::*};
 
+use crate::backend::core::misc::custom_binary_encoding::Binary;
 #[cfg(feature = "ssr")]
 use crate::backend::database::{DatabaseResponse, UserDB, DB};
 
@@ -23,7 +24,7 @@ impl User {
     }
 }
 
-#[server]
+#[server(input=Binary, output=Binary)]
 pub async fn get_user_by_barcode(barcode_string: String) -> Result<Option<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();
