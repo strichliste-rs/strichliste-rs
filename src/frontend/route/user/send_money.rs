@@ -74,8 +74,7 @@ pub fn Show() -> impl IntoView {
                                 .iter()
                                 .filter(|elem| elem.id != user.id)
                                 .filter(|elem| {
-                                    elem
-                                        .nickname
+                                    elem.nickname
                                         .to_lowercase()
                                         .contains(&selected_user_input.get().to_lowercase())
                                 })

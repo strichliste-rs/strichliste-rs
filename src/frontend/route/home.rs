@@ -31,7 +31,6 @@ pub fn View() -> impl IntoView {
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
                 <div class="flex justify-center">
-                    // joinked from: https://gist.github.com/ibelick/0c92c1aba54c2f7e8b3a7381426ed029
                     <Popover
                         trigger_type=PopoverTriggerType::Click
                         on_open=move || { ignore_scan_input_signal.set(true) }
@@ -39,6 +38,7 @@ pub fn View() -> impl IntoView {
                         on_close=move || { ignore_scan_input_signal.set(false) }
                     >
                         <PopoverTrigger slot>
+                            // joinked from: https://gist.github.com/ibelick/0c92c1aba54c2f7e8b3a7381426ed029
                             <button class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-black drop-shadow-sm transition-colors duration-150 hover:bg-gray-200">
                                 "+"
                             </button>
@@ -74,7 +74,9 @@ pub fn View() -> impl IntoView {
                 </div>
             </div>
             <ScanUserBarcodeListener ignore_input=ignore_scan_input_signal />
-            <div class="col-span-9 pr-7">{ShowUsers()}</div>
+            <div class="col-span-9 pr-7">
+                <ShowUsers />
+            </div>
         </div>
     }
 }

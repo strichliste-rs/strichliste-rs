@@ -1,6 +1,7 @@
 use {
     crate::model::{Page, PageRequestParams, Transaction, UserId},
     leptos::prelude::*,
+    server_fn::codec,
 };
 
 #[cfg(feature = "ssr")]
@@ -83,7 +84,7 @@ impl Transaction {
     }
 }
 
-#[server]
+#[server(output=codec::Cbor, input=codec::Cbor)]
 pub async fn get_user_transactions(
     user_id: UserId,
     page_request_params: PageRequestParams,
