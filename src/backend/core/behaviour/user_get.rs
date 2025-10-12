@@ -5,7 +5,10 @@ use {
 };
 
 use {
-    crate::{backend::core::User, model::UserId},
+    crate::{
+        backend::core::{misc::custom_binary_encoding::Binary, User},
+        model::UserId,
+    },
     leptos::prelude::*,
 };
 
@@ -38,7 +41,7 @@ impl User {
     }
 }
 
-#[server]
+#[server(input=Binary, output=Binary)]
 pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();

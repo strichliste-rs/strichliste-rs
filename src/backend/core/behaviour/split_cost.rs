@@ -1,8 +1,8 @@
 use leptos::prelude::*;
 
-use crate::model::SplitCostError;
+use crate::{backend::core::misc::custom_binary_encoding::Binary, model::SplitCostError};
 
-#[server]
+#[server(input=Binary, output=Binary)]
 pub async fn split_cost(
     primary_user: String,
     secondary_users_input: Option<Vec<String>>,

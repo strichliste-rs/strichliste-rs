@@ -1,9 +1,9 @@
 use {
     crate::model::{Page, PageRequestParams, Transaction, UserId},
     leptos::prelude::*,
-    server_fn::codec,
 };
 
+use crate::backend::core::misc::custom_binary_encoding::Binary;
 #[cfg(feature = "ssr")]
 use crate::{
     backend::database::{ArticleDB, DatabaseResponse, TransactionDB, DB},
@@ -83,8 +83,10 @@ impl Transaction {
         Ok(Page::new(page_request_params, total, transactions))
     }
 }
-
-#[server(output=codec::Cbor, input=codec::Cbor)]
+// Binary: 8.12kb
+// Json: 17.58kb
+// Cbor: 13.47kb
+#[server(input=Binary, output=Binary)]
 pub async fn get_user_transactions(
     user_id: UserId,
     page_request_params: PageRequestParams,

@@ -1,4 +1,4 @@
-use crate::backend::core::Article;
+use crate::backend::core::{misc::custom_binary_encoding::Binary, Article};
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
@@ -35,7 +35,7 @@ impl Article {
         }
     }
 }
-#[server]
+#[server(input=Binary, output=Binary)]
 pub async fn get_article(article_id: i64) -> Result<Article, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();
