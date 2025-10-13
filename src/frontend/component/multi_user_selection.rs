@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use thaw::{Button, ButtonAppearance};
 
 use crate::frontend::component::{icon::DeleteIcon, single_user_selection::SelectSingleUser};
 
@@ -7,7 +8,6 @@ pub fn SelectMultiUser(
     title: String,
     users_input: RwSignal<Vec<String>>,
     #[prop(optional)] children: Option<ChildrenFn>,
-    #[prop(optional)] single_user_extra_class: Option<String>,
 ) -> impl IntoView {
     let new_user_input = RwSignal::new(String::new());
     view! {
@@ -16,17 +16,19 @@ pub fn SelectMultiUser(
                 title=title
                 input=new_user_input
                 filter_names=users_input
-                extra_class=single_user_extra_class.map_or(String::new(), |v| v)
             >
-                <button
-                    class="w-full bg-indigo-700 hover:bg-pink-700 text-white font-bold py-2 px-4 mb-6 mt-4 rounded"
-                    on:click=move |_| {
-                        users_input.write().push(new_user_input.get());
-                        new_user_input.write().clear();
-                    }
-                >
-                    "Add User"
-                </button>
+                <div class="pt-5">
+                    <Button
+                        appearance=ButtonAppearance::Primary
+                        class="w-full"
+                        on_click=move |_| {
+                            users_input.write().push(new_user_input.get());
+                            new_user_input.write().clear();
+                        }
+                    >
+                        "Add User"
+                    </Button>
+                </div>
                 <div class="flex flex-col items-center pt-5 gap-10 text-[1.25em]">
                     <table class="w-full text-white border-collapse border-spacing-5">
                         {move || {
