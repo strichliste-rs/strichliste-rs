@@ -12,11 +12,7 @@ pub fn SelectMultiUser(
     let new_user_input = RwSignal::new(String::new());
     view! {
         <div>
-            <SelectSingleUser
-                title=title
-                input=new_user_input
-                filter_names=users_input
-            >
+            <SelectSingleUser title=title input=new_user_input filter_names=users_input>
                 <div class="pt-5">
                     <Button
                         appearance=ButtonAppearance::Primary
