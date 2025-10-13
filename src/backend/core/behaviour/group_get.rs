@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+use crate::backend::core::User;
+
 #[cfg(feature = "ssr")]
 use {
     crate::{
@@ -30,7 +32,7 @@ impl Group {
 }
 
 #[server]
-pub async fn get_group_members(gid: i64) -> Result<Vec<String>, ServerFnError> {
+pub async fn get_group_members(gid: i64) -> Result<Vec<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     use tracing::error;
     let state: ServerState = expect_context();
@@ -58,9 +60,25 @@ pub async fn get_group_members(gid: i64) -> Result<Vec<String>, ServerFnError> {
         }
     };
 
-    Ok(group
-        .members
-        .into_iter()
-        .map(|elem| elem.nickname)
-        .collect())
+    let mut users = Vec::new();
+
+    for user_db in group.members.iter() {
+        match User::get(&mut *conn, user_db.id.into()).await {
+            Ok(user) => match user {
+                Some(user) => users.push(user),
+                None => {
+                    error!("Failed to get user from user id: {}", user_db.id);
+                    response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Err(ServerFnError::new("Failed to fetch user"));
+                }
+            },
+            Err(e) => {
+                error!("Failed to fetch user {}: {}", user_db.nickname, e);
+                response_opts.set_status(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(ServerFnError::new("Failed to fetch user"));
+            }
+        }
+    }
+
+    Ok(users)
 }
