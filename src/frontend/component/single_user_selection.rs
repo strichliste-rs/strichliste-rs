@@ -33,7 +33,6 @@ pub fn SelectSingleUser(
                             .into_any();
                     }
                 };
-
                 let options = Memo::<
                     Vec<String>,
                 >::new(move |_| {
@@ -41,9 +40,7 @@ pub fn SelectSingleUser(
                         .get()
                         .iter()
                         .filter(|elem| {
-                            elem.nickname
-                                .to_lowercase()
-                                .contains(&input.get().to_lowercase())
+                            elem.nickname.to_lowercase().contains(&input.get().to_lowercase())
                         })
                         .filter(|elem| {
                             match filter_names {
@@ -53,9 +50,8 @@ pub fn SelectSingleUser(
                                             return false;
                                         }
                                     }
-
                                     true
-                                },
+                                }
                                 None => true,
                             }
                         })
@@ -66,14 +62,8 @@ pub fn SelectSingleUser(
 
                 view! {
                     <Field label=title>
-                        <AutoComplete
-                            value=input
-                        >
-                            <For
-                                each=move || options.get()
-                                key=|option| option.clone()
-                                let:option
-                            >
+                        <AutoComplete value=input>
+                            <For each=move || options.get() key=|option| option.clone() let:option>
 
                                 <AutoCompleteOption value=option
                                     .clone()>{option}</AutoCompleteOption>

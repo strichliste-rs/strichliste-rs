@@ -43,19 +43,14 @@ pub fn Show() -> impl IntoView {
             let msg = error_signal.get();
             match msg.len() {
                 0 => ().into_any(),
-                _ => {
-                    throw_error_none_view(msg)
-                },
+                _ => throw_error_none_view(msg),
             }
         }}
         <Flex vertical=true align=FlexAlign::Center>
             <Grid cols=2 x_gap=10 y_gap=10>
                 <GridItem>
                     <div class="pt-4">
-                        <SelectSingleUser
-                            title=String::from("Who are you?")
-                            input=primary_user
-                        />
+                        <SelectSingleUser title=String::from("Who are you?") input=primary_user />
                     </div>
                 </GridItem>
                 <GridItem>
@@ -68,10 +63,10 @@ pub fn Show() -> impl IntoView {
                 </GridItem>
                 <GridItem>
                     <Field label="How much?" orientation=FieldOrientation::Horizontal required=true>
-                        <Input value=money_input/>
+                        <Input value=money_input />
                     </Field>
                     <Field label="Description" orientation=FieldOrientation::Horizontal>
-                        <Input value=description_input/>
+                        <Input value=description_input />
                     </Field>
                 </GridItem>
                 <GridItem>
@@ -80,7 +75,9 @@ pub fn Show() -> impl IntoView {
                         appearance=ButtonAppearance::Primary
                         size=ButtonSize::Large
                         on_click=on_click
-                    >"Split cost"</Button>
+                    >
+                        "Split cost"
+                    </Button>
                 </GridItem>
             </Grid>
         </Flex>
