@@ -1,12 +1,14 @@
 use chrono::{DateTime, Local, Utc};
+use itertools::Itertools;
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 
 use crate::{
-    backend::core::behaviour::{
-        group_get::get_group_members, transaction_set_undone::UndoTransaction,
+    backend::core::{
+        behaviour::{group_get::get_group_members, transaction_set_undone::UndoTransaction},
+        User,
     },
     frontend::{
-        component::icon::{ArticleBasketIcon, LeftArrowIcon, RightArrowIcon},
+        component::icon::{ArticleBasketIcon, LeftArrowIcon, LeftRightArrowIcon, RightArrowIcon},
         shared::{throw_error, throw_error_none_view},
     },
     model::{Money, Transaction, TransactionType, UserId},
@@ -76,7 +78,55 @@ pub fn format_transaction(
                     }
                         .into_any()
                 }
-                TransactionType::SentAndReceived(_received_group) => todo!(),
+                TransactionType::SentAndReceived(_) => {
+                    let transaction = transaction.clone();
+                    let group_members_resource = OnceResource::new(get_group_members(transaction.group_id.0));
+
+                    view! {
+                        <Suspense fallback=move || view!{ <p>"Loading users"</p>}>
+                            {move || {
+
+                                let description = transaction
+                                    .description
+                                    .as_ref()
+                                    .map(|val| format!(": {val}"));
+                                let fmt_description = |other: String, description: Option<String>| {
+                                    other + &description.unwrap_or_default()
+                                };
+
+                                group_members_resource.get().map(|members| {
+                                    match members {
+                                        Err(e) => {
+                                            throw_error_none_view(format!("Failed to fetch group members: {e}"))
+                                        },
+                                        Ok(members) => {
+                                            let mut cost = transaction.money.value;
+                                            let members: Vec<User> = members.into_iter().filter(|elem| elem.id != user_id).collect();
+                                            view!{
+                                                {
+                                                    if cost >= 0 {
+                                                        view! {
+                                                            <p class="text-green-500">"+"{transaction.money.format_eur()}</p>
+                                                        }.into_any()
+                                                    } else {
+
+                                                        view! {
+                                                            <p class="text-red-400">"-"{transaction.money.format_eur()}</p>
+                                                        }.into_any()
+                                                    }
+                                                }
+                                                <p class="flex items-center text-white">
+                                                    <LeftRightArrowIcon class="w-[2em] flex h-[1.5em]"/>
+                                                    " "{fmt_description(members.iter().map(|elem| elem.nickname.clone()).join(", "), description)}
+                                                </p>
+                                            }.into_any()
+                                        }
+                                    }
+                                })
+                            }}
+                        </Suspense>
+                    }.into_any()
+                },
                 TransactionType::Received(group) | TransactionType::Sent(group) => {
                     let transaction = transaction.clone();
                     let group_members_resource = OnceResource::new(get_group_members(group.0));
@@ -120,13 +170,13 @@ pub fn format_transaction(
                                                         {if money_value < 0 {
                                                             view! {
                                                                 <RightArrowIcon class="w-[2rem]" />
-                                                                {fmt_description(members.join(", "), description)}
+                                                                {fmt_description(members.iter().map(|elem| elem.nickname.clone()).join(", "), description)}
                                                             }
                                                                 .into_any()
                                                         } else {
                                                             view! {
                                                                 <LeftArrowIcon class="w-[2rem]" />
-                                                                {fmt_description(members.join(", "), description)}
+                                                                {fmt_description(members.iter().map(|elem| elem.nickname.clone()).join(", "), description)}
                                                             }
                                                                 .into_any()
                                                         }}
