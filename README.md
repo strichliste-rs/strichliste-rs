@@ -36,14 +36,23 @@ Otherwise just do
 nix flake develop
 ```
 
-## Other instructions
+## Without Nix / Other instructions
 
 The data directory flag (-d) is the directory the sqlite database will be placed.
+
+Install the following dependencies:
+
+- rust
+- cargo-leptos
+- sqlx (sqlx-cli)
+- tailwind
+- sqlite
 
 ```bash
 # could also be present in a .env
 export DATABASE_URL="sqlite:tmp/db.sqlite" # not needed with nix (env is in flake.nix)
 
+mkdir tmp
 sqlx database setup
 cargo leptos watch -- -d ./tmp -c ./config_example.yaml
 ```
