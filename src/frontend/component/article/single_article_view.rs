@@ -30,7 +30,6 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
     let on_click = move |_| {
         let mut article = clone.clone();
         article.name = name.get();
-        // console_log("Hello");
 
         spawn_local(async move {
             let Article {
@@ -86,20 +85,6 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
                     <Input class=input_css value=cost />
                 </Flex>
             </Flex>
-            // <div class="flex justify-center pt-5">
-            // <div class=format!("{} items-end", { class_css })>
-            // <a class="text-white">"Name:"</a>
-            // <a class="text-white">"Cost:"</a>
-
-            // </div>
-            // <div class=format!("{} items-center", { class_css })>
-            // <Input class=input_css value=name />
-            // <Input
-            // class=input_css
-            // value=cost
-            // />
-            // </div>
-            // </div>
             <div>
                 <table class="w-full text-white border-collapse border-spacing-5">
                     <tr class="bg-black">
@@ -216,7 +201,6 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
                 </div>
             </div>
 
-            // Last element (Submit button)
             <div class="w-[30vw]">
                 <input
                     class="w-full bg-indigo-700 hover:bg-pink-700 text-white font-bold py-2 px-4 mb-6 rounded"
