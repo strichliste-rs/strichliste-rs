@@ -67,13 +67,39 @@ impl Transaction {
                     transaction.money = price.into();
                     transaction.description = Some(article_name);
                 }
+
                 TransactionType::Sent(_) => {
                     use crate::backend::core::Group;
 
                     let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
-
-                    // this shows the user his transferred amount when a group transaction was made
                     transaction.money.value /= sender_group.members.len() as i64;
+                }
+
+                TransactionType::SentAndReceived(receiver_group) => {
+                    use crate::backend::core::{Group, User};
+
+                    let sender_group = Group::get(&mut *conn, transaction.group_id).await?;
+                    let receiver_group = Group::get(&mut *conn, receiver_group).await?;
+
+                    let transaction_db = TransactionDB::get(&mut *conn, transaction.id)
+                        .await?
+                        .unwrap();
+
+                    let delta = Transaction::get_transaction_delta(
+                        &mut *conn,
+                        &sender_group,
+                        &receiver_group,
+                        &transaction_db,
+                    )
+                    .await?;
+
+                    let user = User::get(&mut *conn, user_id).await?.unwrap();
+
+                    let user_delta = delta.get(&user).unwrap();
+
+                    dbg!(&user_delta);
+
+                    transaction.money.value = user_delta.delta;
                 }
 
                 _ => {}
@@ -83,9 +109,7 @@ impl Transaction {
         Ok(Page::new(page_request_params, total, transactions))
     }
 }
-// Binary: 8.12kb
-// Json: 17.58kb
-// Cbor: 13.47kb
+
 #[server(input=Binary, output=Binary)]
 pub async fn get_user_transactions(
     user_id: UserId,
