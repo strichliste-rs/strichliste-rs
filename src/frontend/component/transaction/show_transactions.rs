@@ -1,6 +1,7 @@
 use leptos::{leptos_dom::logging::console_log, prelude::*};
 use leptos_router::hooks::use_params_map;
 use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
+use thaw::Spinner;
 
 use crate::{
     backend::core::behaviour::transaction_get_user_transactions::get_user_transactions,
@@ -40,7 +41,7 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <p class="text-white text-center p-5">"Loading transactions"</p> }
+            view! { <Spinner label="Loading transactions"/> }
         }>
             {move || {
                 let transactions = match transaction_data.get() {

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local, Utc};
 use itertools::Itertools;
 use leptos::{leptos_dom::logging::console_log, prelude::*};
+use thaw::Spinner;
 
 use crate::{
     backend::core::{
@@ -87,7 +88,7 @@ pub fn FormatTransaction(
 
                     view! {
                         <Suspense fallback=move || {
-                            view! { <p>"Loading users"</p> }
+                            view! { <Spinner label="Loading users"/> }
                         }>
                             {move || {
                                 let description = transaction
