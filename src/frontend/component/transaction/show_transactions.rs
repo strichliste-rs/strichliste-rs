@@ -5,7 +5,7 @@ use leptos_use::{use_infinite_scroll_with_options, UseInfiniteScrollOptions};
 use crate::{
     backend::core::behaviour::transaction_get_user_transactions::get_user_transactions,
     frontend::{
-        component::transaction::format_transaction, model::money_args::MoneyArgs,
+        component::transaction::FormatTransaction, model::money_args::MoneyArgs,
         shared::throw_error_none_view,
     },
     model::{PageRequestParams, PageResponseParams, Transaction, UserId},
@@ -30,7 +30,7 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
         }
     };
 
-    let previous_transactions_presonse_params: RwSignal<Option<PageResponseParams>> =
+    let previous_transactions_response_params: RwSignal<Option<PageResponseParams>> =
         RwSignal::new(None);
     let transaction_data =
         OnceResource::new(get_user_transactions(user_id, PageRequestParams::new(100)));
@@ -61,7 +61,6 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
                         );
                     }
                 };
-                transactions.sort_by(|a, b| { b.timestamp.cmp(&a.timestamp) });
                 let el = NodeRef::<leptos::html::Div>::new();
                 transaction_signal
                     .write()
@@ -70,21 +69,29 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
                     let _ = use_infinite_scroll_with_options(
                         el,
                         move |_| async move {
-                            let next_params = previous_transactions_presonse_params
+                            let next_params = previous_transactions_response_params
                                 .with_untracked(|p| PageResponseParams::next_params(*p, 100));
                             if let Some(params) = next_params {
                                 let mut data = get_user_transactions(user_id, params).await;
                                 match data {
                                     Ok(mut data) => {
-                                        transaction_signal.update(|d| d.append(&mut data.items));
-                                        previous_transactions_presonse_params
+                                        transaction_signal
+                                            .update(|trans| {
+                                                for item in data.items.into_iter() {
+                                                    if !trans.contains(&item) {
+                                                        trans.push(item)
+                                                    }
+                                                }
+                                                trans.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+                                            });
+                                        previous_transactions_response_params
                                             .set(Some(data.params));
                                     }
                                     Err(e) => console_log(&e.to_string()),
                                 }
                             }
                         },
-                        UseInfiniteScrollOptions::default().distance(20.0).interval(1.0),
+                        UseInfiniteScrollOptions::default().distance(0.0).interval(1.0),
                     );
                 });
 
@@ -99,7 +106,7 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
                             )
                             let:child
                         >
-                            {format_transaction(&child, user_id, money_signal)}
+                            <FormatTransaction transaction=child.clone() user_id money_signal />
                         </For>
 
                     </div>

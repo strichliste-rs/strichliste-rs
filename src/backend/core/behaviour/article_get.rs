@@ -17,7 +17,6 @@ impl Article {
 
         match ArticleDB::get_single(&mut *conn, id).await? {
             Some(article) => {
-                let article_sounds = ArticleDB::get_sounds(&mut *conn, article.id).await?;
                 let article_barcodes = ArticleDB::get_barcodes(&mut *conn, article.id)
                     .await?
                     .into_iter()
@@ -26,13 +25,17 @@ impl Article {
 
                 let cost = ArticleDB::get_latest_cost(&mut *conn, article.id).await?;
 
-                let ArticleDB { id, name } = article;
+                let ArticleDB {
+                    id,
+                    name,
+                    is_disabled,
+                } = article;
                 Ok(Some(Article {
                     id,
                     name,
                     cost: cost.into(),
-                    sounds: article_sounds,
                     barcodes: article_barcodes,
+                    is_disabled,
                 }))
             }
             None => Ok(None),

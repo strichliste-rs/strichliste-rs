@@ -6,12 +6,9 @@ use crate::backend::core::misc::custom_binary_encoding::Binary;
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
-use {
-    crate::backend::{
-        core::Barcode,
-        database::{ArticleDB, DatabaseResponse, DB},
-    },
-    tracing::debug,
+use crate::backend::{
+    core::Barcode,
+    database::{ArticleDB, DatabaseResponse, DB},
 };
 
 #[cfg(feature = "ssr")]
@@ -23,24 +20,24 @@ impl Article {
 
         let mut article_no_db = Vec::new();
         for article in articles {
-            let ArticleDB { id, name } = article;
-            let article_sounds = ArticleDB::get_sounds(&mut *conn, id).await?;
-            debug!("Fetched sounds");
+            let ArticleDB {
+                id,
+                name,
+                is_disabled,
+            } = article;
             let article_barcodes = ArticleDB::get_barcodes(&mut *conn, id)
                 .await?
                 .into_iter()
                 .map(|elem| Barcode(elem.barcode_content))
                 .collect();
-            debug!("Fetched barcodes");
             let cost = ArticleDB::get_latest_cost(&mut *conn, id).await?;
-            debug!("Fetched cost");
 
             article_no_db.push(Article {
                 id,
                 name,
                 cost: cost.into(),
-                sounds: article_sounds,
                 barcodes: article_barcodes,
+                is_disabled,
             });
         }
         Ok(article_no_db)

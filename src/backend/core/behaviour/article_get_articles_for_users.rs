@@ -21,11 +21,14 @@ impl Article {
         let mut full_articles = Vec::<Article>::new();
 
         for (article_id, _amount_bought) in articles_amount_bought.iter() {
-            full_articles.push(
-                Article::get(db, *article_id)
-                    .await?
-                    .expect("fetched article should exist!"),
-            );
+            match Article::get(db, *article_id).await? {
+                Some(article) => full_articles.push(article),
+                None => {
+                    use tracing::error;
+
+                    error!("Failed to find article with id {article_id}, although it was found in transactions")
+                }
+            };
         }
 
         let mut articles = Self::get_all(db, None).await?;

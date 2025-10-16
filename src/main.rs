@@ -7,8 +7,10 @@ use clap::Parser;
 #[cfg(feature = "ssr")]
 #[derive(Parser)]
 struct Args {
-    #[arg(short, long = "data-dir", help = "The data directory to use")]
-    data_dir: std::path::PathBuf,
+    #[arg(short = 'd', long = "db", help = "The path to the sqlite db")]
+    db_path: std::path::PathBuf,
+    #[arg(short = 'q', long = "create", help = "Create the database and exit", action = clap::ArgAction::SetTrue)]
+    create: bool,
     #[arg(short='v', long, action = clap::ArgAction::Count, help="Sets the verbose level. More v's more output")]
     verbose: u8,
 
@@ -32,19 +34,21 @@ async fn main() {
     use strichliste_rs::backend::{core::ServerState, core::Settings, core::State};
 
     use tokio::sync::Mutex;
-    use tracing::{error, Level};
+    use tracing::error;
+    use tracing_subscriber::EnvFilter;
 
     let args = Args::parse();
 
-    let logger = tracing_subscriber::fmt();
-
-    let logger = match args.verbose {
-        0 => logger.with_max_level(Level::INFO),
-        1 => logger.with_max_level(Level::DEBUG),
-        _ => logger.with_max_level(Level::TRACE),
+    let level = match args.verbose {
+        0 => "info,sqlx=warn",
+        1 => "debug,sqlx=warn",
+        _ => "trace",
     };
 
-    logger.init();
+    tracing_subscriber::fmt()
+        .with_line_number(true)
+        .with_env_filter(EnvFilter::new(level))
+        .init();
 
     let settings = match Settings::new(args.config) {
         Ok(mut settings) => {
@@ -70,7 +74,7 @@ async fn main() {
         }
     };
 
-    let path = args.data_dir.join("db.sqlite");
+    let path = args.db_path;
 
     let db = match DB::new(path.to_str().unwrap()).await {
         Ok(db) => db,
@@ -79,6 +83,14 @@ async fn main() {
             exit(1);
         }
     };
+
+    if args.create {
+        use tracing::info;
+
+        db.close().await;
+        info!("Created database and exiting.");
+        exit(0);
+    }
 
     let server_state: ServerState = Arc::new(State {
         db: Mutex::new(db),

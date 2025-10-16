@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::model::{DatabaseId, GroupId, Money};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq)]
 pub struct Transaction {
     pub id: DatabaseId,
     /// used to look up name (for split transaction)
@@ -15,6 +15,12 @@ pub struct Transaction {
     pub description: Option<String>,
     pub timestamp: DateTime<Utc>,
     pub is_undone_signal: RwSignal<bool>,
+}
+
+impl PartialEq for Transaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]

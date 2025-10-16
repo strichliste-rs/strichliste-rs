@@ -7,7 +7,6 @@ pub mod article_get_barcodes;
 pub mod article_get_effective_cost;
 pub mod article_get_latest_cost;
 pub mod article_get_single;
-pub mod article_get_sounds;
 pub mod article_remove_barcode;
 pub mod article_set_name;
 pub mod article_set_price;

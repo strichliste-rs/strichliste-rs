@@ -43,12 +43,18 @@ impl Transaction {
                 TransactionType::Bought(article_id) => {
                     let (price, article_name) = match article_cache.get(&article_id) {
                         None => {
+                            use tracing::debug;
+
                             let article =
                                 match ArticleDB::get_single(&mut *conn, article_id).await? {
                                     None => continue, // Article got nuked?,
                                     Some(value) => value,
                                 };
 
+                            debug!(
+                                "Getting effective cost of {} for timestamp {}",
+                                article.name, transaction.timestamp
+                            );
                             let price = ArticleDB::get_effective_cost(
                                 &mut *conn,
                                 article_id,
@@ -99,7 +105,7 @@ impl Transaction {
 
                     let user_delta = delta.get(&user).unwrap();
 
-                    dbg!(&user_delta);
+                    // dbg!(&user_delta);
 
                     transaction.money.value = user_delta.delta;
                 }

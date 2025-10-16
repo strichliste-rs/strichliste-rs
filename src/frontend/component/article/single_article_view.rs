@@ -32,13 +32,7 @@ pub fn SingleArticleView(article: Article) -> impl IntoView {
         article.name = name.get();
 
         spawn_local(async move {
-            let Article {
-                id,
-                name: _,
-                cost: _,
-                sounds: _,
-                barcodes: _,
-            } = article;
+            let Article { id, .. } = article;
 
             let barcodes = barcodes_diff_signal.get_untracked();
             if let Err(e) = update_article(

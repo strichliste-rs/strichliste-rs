@@ -3,7 +3,9 @@
 use sqlx::{query, Executor};
 
 use crate::{
-    backend::database::{ArticleDB, DBError, DatabaseResponse, DatabaseType, DBGROUP_SNACKBAR_ID},
+    backend::database::{
+        ArticleDB, DBError, DatabaseResponse, DatabaseType, GroupDB, DBGROUP_SNACKBAR_ID,
+    },
     model::UserId,
 };
 
@@ -15,6 +17,7 @@ impl ArticleDB {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        let user_group = GroupDB::get_single_group(&mut *conn, user_id).await?;
         let result = query!(
             "
                 select
@@ -27,7 +30,7 @@ impl ArticleDB {
                 order by timestamp desc
                 limit 50
             ",
-            user_id.0,
+            user_group,
             DBGROUP_SNACKBAR_ID.0
         )
         .fetch_all(&mut *conn)

@@ -18,11 +18,17 @@ impl TransactionDB {
     {
         let result = sqlx::query_as::<_, Self>(
             "
-            select distinct Transactions.* from Transactions
-            join Users on Users.id=?
-            join UserGroupMap as UGM on UGM.uid = Users.id
-            where Transactions.receiver = UGM.gid or Transactions.sender = UGM.gid
-            order by timestamp desc
+            select
+                distinct Transactions.* from Transactions
+                join
+                    Users on Users.id=?
+                join
+                    UserGroupMap as UGM on UGM.uid = Users.id
+            where
+                Transactions.receiver = UGM.gid
+                or Transactions.sender = UGM.gid
+            order by
+                timestamp desc
             limit ?
             offset ?
         ",
