@@ -9,4 +9,5 @@ use crate::model::DatabaseId;
 pub struct ArticleDB {
     pub id: DatabaseId,
     pub name: String,
+    pub is_disabled: bool,
 }

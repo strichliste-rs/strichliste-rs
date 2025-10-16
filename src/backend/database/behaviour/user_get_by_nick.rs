@@ -3,6 +3,7 @@
 use sqlx::{query_as, Executor};
 
 use crate::backend::database::{DatabaseResponse, DatabaseType, UserDB};
+use chrono::{DateTime, Utc};
 impl UserDB {
     pub async fn get_by_nick<T>(conn: &mut T, nick: &String) -> DatabaseResponse<Option<Self>>
     where
@@ -10,11 +11,17 @@ impl UserDB {
     {
         query_as!(
             UserDB,
-            "
-                select *
+            r#"
+                select
+                    id,
+                    nickname,
+                    money,
+                    is_system_user,
+                    created_at as "created_at: DateTime<Utc>",
+                    disabled
                 from Users
                 where nickname = ?
-            ",
+            "#,
             nick
         )
         .fetch_optional(&mut *conn)

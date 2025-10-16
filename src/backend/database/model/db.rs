@@ -1,14 +1,9 @@
 use std::str::FromStr;
 
-use sqlx::{
-    pool::PoolConnection, query, sqlite::SqliteConnectOptions, Sqlite, SqlitePool, Transaction,
-};
-use tracing::{debug, info};
+use sqlx::{pool::PoolConnection, sqlite::SqliteConnectOptions, Sqlite, SqlitePool, Transaction};
+use tracing::info;
 
-use crate::backend::database::{
-    DBError, GroupDB, DBGROUP_AUFLADUNG_ID, DBGROUP_SNACKBAR_ID, DBUSER_AUFLADUNG_ID,
-    DBUSER_SNACKBAR_ID,
-};
+use crate::backend::database::DBError;
 
 pub struct DB {
     pool: SqlitePool,
@@ -34,6 +29,10 @@ impl DB {
         Ok(db)
     }
 
+    pub async fn close(self) {
+        self.pool.close().await;
+    }
+
     pub async fn get_conn(&self) -> Result<PoolConnection<Sqlite>, DBError> {
         self.pool
             .acquire()
@@ -54,68 +53,6 @@ impl DB {
             .map_err(DBError::new)?;
 
         info!("Applied database migrations (if necessary)");
-
-        _ = query!(
-            "
-                insert or ignore into Users
-                    (id, nickname, money, is_system_user)
-                values
-                    (?, ?, ?, ?)
-            ",
-            DBGROUP_SNACKBAR_ID.0,
-            "kasse",
-            0,
-            true,
-        )
-        .execute(&mut *transaction)
-        .await
-        .map_err(DBError::new)?;
-
-        debug!("Created DBUSER_KASSE user");
-
-        _ = query!(
-            "
-                insert or ignore into Users
-                    (id, nickname, money, is_system_user)
-                values
-                    (?, ?, ?, ?)
-            ",
-            DBGROUP_AUFLADUNG_ID.0,
-            "aufladung",
-            0,
-            true
-        )
-        .execute(&mut *transaction)
-        .await
-        .map_err(DBError::new)?;
-
-        debug!("Created DBUSER_AUFLADUNG user");
-
-        let group_k = GroupDB::_create(&mut *transaction, DBGROUP_SNACKBAR_ID.0).await?;
-        let group_a = GroupDB::_create(&mut *transaction, DBGROUP_AUFLADUNG_ID.0).await?;
-
-        match group_k
-            .link_user(&mut *transaction, DBUSER_SNACKBAR_ID)
-            .await
-        {
-            Ok(_) => {}
-            Err(_) => {
-                debug!("Failed to link DBUSER_KASSE with group. (Hopefully) Already linked")
-            }
-        };
-        debug!("Linked group to user: DBUSER_KASSE");
-        match group_a
-            .link_user(&mut *transaction, DBUSER_AUFLADUNG_ID)
-            .await
-        {
-            Ok(_) => {}
-            Err(_) => {
-                debug!("Failed to link DBUSER_AUFLADUNG with group. (Hopefully) Already linked")
-            }
-        };
-        debug!("Linked group to user: DBUSER_AUFLADUNG");
-
-        // no need ?
 
         transaction.commit().await.map_err(From::from)
     }
