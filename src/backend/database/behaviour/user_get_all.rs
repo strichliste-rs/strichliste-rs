@@ -25,8 +25,6 @@ impl UserDB {
                 where
                     is_system_user = false and
                     disabled = false
-                order by
-                    nickname
             "#,
         )
         .fetch_all(&mut *conn)

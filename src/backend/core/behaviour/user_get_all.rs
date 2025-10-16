@@ -23,6 +23,8 @@ impl User {
             )
         }
 
+        users.sort_by(|a, b| a.nickname.to_lowercase().cmp(&b.nickname.to_lowercase()));
+
         Ok(users)
     }
 }
