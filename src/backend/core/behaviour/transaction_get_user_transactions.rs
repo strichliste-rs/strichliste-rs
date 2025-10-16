@@ -105,8 +105,6 @@ impl Transaction {
 
                     let user_delta = delta.get(&user).unwrap();
 
-                    // dbg!(&user_delta);
-
                     transaction.money.value = user_delta.delta;
                 }
 
