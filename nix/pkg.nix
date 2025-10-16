@@ -134,8 +134,16 @@ let
       cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
     }
   );
+
+  migrate = pkgs.stdenv.mkDerivation {
+    name = "migrate";
+    propagatedBuildInputs = with pkgs; [ python3 ];
+    dontUnpack = true;
+    installPhase = "install -Dm755 ${../scripts/migration.py} $out/bin/migrate";
+  };
 in
 {
   packages.default = package;
+  packages.migrate = migrate;
   checks = { inherit clippyFrontend clippybackend; };
 }
