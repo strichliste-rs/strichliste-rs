@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use thaw::Spinner;
 
 use crate::{
     backend::core::behaviour::user_get_all::get_all_users,
@@ -16,7 +17,7 @@ pub fn ShowUsers() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <h1>"Loading users..."</h1> }
+            view! { <Spinner label="Loading users"/> }
         }>
             {move || {
                 let users = match user_data.get() {

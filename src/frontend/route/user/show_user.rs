@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
-use thaw::{Button, Input};
+use thaw::{Button, Input, Spinner};
 
 use crate::{
     backend::core::behaviour::user_get::get_user,
@@ -41,7 +41,7 @@ pub fn ShowUser() -> impl IntoView {
 
                 view! {
                     <Suspense fallback=move || {
-                        view! { <p class="text-white text-center pt-5">"Loading user..."</p> }
+                        view! { <Spinner label="Loading user"/> }
                     }>
                         <div>
                             {move || {
