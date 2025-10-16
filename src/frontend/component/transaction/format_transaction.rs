@@ -88,7 +88,7 @@ pub fn FormatTransaction(
 
                     view! {
                         <Suspense fallback=move || {
-                            view! { <Spinner label="Loading users"/> }
+                            view! { <Spinner label="Loading users" /> }
                         }>
                             {move || {
                                 let description = transaction

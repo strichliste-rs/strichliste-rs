@@ -12,12 +12,17 @@
         "name": "name",
         "ordinal": 1,
         "type_info": "Text"
+      },
+      {
+        "name": "is_disabled",
+        "ordinal": 2,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
       "Right": 1
     },
-    "nullable": [false, false]
+    "nullable": [false, false, false]
   },
   "hash": "788f71b4acfb410b1143df5ce00fae60c10d4770222feeea6af38c29ba957977"
 }

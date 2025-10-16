@@ -17,7 +17,7 @@ pub fn ShowUsers() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <Spinner label="Loading users"/> }
+            view! { <Spinner label="Loading users" /> }
         }>
             {move || {
                 let users = match user_data.get() {
