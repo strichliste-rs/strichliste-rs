@@ -43,8 +43,7 @@ pub fn View() -> impl IntoView {
                                 "+"
                             </button>
                         </PopoverTrigger>
-                        <form autocomplete="off">
-                            <ActionForm action=create_user_action>
+                            <ActionForm action=create_user_action prop:autocomplete="off">
                                 <FieldContextProvider>
                                     <Flex gap=FlexGap::Medium>
                                         <Field name="username">
@@ -69,7 +68,6 @@ pub fn View() -> impl IntoView {
                                     </Flex>
                                 </FieldContextProvider>
                             </ActionForm>
-                        </form>
                     </Popover>
                 </div>
             </div>
