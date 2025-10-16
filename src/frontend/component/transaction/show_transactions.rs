@@ -41,7 +41,7 @@ pub fn ShowTransactions(arguments: RwSignal<MoneyArgs>) -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <Spinner label="Loading transactions"/> }
+            view! { <Spinner label="Loading transactions" /> }
         }>
             {move || {
                 let transactions = match transaction_data.get() {

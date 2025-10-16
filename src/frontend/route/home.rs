@@ -43,31 +43,31 @@ pub fn View() -> impl IntoView {
                                 "+"
                             </button>
                         </PopoverTrigger>
-                            <ActionForm action=create_user_action prop:autocomplete="off">
-                                <FieldContextProvider>
-                                    <Flex gap=FlexGap::Medium>
-                                        <Field name="username">
-                                            <Input
-                                                rules=vec![InputRule::required(true.into())]
-                                                autofocus=true
-                                            />
-                                        </Field>
-                                        <Button
-                                            button_type=ButtonType::Submit
-                                            on_click={
-                                                let field_context = FieldContextInjection::expect_context();
-                                                move |e: ev::MouseEvent| {
-                                                    if !field_context.validate() {
-                                                        e.prevent_default()
-                                                    }
+                        <ActionForm action=create_user_action prop:autocomplete="off">
+                            <FieldContextProvider>
+                                <Flex gap=FlexGap::Medium>
+                                    <Field name="username">
+                                        <Input
+                                            rules=vec![InputRule::required(true.into())]
+                                            autofocus=true
+                                        />
+                                    </Field>
+                                    <Button
+                                        button_type=ButtonType::Submit
+                                        on_click={
+                                            let field_context = FieldContextInjection::expect_context();
+                                            move |e: ev::MouseEvent| {
+                                                if !field_context.validate() {
+                                                    e.prevent_default()
                                                 }
                                             }
-                                        >
-                                            "Create User"
-                                        </Button>
-                                    </Flex>
-                                </FieldContextProvider>
-                            </ActionForm>
+                                        }
+                                    >
+                                        "Create User"
+                                    </Button>
+                                </Flex>
+                            </FieldContextProvider>
+                        </ActionForm>
                     </Popover>
                 </div>
             </div>

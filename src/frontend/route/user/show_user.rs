@@ -41,7 +41,7 @@ pub fn ShowUser() -> impl IntoView {
 
                 view! {
                     <Suspense fallback=move || {
-                        view! { <Spinner label="Loading user"/> }
+                        view! { <Spinner label="Loading user" /> }
                     }>
                         <div>
                             {move || {

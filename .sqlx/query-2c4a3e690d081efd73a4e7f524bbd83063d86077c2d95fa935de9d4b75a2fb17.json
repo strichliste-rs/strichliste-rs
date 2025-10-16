@@ -1,0 +1,18 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into Users\n                    (nickname, money, created_at)\n                values\n                    (?, ?, ?)\n                returning id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [false]
+  },
+  "hash": "2c4a3e690d081efd73a4e7f524bbd83063d86077c2d95fa935de9d4b75a2fb17"
+}

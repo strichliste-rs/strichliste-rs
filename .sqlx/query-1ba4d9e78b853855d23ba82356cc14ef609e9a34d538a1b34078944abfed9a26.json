@@ -1,0 +1,43 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    Users.id,\n                    Users.nickname,\n                    Users.money,\n                    Users.is_system_user,\n                    Users.created_at as \"created_at: DateTime<Utc>\",\n                    Users.disabled\n                    from UserGroupMap\n                join Users on Users.id = UserGroupMap.uid \n                    where UserGroupMap.gid = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "nickname",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "money",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_system_user",
+        "ordinal": 3,
+        "type_info": "Bool"
+      },
+      {
+        "name": "created_at: DateTime<Utc>",
+        "ordinal": 4,
+        "type_info": "Date"
+      },
+      {
+        "name": "disabled",
+        "ordinal": 5,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [false, false, false, false, false, false]
+  },
+  "hash": "1ba4d9e78b853855d23ba82356cc14ef609e9a34d538a1b34078944abfed9a26"
+}
