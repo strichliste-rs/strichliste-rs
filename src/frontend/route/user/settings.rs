@@ -6,7 +6,10 @@ use crate::{
     },
     model::UserId,
 };
-use leptos::{ev, prelude::*};
+use leptos::{
+    ev::{self},
+    prelude::*,
+};
 use leptos_router::hooks::use_params_map;
 use thaw::{
     Button, ButtonSize, ButtonType, Field, FieldContextInjection, FieldContextProvider, Flex,
@@ -30,6 +33,17 @@ pub fn Show() -> impl IntoView {
     let user_resource = OnceResource::new(get_user(user_id));
 
     let update_action = ServerAction::<UpdateUser>::new();
+
+    // prevents the form from submitting if a user uses a HID to input a barcode
+    let enter_handler = window_event_listener(ev::keypress, move |ev| {
+        if ev.key().as_str() == "Enter" {
+            ev.prevent_default();
+        }
+    });
+
+    on_cleanup(move || {
+        enter_handler.remove();
+    });
     view! {
         <ReturnTo after=RETURN_TO_MAIN_VIEW_TIMEOUT_SEC route="/" />
         <Suspense fallback=move || {
