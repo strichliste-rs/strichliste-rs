@@ -1,6 +1,6 @@
 accounts:
   upper_limit: 0 # cents, 0 = disabled, but only here
-  lower_limit: -2000
+  lower_limit: 0
 sounds:
   failed:
     - ./public/sounds/wobble.wav

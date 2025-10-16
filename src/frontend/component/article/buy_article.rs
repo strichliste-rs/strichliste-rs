@@ -39,8 +39,9 @@ pub fn BuyArticle(args: RwSignal<MoneyArgs>) -> impl IntoView {
                                 };
                                 article
                                     .into_iter()
+                                    .filter(|article| !article.is_disabled)
                                     .map(|article| {
-                                        let Article { id, name, cost, sounds: _, barcodes: _ } = article;
+                                        let Article { id, name, cost, .. } = article;
                                         view! {
                                             <Button
                                                 class="bg-gray-700 rounded p-2"

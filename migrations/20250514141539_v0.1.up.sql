@@ -4,6 +4,8 @@ create table Users (
   nickname varchar(255) not null unique,
   money integer not null,
   is_system_user boolean not null default false,
+  created_at date not null,
+  disabled boolean not null default false,
   primary key (id)
 );
 
@@ -31,6 +33,7 @@ create table Transactions (
 create table Articles (
   id integer not null,
   name text not null unique,
+  is_disabled boolean not null default false,
   primary key (id)
 );
 
@@ -38,33 +41,6 @@ create table ArticleBarcodes (
   article_id integer not null,
   barcode_content text not null unique,
   primary key (barcode_content),
-  foreign key (article_id) references Articles (id)
-);
-
-create table ArticleTags (
-  id integer not null,
-  name text not null,
-  primary key (id)
-);
-
-create table ArticleTagMap (
-  tag_id integer not null,
-  article_id integer not null,
-  foreign key (tag_id) references ArticleTags (id),
-  foreign key (article_id) references Articles (id)
-);
-
-create table ArticleSounds (
-  id integer not null,
-  name text not null,
-  path text not null,
-  primary key (id)
-);
-
-create table ArticleSoundMap (
-  sound_id integer not null,
-  article_id integer not null,
-  foreign key (sound_id) references ArticleSounds (id),
   foreign key (article_id) references Articles (id)
 );
 
@@ -84,3 +60,28 @@ create table UserGroupMap (
   foreign key (gid) references Groups (id),
   foreign key (uid) references Users (id)
 );
+
+insert into
+  Users (
+    id,
+    nickname,
+    money,
+    is_system_user,
+    created_at,
+    disabled
+  )
+values
+  (0, "snackbar", 0, 1, "1970-01-01 00:00:00", 0),
+  (1, "aufladung", 0, 1, "1970-01-01 00:00:00", 0);
+
+insert into
+  Groups (id)
+values
+  (0),
+  (1);
+
+insert into
+  UserGroupMap (gid, uid)
+values
+  (0, 0),
+  (1, 1);

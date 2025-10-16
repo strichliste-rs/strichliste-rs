@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use chrono::Utc;
 use sqlx::query;
 use sqlx::Executor;
 
@@ -13,16 +14,18 @@ impl UserDB {
     where
         for<'a> &'a mut T: Executor<'a, Database = DatabaseType>,
     {
+        let now = Utc::now();
         query!(
             "
                 insert into Users
-                    (nickname, money)
+                    (nickname, money, created_at)
                 values
-                    (?, ?)
+                    (?, ?, ?)
                 returning id
             ",
             nickname,
-            0
+            0,
+            now,
         )
         .fetch_one(&mut *conn)
         .await

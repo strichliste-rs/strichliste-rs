@@ -3,6 +3,7 @@
 use sqlx::{query_as, Executor};
 
 use crate::backend::database::{DatabaseResponse, DatabaseType, UserDB};
+use chrono::{DateTime, Utc};
 
 impl UserDB {
     pub async fn get_all<T>(conn: &mut T) -> DatabaseResponse<Vec<Self>>
@@ -11,11 +12,22 @@ impl UserDB {
     {
         query_as!(
             UserDB,
-            "
-                select *
-                from Users
-                where is_system_user = false
-            ",
+            r#"
+                select
+                    id,
+                    nickname,
+                    money,
+                    is_system_user,
+                    created_at as "created_at: DateTime<Utc>",
+                    disabled
+                from
+                    Users
+                where
+                    is_system_user = false and
+                    disabled = false
+                order by
+                    nickname
+            "#,
         )
         .fetch_all(&mut *conn)
         .await
