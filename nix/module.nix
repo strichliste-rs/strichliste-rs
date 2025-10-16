@@ -51,6 +51,12 @@ in
       description = "The data directory. If not default, permissions must be granted manually.";
     };
 
+    databaseName = mkOption {
+      type = types.str;
+      default = "database.db";
+      description = "The database name in the data directory";
+    };
+
     settings = mkSubmoduleOption {
       accounts = mkSubmoduleOption {
         upper_limit = mkOption {
@@ -116,7 +122,7 @@ in
               "LEPTOS_SITE_ROOT=${cfg.package}/bin/site"
               "LEPTOS_SITE_ADDR=${cfg.address}:${toString cfg.port}"
             ];
-            ExecStart = "${cfg.package}/bin/strichliste-rs -d ${cfg.dataDir} -c ${config-file}";
+            ExecStart = "${cfg.package}/bin/strichliste-rs -d ${cfg.dataDir}/${cfg.databaseName} -c ${config-file}";
             Restart = "on-failure";
 
             User = "strichliste-rs";
