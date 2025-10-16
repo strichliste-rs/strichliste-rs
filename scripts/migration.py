@@ -1,7 +1,5 @@
 import sqlite3
 import argparse
-import os
-import shutil
 from datetime import timedelta, datetime
 
 USER_ID_OFFSET = 2
@@ -300,6 +298,15 @@ def migrate_transactions(old_db, new_db, article_pre_id_to_current_id):
 
         if t_article_id is None:
             if t_recipient_t_id is None and t_sender_t_id is None:
+                if not t_deleted:
+                    snackbar_money = new_conn.execute(
+                        f"select money from Users where id = {USER_AUFLADUNG}"
+                    ).fetchone()[0]
+                    snackbar_money -= t_amount
+                    new_conn.execute(
+                        f"update Users set money = ? where id = {USER_AUFLADUNG} ",
+                        [snackbar_money],
+                    )
                 if t_amount >= 0:
                     # deposit
                     new_conn.execute(
@@ -352,6 +359,16 @@ def migrate_transactions(old_db, new_db, article_pre_id_to_current_id):
             # we bough something
             article_id_new = article_pre_id_to_current_id.get(t_article_id)
 
+            if not t_deleted:
+                snackbar_money = new_conn.execute(
+                    f"select money from Users where id = {USER_SNACKBAR}"
+                ).fetchone()[0]
+                snackbar_money += abs(t_amount)
+                new_conn.execute(
+                    f"update Users set money = ? where id = {USER_SNACKBAR} ",
+                    [snackbar_money],
+                )
+
             new_conn.execute(
                 "insert into Transactions(sender, receiver, is_undone, t_type_data, money, timestamp) values (?, ?, ?, ?, ?, ?)",
                 [
@@ -365,6 +382,113 @@ def migrate_transactions(old_db, new_db, article_pre_id_to_current_id):
             )
 
 
+def check_databases(old_db, new_db):
+    old_conn = old_db.cursor()
+    new_conn = new_db.cursor()
+
+    user_money_dict = dict()
+
+    transactions = old_conn.execute(
+        "select * from transactions where deleted = 0"
+    ).fetchall()
+
+    for transaction in transactions:
+        (
+            t_id,
+            t_user_id,
+            t_article_id,
+            t_recipient_t_id,
+            t_sender_t_id,
+            t_quantity,
+            t_comment,
+            t_amount,
+            t_deleted,
+            t_created,
+        ) = transaction
+
+        if user_money_dict.get(t_user_id) is None:
+            user_money_dict[t_user_id] = 0
+
+        user_money_dict[t_user_id] += t_amount
+
+    users_old = old_conn.execute(
+        "select id, balance, name from user where disabled = 0"
+    ).fetchall()
+
+    failed = False
+
+    for user in users_old:
+        u_id, u_balance, u_name = user
+
+        if user_money_dict.get(u_id, 0) != u_balance:
+            print(
+                f"Found mismatch in balance for user {u_id}, {u_name}. Should be {user_money_dict.get(u_id, 0)}, but is {u_balance}"
+            )
+            failed = True
+
+    if failed:
+        print("Failed check of old_db, exiting...")
+        exit(1)
+
+    user_money_dict = dict()
+
+    transactions = new_conn.execute(
+        "select * from Transactions where is_undone = 0"
+    ).fetchall()
+
+    for transaction in transactions:
+        (
+            t_id,
+            t_sender_id,
+            t_receiver_id,
+            t_is_undone,
+            t_t_type_data,
+            t_money,
+            t_description,
+            t_timestamp,
+        ) = transaction
+
+        if user_money_dict.get(t_sender_id) is None:
+            user_money_dict[t_sender_id] = 0
+
+        if user_money_dict.get(t_receiver_id) is None:
+            user_money_dict[t_receiver_id] = 0
+
+        user_money_dict[t_sender_id] -= t_money
+        user_money_dict[t_receiver_id] += t_money
+
+    users = new_conn.execute(
+        "select id, nickname, money from Users where disabled = 0"
+    ).fetchall()
+
+    failed = False
+    for user in users:
+        u_id, u_nickname, u_money = user
+
+        if user_money_dict.get(u_id, 0) != u_money:
+            print(
+                f"Found mismatch in balance for user {u_id}, {u_nickname}. Should be {user_money_dict.get(u_id, 0)}, but is {u_money}"
+            )
+            failed = True
+
+    if failed:
+        print("Failed check of new_db, exiting...")
+        exit(1)
+
+    for user in users:
+        for old_user in users_old:
+            if old_user[0] + USER_ID_OFFSET == user[0]:
+                if old_user[1] != user[2]:
+                    failed = True
+                    print(
+                        f"User Balance differs in old and new database, old: {old_user[1]} -> new: {user[2]}"
+                    )
+
+    if failed:
+        print("migrating user balances went wrong")
+        exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -374,18 +498,24 @@ def main():
         "-o", "--out", required=True, help="The path to the resuling sqlite db"
     )
 
+    parser.add_argument(
+        "-c",
+        "--check",
+        help="Check the old database and new database for consistency",
+        action="store_true",
+    )
+
     parsed = parser.parse_args()
 
     old_db = load_backup(parsed.file)
-    old_conn = old_db.cursor()
-
     new_db = sqlite3.connect(parsed.out)
-
-    new_conn = new_db.cursor()
 
     migrate_users(old_db, new_db)
     pre_id_map = migrate_articles(old_db, new_db)
     migrate_transactions(old_db, new_db, pre_id_map)
+
+    if parsed.check:
+        check_databases(old_db, new_db)
 
     new_db.commit()
 
