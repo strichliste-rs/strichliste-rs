@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use thaw::{Table, TableBody, TableCell, TableHeader, TableRow};
+use thaw::{Spinner, Table, TableBody, TableCell, TableHeader, TableRow};
 
 use crate::{
     backend::core::behaviour::article_get_all::get_all_articles,
@@ -11,7 +11,7 @@ pub fn ShowArticles() -> impl IntoView {
     let all_articles = OnceResource::new(get_all_articles(None));
     view! {
         <Suspense fallback=move || {
-            view! { <h1>"Loading articles..."</h1> }
+            view! { <Spinner label="Loading Articles" /> }
         }>
             {move || {
                 all_articles
@@ -38,9 +38,13 @@ pub fn ShowArticles() -> impl IntoView {
                                         </TableHeader>
                                         <TableBody>
                                             {
-                                                articles.sort_by(|a, b| a.name.cmp(&b.name));
+                                                articles
+                                                    .sort_by(|a, b| {
+                                                        a.name.to_lowercase().cmp(&b.name.to_lowercase())
+                                                    });
                                                 articles
                                                     .into_iter()
+                                                    .filter(|article| !article.is_disabled)
                                                     .map(|article| {
                                                         view! {
                                                             <TableRow class="even:bg-gray-700 odd:bg-gray-500">
