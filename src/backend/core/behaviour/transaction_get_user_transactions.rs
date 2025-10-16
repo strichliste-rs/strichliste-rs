@@ -3,7 +3,9 @@ use {
     leptos::prelude::*,
 };
 
+#[cfg(not(debug_assertions))]
 use crate::backend::core::misc::custom_binary_encoding::Binary;
+
 #[cfg(feature = "ssr")]
 use crate::{
     backend::database::{ArticleDB, DatabaseResponse, TransactionDB, DB},
@@ -41,12 +43,18 @@ impl Transaction {
                 TransactionType::Bought(article_id) => {
                     let (price, article_name) = match article_cache.get(&article_id) {
                         None => {
+                            use tracing::debug;
+
                             let article =
                                 match ArticleDB::get_single(&mut *conn, article_id).await? {
                                     None => continue, // Article got nuked?,
                                     Some(value) => value,
                                 };
 
+                            debug!(
+                                "Getting effective cost of {} for timestamp {}",
+                                article.name, transaction.timestamp
+                            );
                             let price = ArticleDB::get_effective_cost(
                                 &mut *conn,
                                 article_id,
@@ -97,7 +105,7 @@ impl Transaction {
 
                     let user_delta = delta.get(&user).unwrap();
 
-                    dbg!(&user_delta);
+                    // dbg!(&user_delta);
 
                     transaction.money.value = user_delta.delta;
                 }
@@ -110,7 +118,8 @@ impl Transaction {
     }
 }
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_user_transactions(
     user_id: UserId,
     page_request_params: PageRequestParams,

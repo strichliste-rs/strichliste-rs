@@ -14,8 +14,9 @@ use crate::{
     model::{Money, Transaction, TransactionType, UserId},
 };
 
-pub fn format_transaction(
-    transaction: &Transaction,
+#[component]
+pub fn FormatTransaction(
+    transaction: Transaction,
     user_id: UserId,
     money_signal: RwSignal<Money>,
 ) -> impl IntoView {
@@ -48,7 +49,7 @@ pub fn format_transaction(
     view! {
         <div
             class="grid grid-cols-3 items-center border-t-4 border-gray-300 p-2 text-white"
-            class=("line-through", undo_signal.get())
+            class=("line-through", move || undo_signal.get())
         >
             {match transaction.t_type {
                 TransactionType::Withdraw => {
