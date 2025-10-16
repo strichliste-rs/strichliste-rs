@@ -1,5 +1,6 @@
 import sys
 
+
 def parse(lines, indent=0):
     """Parse indented list into a nested tree structure"""
     tree = []
@@ -17,6 +18,7 @@ def parse(lines, indent=0):
             tree.append([node, []])
     return tree, lines
 
+
 def normalize(tree):
     """Sort children recursively for comparison"""
     tree.sort(key=lambda x: x[0])
@@ -25,7 +27,7 @@ def normalize(tree):
     return tree
 
 
-def _diff_trees(tree1, tree2, name1 = "tree1", name2 = "tree2", path=""):
+def _diff_trees(tree1, tree2, name1="tree1", name2="tree2", path=""):
     """Recursively print differences between two trees"""
     names1 = {node: children for node, children in tree1}
     names2 = {node: children for node, children in tree2}
@@ -39,6 +41,7 @@ def _diff_trees(tree1, tree2, name1 = "tree1", name2 = "tree2", path=""):
     for node in names2:
         if node not in names1:
             print(f"- Missing in {name2}: {path}{node}")
+
 
 def trees_equal(tree1, tree2):
     """Check deep equality of two normalized trees"""
@@ -57,10 +60,11 @@ def trees_equal(tree1, tree2):
     return True
 
 
-def diff_trees(tree1, tree2, name1 = "tree1", name2 = "tree2", path=""):
+def diff_trees(tree1, tree2, name1="tree1", name2="tree2", path=""):
     normalize(tree1)
     normalize(tree2)
     _diff_trees(tree1, tree2, name1, name2, path)
+
 
 if __name__ == "__main__":
     # Example: read two trees separated by a blank line from stdin
@@ -72,13 +76,13 @@ if __name__ == "__main__":
         sys.exit("Please provide two trees separated by a blank line.")
 
     tree1_lines = content[:sep]
-    tree2_lines = content[sep+1:]
+    tree2_lines = content[sep + 1 :]
 
     tree1, _ = parse(tree1_lines)
     tree2, _ = parse(tree2_lines)
 
-    name1 = sys.argv[1] if len(sys.argv) > 1 else 'name1'
-    name2 = sys.argv[2] if len(sys.argv) > 2 else 'name1'
+    name1 = sys.argv[1] if len(sys.argv) > 1 else "name1"
+    name2 = sys.argv[2] if len(sys.argv) > 2 else "name1"
 
     if trees_equal(tree1, tree2):
         exit(0)
