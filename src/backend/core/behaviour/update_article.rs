@@ -1,7 +1,12 @@
-use crate::backend::core::{misc::custom_binary_encoding::Binary, BarcodeDiff};
+use crate::backend::core::BarcodeDiff;
+
+#[cfg(not(debug_assertions))]
+use crate::backend::core::misc::custom_binary_encoding::Binary;
+
 use leptos::prelude::*;
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn update_article(
     id: i64,
     name: String,

@@ -1,5 +1,6 @@
 use {crate::backend::core::Article, leptos::prelude::*};
 
+#[cfg(not(debug_assertions))]
 use crate::backend::core::misc::custom_binary_encoding::Binary;
 #[cfg(feature = "ssr")]
 use crate::backend::database::{ArticleDB, DatabaseResponse, DB};
@@ -21,7 +22,8 @@ impl Article {
     }
 }
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_article_by_barcode(barcode: String) -> Result<Option<Article>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();

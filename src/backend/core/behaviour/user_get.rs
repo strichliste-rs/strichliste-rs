@@ -5,12 +5,12 @@ use {
 };
 
 use {
-    crate::{
-        backend::core::{misc::custom_binary_encoding::Binary, User},
-        model::UserId,
-    },
+    crate::{backend::core::User, model::UserId},
     leptos::prelude::*,
 };
+
+#[cfg(not(debug_assertions))]
+use crate::backend::core::misc::custom_binary_encoding::Binary;
 
 #[cfg(feature = "ssr")]
 impl User {
@@ -41,7 +41,8 @@ impl User {
     }
 }
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_user(id: UserId) -> Result<Option<User>, ServerFnError> {
     use crate::backend::core::ServerState;
     let state: ServerState = expect_context();
