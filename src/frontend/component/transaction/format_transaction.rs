@@ -4,9 +4,8 @@ use leptos::{leptos_dom::logging::console_log, prelude::*};
 use thaw::Spinner;
 
 use crate::{
-    backend::core::{
-        behaviour::{group_get::get_group_members, transaction_set_undone::UndoTransaction},
-        User,
+    backend::core::behaviour::{
+        group_get::get_group_members, transaction_set_undone::UndoTransaction,
     },
     frontend::{
         component::icon::{ArticleBasketIcon, LeftArrowIcon, LeftRightArrowIcon, RightArrowIcon},
@@ -91,13 +90,6 @@ pub fn FormatTransaction(
                             view! { <Spinner label="Loading users" /> }
                         }>
                             {move || {
-                                let description = transaction
-                                    .description
-                                    .as_ref()
-                                    .map(|val| format!(": {val}"));
-                                let fmt_description = |other: String, description: Option<String>| {
-                                    other + &description.unwrap_or_default()
-                                };
                                 group_members_resource
                                     .get()
                                     .map(|members| {
@@ -109,10 +101,15 @@ pub fn FormatTransaction(
                                             }
                                             Ok(members) => {
                                                 let mut cost = transaction.money.value;
-                                                let members: Vec<User> = members
+                                                let members = members
                                                     .into_iter()
                                                     .filter(|elem| elem.id != user_id)
-                                                    .collect();
+                                                    .map(|elem| {
+                                                        view! {
+                                                            <a href=format!("/user/{}", elem.id)>{elem.nickname}</a>
+                                                        }
+                                                    })
+                                                    .collect_view();
 
                                                 view! {
                                                     {if cost >= 0 {
@@ -134,10 +131,17 @@ pub fn FormatTransaction(
                                                     <p class="flex items-center text-white">
                                                         <LeftRightArrowIcon class="w-[2em] flex h-[1.5em]" />
                                                         " "
-                                                        {fmt_description(
-                                                            members.iter().map(|elem| elem.nickname.clone()).join(", "),
-                                                            description,
-                                                        )}
+                                                        {members}
+                                                        {if let Some(description) = transaction.description.clone()
+                                                        {
+                                                            if !description.is_empty() {
+                                                                format!(": {description}")
+                                                            } else {
+                                                                String::new()
+                                                            }
+                                                        } else {
+                                                            String::new()
+                                                        }}
                                                     </p>
                                                 }
                                                     .into_any()
@@ -177,7 +181,13 @@ pub fn FormatTransaction(
                                 let description = transaction
                                     .description
                                     .as_ref()
-                                    .map(|val| format!(": {val}"));
+                                    .map(|val| {
+                                        if !val.is_empty() {
+                                            format!(": {val}")
+                                        } else {
+                                            String::new()
+                                        }
+                                    });
                                 let fmt_description = |other: String, description: Option<String>| {
                                     other + &description.unwrap_or_default()
                                 };
