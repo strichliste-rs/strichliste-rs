@@ -1,4 +1,8 @@
-use crate::backend::core::{misc::custom_binary_encoding::Binary, Article};
+use crate::backend::core::Article;
+
+#[cfg(not(debug_assertions))]
+use crate::backend::core::misc::custom_binary_encoding::Binary;
+
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
@@ -43,7 +47,8 @@ impl Article {
     }
 }
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_all_articles(limit: Option<i64>) -> Result<Vec<Article>, ServerFnError> {
     use crate::backend::core::ServerState;
     use tracing::error;

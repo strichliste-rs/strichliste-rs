@@ -3,7 +3,9 @@ use {
     leptos::prelude::*,
 };
 
+#[cfg(not(debug_assertions))]
 use crate::backend::core::misc::custom_binary_encoding::Binary;
+
 #[cfg(feature = "ssr")]
 use crate::{
     backend::database::{ArticleDB, DatabaseResponse, TransactionDB, DB},
@@ -110,7 +112,8 @@ impl Transaction {
     }
 }
 
-#[server(input=Binary, output=Binary)]
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_user_transactions(
     user_id: UserId,
     page_request_params: PageRequestParams,

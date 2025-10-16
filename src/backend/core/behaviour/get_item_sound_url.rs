@@ -1,8 +1,12 @@
 use leptos::prelude::*;
 
-use crate::{backend::core::misc::custom_binary_encoding::Binary, model::AudioPlayback};
+use crate::model::AudioPlayback;
 
-#[server(input=Binary, output=Binary)]
+#[cfg(not(debug_assertions))]
+use crate::backend::core::misc::custom_binary_encoding::Binary;
+
+#[cfg_attr(not(debug_assertions), server(input=Binary, output=Binary))]
+#[cfg_attr(debug_assertions, server)]
 pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<Vec<u8>, ServerFnError> {
     use crate::backend::core::{
         behaviour::article_get::get_article, misc::choose_random_item, ServerState,
