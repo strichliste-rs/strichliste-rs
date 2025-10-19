@@ -3,6 +3,10 @@ accounts:
   lower_limit: 0
 sounds:
   failed:
+    - ./public/sounds/windows_error.wav
+  deposit:
+    - ./public/sounds/spongebob_moneten.wav
+  withdraw:
     - ./public/sounds/wobble.wav
   generic:
     - ./public/sounds/kaching.wav

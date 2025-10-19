@@ -75,12 +75,22 @@ in
       sounds = mkSubmoduleOption {
         failed = mkSoundListOption {
           description = "Sounds that play when a transaction fails";
-          default = [ ../public/sounds/wobble.wav ];
+          default = [ ../public/sounds/windows_error.wav ];
         };
 
         generic = mkSoundListOption {
           description = "Sounds that play when a transaction succeeds";
           default = [ ../public/sounds/kaching.wav ];
+        };
+
+        deposit = mkSoundListOption {
+          description = "Sounds that play when money was deposited";
+          default = [ ../public/sounds/spongebob_moneten.wav ];
+        };
+
+        withdraw = mkSoundListOption {
+          description = "Sounds that play when money was withdrawn";
+          default = [ ../public/sounds/wobble.wav ];
         };
 
         articles = mkOption {
