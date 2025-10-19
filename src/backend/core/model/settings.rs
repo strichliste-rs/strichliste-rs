@@ -15,6 +15,8 @@ pub struct SoundSettings {
     pub articles: HashMap<String, Vec<String>>,
     pub generic: Vec<String>,
     pub failed: Vec<String>,
+    pub withdraw: Vec<String>,
+    pub deposit: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]

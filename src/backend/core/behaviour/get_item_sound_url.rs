@@ -26,9 +26,9 @@ pub async fn get_item_sound_url(audio: AudioPlayback) -> Result<Vec<u8>, ServerF
     let file = match audio {
         AudioPlayback::Failed => choose_random_item(&sounds.failed),
         AudioPlayback::Undo => choose_random_item(&sounds.generic),
-        AudioPlayback::Deposit(_) => choose_random_item(&sounds.generic),
+        AudioPlayback::Deposit(_) => choose_random_item(&sounds.deposit),
         AudioPlayback::Sent(_) => choose_random_item(&sounds.generic),
-        AudioPlayback::Withdraw(_) => choose_random_item(&sounds.generic),
+        AudioPlayback::Withdraw(_) => choose_random_item(&sounds.withdraw),
         AudioPlayback::Bought(article_id) => {
             let article = get_article(article_id).await?;
 
