@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    update UserPreferences\n                    set alternative_coloring = ?\n                    where user_id = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "25971431945f64d9aa526907f98005db40ebdaafd814c797a02dd541f9550add"
+}
