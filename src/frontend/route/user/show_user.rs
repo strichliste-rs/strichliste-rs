@@ -180,7 +180,7 @@ pub fn ShowUser() -> impl IntoView {
                                                 <div class="grid grid-cols-3 gap-3">
                                                     <Button
                                                         class={
-                                                            let style = ChangeMoneyButtonStyle::GREEN(
+                                                            let style = ChangeMoneyButtonStyle::RED(
                                                                 preferences.get_untracked(),
                                                             );
                                                             format!(
@@ -210,7 +210,7 @@ pub fn ShowUser() -> impl IntoView {
                                                     </Input>
                                                     <Button
                                                         class={
-                                                            let style = ChangeMoneyButtonStyle::RED(
+                                                            let style = ChangeMoneyButtonStyle::GREEN(
                                                                 preferences.get_untracked(),
                                                             );
                                                             format!(
