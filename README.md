@@ -10,13 +10,11 @@ You can test it out on https://demo.strichliste.rs
 
 ```bash
 nix build
-
 ```
 
 ## Build with cargo-leptos
 
 ```bash
-
 SQLX_OFFLINE=true cargo leptos build --release
 ```
 
@@ -32,8 +30,8 @@ direnv allow .
 
 Otherwise just do
 
-```
-nix flake develop
+```bash
+nix develop
 ```
 
 then do
@@ -67,7 +65,7 @@ cargo leptos watch -- -d ./tmp/db.sqlite -c ./config_example.yaml
 
 We use sqlx and compile-time checked queries. This has the drawback of needing a live db to check the queries, which is not possible in build environments. So we "cache" the sqlx queries using the following command:
 
-```
+```bash
 # this is an alias to scripts/prepare-sqlx
 prepare-sqlx
 ```
