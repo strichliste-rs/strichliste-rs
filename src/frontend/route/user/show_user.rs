@@ -36,6 +36,8 @@ pub fn ShowUser() -> impl IntoView {
 
     let user_resource = OnceResource::new(get_user(user_id));
 
+    let preferences_resource = OnceResource::new(get_user_preferences(user_id));
+
     view! {
         <ReturnTo after=RETURN_TO_MAIN_VIEW_TIMEOUT_SEC route="/" />
         {move || {
@@ -67,6 +69,19 @@ pub fn ShowUser() -> impl IntoView {
                                         return throw_error_none_view(
                                             format!("No user with the id {} has been found!", user_id.0),
                                         );
+                                    }
+                                };
+                                let preferences = match preferences_resource.get() {
+                                    None => return ().into_any(),
+                                    Some(value) => {
+                                        match value {
+                                            Ok(value) => RwSignal::new(value),
+                                            Err(e) => {
+                                                return throw_error_none_view(
+                                                    format!("Failed to fetch preferences: {e}"),
+                                                );
+                                            }
+                                        }
                                     }
                                 };
                                 let money_signal = RwSignal::new(user.money);
@@ -184,17 +199,26 @@ pub fn ShowUser() -> impl IntoView {
                                             // right side (put in money)
                                             <div class="flex flex-col gap-3 bg-gray-500 p-3 rounded-[10px]">
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    <ChangeMoneyButton money=50 args=money_args />
-                                                    <ChangeMoneyButton money=100 args=money_args />
-                                                    <ChangeMoneyButton money=200 args=money_args />
-                                                    <ChangeMoneyButton money=500 args=money_args />
-                                                    <ChangeMoneyButton money=1000 args=money_args />
-                                                    <ChangeMoneyButton money=2000 args=money_args />
-                                                    <ChangeMoneyButton money=5000 args=money_args />
+                                                    <ChangeMoneyButton money=50 args=money_args preferences />
+                                                    <ChangeMoneyButton money=100 args=money_args preferences />
+                                                    <ChangeMoneyButton money=200 args=money_args preferences />
+                                                    <ChangeMoneyButton money=500 args=money_args preferences />
+                                                    <ChangeMoneyButton money=1000 args=money_args preferences />
+                                                    <ChangeMoneyButton money=2000 args=money_args preferences />
+                                                    <ChangeMoneyButton money=5000 args=money_args preferences />
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-3">
                                                     <Button
-                                                        class="bg-red-400 text-white rounded-full p-5"
+                                                        class={
+                                                            let style = ChangeMoneyButtonStyle::RED(
+                                                                preferences.get_untracked(),
+                                                            );
+                                                            format!(
+                                                                "rounded-full p-5 {} {}",
+                                                                style.text(),
+                                                                style.background(),
+                                                            )
+                                                        }
                                                         on_click=move |_| on_custom_money_button_click(
                                                             false,
                                                             custom_money_change,
@@ -215,7 +239,16 @@ pub fn ShowUser() -> impl IntoView {
                                                     // <InputSuffix slot>"€"</InputSuffix>
                                                     </Input>
                                                     <Button
-                                                        class="bg-emerald-600 text-white rounded-full p-5"
+                                                        class={
+                                                            let style = ChangeMoneyButtonStyle::GREEN(
+                                                                preferences.get_untracked(),
+                                                            );
+                                                            format!(
+                                                                "rounded-full p-5 {} {}",
+                                                                style.text(),
+                                                                style.background(),
+                                                            )
+                                                        }
                                                         on_click=move |_| on_custom_money_button_click(
                                                             true,
                                                             custom_money_change,
@@ -226,13 +259,25 @@ pub fn ShowUser() -> impl IntoView {
                                                     </Button>
                                                 </div>
                                                 <div class="grid grid-cols-3 gap-5 rounded-[10px]">
-                                                    <ChangeMoneyButton money=-50 args=money_args />
-                                                    <ChangeMoneyButton money=-100 args=money_args />
-                                                    <ChangeMoneyButton money=-200 args=money_args />
-                                                    <ChangeMoneyButton money=-500 args=money_args />
-                                                    <ChangeMoneyButton money=-1000 args=money_args />
-                                                    <ChangeMoneyButton money=-2000 args=money_args />
-                                                    <ChangeMoneyButton money=-5000 args=money_args />
+                                                    <ChangeMoneyButton money=-50 args=money_args preferences />
+                                                    <ChangeMoneyButton money=-100 args=money_args preferences />
+                                                    <ChangeMoneyButton money=-200 args=money_args preferences />
+                                                    <ChangeMoneyButton money=-500 args=money_args preferences />
+                                                    <ChangeMoneyButton
+                                                        money=-1000
+                                                        args=money_args
+                                                        preferences
+                                                    />
+                                                    <ChangeMoneyButton
+                                                        money=-2000
+                                                        args=money_args
+                                                        preferences
+                                                    />
+                                                    <ChangeMoneyButton
+                                                        money=-5000
+                                                        args=money_args
+                                                        preferences
+                                                    />
 
                                                 </div>
                                             </div>

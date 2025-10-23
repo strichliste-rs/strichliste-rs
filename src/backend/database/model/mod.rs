@@ -6,6 +6,7 @@ pub mod db_error;
 pub mod group;
 pub mod transaction;
 pub mod user;
+pub mod user_preferences;
 
 pub use article::*;
 pub use article_cost_map::*;
@@ -15,3 +16,4 @@ pub use db_error::*;
 pub use group::*;
 pub use transaction::*;
 pub use user::*;
+pub use user_preferences::*;

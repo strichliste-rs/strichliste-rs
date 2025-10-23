@@ -30,6 +30,8 @@ pub mod user_get_card_number;
 pub mod user_get_id_by_card_number;
 pub mod user_insert;
 pub mod user_insert_card;
+pub mod user_preferences_get;
+pub mod user_preferences_set;
 pub mod user_set_card_number;
 pub mod user_set_money;
 pub mod user_set_name;
