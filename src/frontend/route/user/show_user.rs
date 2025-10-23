@@ -1,19 +1,21 @@
 use std::str::FromStr;
 
-use leptos::prelude::*;
+use leptos::{leptos_dom::logging::console_log, prelude::*, reactive::spawn_local};
 use leptos_router::hooks::use_params_map;
-use thaw::{Button, Input, Spinner};
+use thaw::{Button, Input, Spinner, ToasterInjection};
 
 use crate::{
-    backend::core::behaviour::user_get::get_user,
+    backend::core::behaviour::{
+        article_get_by_barcode::get_article_by_barcode, user_get::get_user,
+    },
     frontend::{
         component::{
             article::buy_article::BuyArticle, change_money_button::ChangeMoneyButton,
-            icon::SettingsIcon, return_to::ReturnTo, scan_input::invisible_scan_input,
+            icon::SettingsIcon, return_to::ReturnTo, scan_input::ScanInput,
             transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
-        shared::{on_custom_money_button_click, throw_error_none_view},
+        shared::{buy_article, on_custom_money_button_click, throw_error, throw_error_none_view},
     },
     model::{Transaction, UserId},
 };
@@ -78,9 +80,40 @@ pub fn ShowUser() -> impl IntoView {
                                     String::from_str("0.00").unwrap(),
                                 );
                                 let custom_money_is_focused = RwSignal::new(false);
+                                let toaster = ToasterInjection::expect_context();
 
                                 view! {
-                                    {invisible_scan_input(custom_money_is_focused, money_args)}
+                                    <ScanInput
+                                        ignore_input_signals=vec![custom_money_is_focused]
+                                        callback=move |scan_input| {
+                                            spawn_local(async move {
+                                                console_log(&format!("Input {scan_input}"));
+                                                let article = get_article_by_barcode(scan_input.clone())
+                                                    .await;
+                                                let article = match article {
+                                                    Ok(value) => value,
+                                                    Err(e) => {
+                                                        throw_error(
+                                                            format!("Failed to fetch article from server: {e}"),
+                                                        );
+                                                        return;
+                                                    }
+                                                };
+                                                match article {
+                                                    None => {
+                                                        throw_error(
+                                                            format!(
+                                                                "No article could be found with barcode '{scan_input}'",
+                                                            ),
+                                                        );
+                                                    }
+                                                    Some(value) => {
+                                                        buy_article(value.id, value.cost, money_args, toaster);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    />
                                     <div class="grid grid-cols-2">
                                         <div class="pt-5">
                                             // left side (show user statistics)
