@@ -7,11 +7,15 @@ use thaw::{Button, Input, Spinner, ToasterInjection};
 use crate::{
     backend::core::behaviour::{
         article_get_by_barcode::get_article_by_barcode, user_get::get_user,
+        user_preferences_get::get_user_preferences,
     },
     frontend::{
         component::{
-            article::buy_article::BuyArticle, change_money_button::ChangeMoneyButton,
-            icon::SettingsIcon, return_to::ReturnTo, scan_input::ScanInput,
+            article::buy_article::BuyArticle,
+            change_money_button::{ChangeMoneyButton, ChangeMoneyButtonStyle},
+            icon::SettingsIcon,
+            return_to::ReturnTo,
+            scan_input::ScanInput,
             transaction::ShowTransactions,
         },
         model::money_args::MoneyArgs,
