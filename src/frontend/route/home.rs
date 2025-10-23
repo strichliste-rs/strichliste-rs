@@ -1,9 +1,9 @@
 use leptos::{ev, prelude::*, reactive::spawn_local};
 use leptos_router::hooks::use_navigate;
 use thaw::{
-    Button, ButtonType, Field, FieldContextInjection, FieldContextProvider, Flex, FlexGap, Input,
-    InputRule, Popover, PopoverTrigger, PopoverTriggerType, Toast, ToastBody, ToastTitle,
-    ToasterInjection,
+    Button, ButtonType, ComponentRef, Field, FieldContextInjection, FieldContextProvider, Flex,
+    FlexGap, Input, InputRef, InputRule, Popover, PopoverTrigger, PopoverTriggerType, Toast,
+    ToastBody, ToastTitle, ToasterInjection,
 };
 
 use crate::{
@@ -43,6 +43,14 @@ pub fn View() -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
     let ignore_scan_input_signal = RwSignal::new(false);
+    let input_ref = ComponentRef::<InputRef>::new();
+
+    Effect::new(move || {
+        if let Some(input) = input_ref.get() {
+            input.focus();
+        }
+    });
+
     view! {
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
@@ -65,7 +73,7 @@ pub fn View() -> impl IntoView {
                                     <Field name="username">
                                         <Input
                                             rules=vec![InputRule::required(true.into())]
-                                            autofocus=true
+                                            comp_ref=input_ref
                                         />
                                     </Field>
                                     <Button
