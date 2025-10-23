@@ -3,7 +3,6 @@ pub mod change_money_button;
 pub mod error_message;
 pub mod error_popup;
 pub mod icon;
-pub mod invisible_scan_input;
 pub mod multi_user_selection;
 pub mod navbar;
 pub mod return_to;

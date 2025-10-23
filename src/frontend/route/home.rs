@@ -1,13 +1,18 @@
-use leptos::{ev, prelude::*};
+use leptos::{ev, prelude::*, reactive::spawn_local};
+use leptos_router::hooks::use_navigate;
 use thaw::{
     Button, ButtonType, Field, FieldContextInjection, FieldContextProvider, Flex, FlexGap, Input,
-    InputRule, Popover, PopoverTrigger, PopoverTriggerType,
+    InputRule, Popover, PopoverTrigger, PopoverTriggerType, Toast, ToastBody, ToastTitle,
+    ToasterInjection,
 };
 
 use crate::{
-    backend::core::behaviour::user_create::CreateUser,
+    backend::core::{
+        behaviour::{user_create::CreateUser, user_get_by_card_number::get_user_by_barcode},
+        User,
+    },
     frontend::{
-        component::{invisible_scan_input::ScanUserBarcodeListener, user::ShowUsers},
+        component::{scan_input::ScanInput, user::ShowUsers},
         shared::throw_error,
     },
 };
@@ -25,6 +30,17 @@ pub fn View() -> impl IntoView {
             throw_error(format!("Failed to add user: {msg}"));
         }
     });
+
+    let found_user_signal: RwSignal<Option<User>> = RwSignal::new(None);
+
+    Effect::new(move || {
+        if let Some(user) = found_user_signal.get() {
+            let navigate = use_navigate();
+            navigate(&format!("/user/{}", user.id), Default::default());
+        }
+    });
+
+    let toaster = ToasterInjection::expect_context();
 
     let ignore_scan_input_signal = RwSignal::new(false);
     view! {
@@ -71,7 +87,41 @@ pub fn View() -> impl IntoView {
                     </Popover>
                 </div>
             </div>
-            <ScanUserBarcodeListener ignore_input=ignore_scan_input_signal />
+            <ScanInput
+                ignore_input_signals=vec![ignore_scan_input_signal]
+                callback=move |input_string| {
+                    spawn_local(async move {
+                        let user = match get_user_by_barcode(input_string.clone()).await {
+                            Ok(user) => user,
+                            Err(err) => {
+                                throw_error(format!("Failed to fetch user by barcode: {}", err));
+                                return;
+                            }
+                        };
+                        match user {
+                            Some(user) => found_user_signal.set(Some(user)),
+                            None => {
+                                toaster
+                                    .dispatch_toast(
+                                        move || {
+                                            view! {
+                                                <Toast>
+                                                    <ToastTitle>"Failed to find user"</ToastTitle>
+                                                    <ToastBody>
+                                                        {format!(
+                                                            "There is no user with barcode \"{input_string}\"",
+                                                        )}
+                                                    </ToastBody>
+                                                </Toast>
+                                            }
+                                        },
+                                        Default::default(),
+                                    );
+                            }
+                        };
+                    });
+                }
+            />
             <div class="col-span-9 pr-7">
                 <ShowUsers />
             </div>
