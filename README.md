@@ -36,9 +36,15 @@ Otherwise just do
 nix flake develop
 ```
 
-## Without Nix / Other instructions
+then do
 
-The data directory flag (-d) is the directory the sqlite database will be placed.
+```bash
+mkdir tmp
+sqlx database setup
+cargo leptos watch -- -d ./tmp/db.sqlite -c ./config_example.yaml
+```
+
+## Without Nix / Other instructions
 
 Install the following dependencies:
 
@@ -54,7 +60,7 @@ export DATABASE_URL="sqlite:tmp/db.sqlite" # not needed with nix (env is in flak
 
 mkdir tmp
 sqlx database setup
-cargo leptos watch -- -d ./tmp -c ./config_example.yaml
+cargo leptos watch -- -d ./tmp/db.sqlite -c ./config_example.yaml
 ```
 
 ## Preparing for build
