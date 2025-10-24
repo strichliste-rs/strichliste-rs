@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into\n                        UserPreferences(user_id, alternative_coloring)\n                    values\n                        (?, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e38510bd06b05e52ed7c6b293a1c7eeb9b2e29938ccc4b20210c8e9a3aa5eb40"
+}
