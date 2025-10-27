@@ -1,5 +1,5 @@
 use leptos::{ev, prelude::*, reactive::spawn_local};
-use leptos_router::hooks::use_navigate;
+use leptos_router::hooks::{use_navigate, use_query_map};
 use reactive_stores::Store;
 use thaw::{
     Button, ButtonType, ComponentRef, Field, FieldContextInjection, FieldContextProvider, Flex,
@@ -12,11 +12,15 @@ use crate::{
         User,
     },
     frontend::{
-        component::user::ShowUsers,
+        component::{icon::clear_filter::ClearFilterIcon, return_to::ReturnTo, user::ShowUsers},
         model::scaninput_manager::ScanInputManager,
         shared::{throw_error, throw_error_soft},
     },
 };
+
+pub const PREFIX_FILTER_NON_ALPHABETIC_VALUE: char = '!';
+const PREFIX_FILTER_CLEAR_TIMEOUT_SEC: u64 = 15;
+const PREFIX_FILTER_NAME: &str = "filter";
 
 #[component]
 pub fn View() -> impl IntoView {
@@ -36,6 +40,12 @@ pub fn View() -> impl IntoView {
 
     let ignore_scan_input_signal = RwSignal::new(false);
     let input_ref = ComponentRef::<InputRef>::new();
+
+    let querys = use_query_map();
+    let prefix_filter = Signal::derive(move || match querys.read().get(PREFIX_FILTER_NAME) {
+        Some(s) => s.chars().nth(0),
+        None => None,
+    });
 
     Effect::new(move || {
         if let Some(input) = input_ref.get() {
@@ -77,13 +87,13 @@ pub fn View() -> impl IntoView {
     );
 
     view! {
+        {move || prefix_filter.get().map(|_| view!{ <ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC />})}
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
-                <div class="flex justify-center">
+                <div class="flex flex-col">
                     <Popover
                         trigger_type=PopoverTriggerType::Click
                         on_open=move || { ignore_scan_input_signal.set(true) }
-
                         on_close=move || { ignore_scan_input_signal.set(false) }
                     >
                         <PopoverTrigger slot>
@@ -118,10 +128,49 @@ pub fn View() -> impl IntoView {
                             </FieldContextProvider>
                         </ActionForm>
                     </Popover>
+                    <div class="flex flex-full flex-col mt-4">
+                        {move || {
+                            prefix_filter
+                                .get()
+                                .map(|_| {
+                                    view! {
+                                        <a class="flex justify-center mb-1.5" href="/">
+                                            <ClearFilterIcon class="w-[1.5em] h-auto" />
+                                        </a>
+                                    }
+                                })
+                        }}
+                        <a
+                            class="text-center mb-1.5"
+                            href=format!(
+                                "/?{}={}",
+                                PREFIX_FILTER_NAME,
+                                PREFIX_FILTER_NON_ALPHABETIC_VALUE,
+                            )
+                        >
+                            #
+                        </a>
+                        {('A'..='Z')
+                            .map(|letter| {
+                                view! {
+                                    <a
+                                        class="text-center mb-1.5"
+                                        href=format!(
+                                            "/?{}={}",
+                                            PREFIX_FILTER_NAME,
+                                            letter.to_ascii_lowercase(),
+                                        )
+                                    >
+                                        {letter}
+                                    </a>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </div>
                 </div>
             </div>
             <div class="col-span-9 pr-7">
-                <ShowUsers />
+                <ShowUsers prefix_filter=prefix_filter />
             </div>
         </div>
     }
