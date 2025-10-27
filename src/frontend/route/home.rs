@@ -12,10 +12,12 @@ use crate::{
         User,
     },
     frontend::{
-        component::{scan_input::ScanInput, user::ShowUsers},
+        component::{return_to::ReturnTo, scan_input::ScanInput, user::ShowUsers},
         shared::throw_error,
     },
 };
+
+const PREFIX_FILTER_CLEAR_TIMEOUT_SEC: u64 = 15;
 
 #[component]
 pub fn View() -> impl IntoView {
@@ -46,11 +48,9 @@ pub fn View() -> impl IntoView {
     let input_ref = ComponentRef::<InputRef>::new();
 
     let querys = use_query_map();
-    let filter_prefix = RwSignal::new(None);
-
-    Effect::new(move || match querys.read().get("p") {
-        Some(s) => filter_prefix.set(s.chars().nth(0)),
-        None => filter_prefix.set(None),
+    let filter_prefix = Signal::derive(move || match querys.read().get("p") {
+        Some(s) => s.chars().nth(0),
+        None => None,
     });
 
     Effect::new(move || {
@@ -59,7 +59,14 @@ pub fn View() -> impl IntoView {
         }
     });
 
+    let clear_filter_component = move || {
+        filter_prefix
+            .get()
+            .map(|_| view! {<ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC />})
+    };
+
     view! {
+        { clear_filter_component }
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
                 <div class="grid columns-1 content-center justify-center">
@@ -101,7 +108,7 @@ pub fn View() -> impl IntoView {
                         </ActionForm>
                     </Popover>
                     <div class="grid content-center justify-center columns-1">
-                        <a href="/">"*"</a>
+                        <a href="/">*</a>
                         {('A'..='Z')
                             .map(|letter| {
                                 view! {

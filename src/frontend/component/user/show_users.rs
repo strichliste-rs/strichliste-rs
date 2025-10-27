@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[component]
-pub fn ShowUsers(filter_prefix: RwSignal<Option<char>>) -> impl IntoView {
+pub fn ShowUsers(filter_prefix: Signal<Option<char>>) -> impl IntoView {
     // use reactive_stores::Store;
     // let store = expect_context::<Store<FrontendStore>>();
 
