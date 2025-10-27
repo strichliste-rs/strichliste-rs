@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[component]
-pub fn ShowUsers() -> impl IntoView {
+pub fn ShowUsers(filter_prefix: RwSignal<Option<char>>) -> impl IntoView {
     // use reactive_stores::Store;
     // let store = expect_context::<Store<FrontendStore>>();
 
@@ -46,14 +46,20 @@ pub fn ShowUsers() -> impl IntoView {
                         >
                             {users
                                 .into_iter()
-                                .map(|user| {
+                                .filter_map(|user| {
                                     let id = user.id;
-
-                                    view! {
-                                        <a href=format!("/user/{}", id)>
-                                            <UserPreview user />
-                                        </a>
+                                    if let Some(prefix) = filter_prefix.get() {
+                                        if !user.nickname.to_lowercase().starts_with(prefix) {
+                                            return None;
+                                        }
                                     }
+                                    Some(
+                                        view! {
+                                            <a href=format!("/user/{}", id)>
+                                                <UserPreview user />
+                                            </a>
+                                        },
+                                    )
                                 })
                                 .collect_view()
                                 .into_any()}

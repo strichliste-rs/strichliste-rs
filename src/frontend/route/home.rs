@@ -1,5 +1,5 @@
 use leptos::{ev, prelude::*, reactive::spawn_local};
-use leptos_router::hooks::use_navigate;
+use leptos_router::hooks::{use_navigate, use_query_map};
 use thaw::{
     Button, ButtonType, ComponentRef, Field, FieldContextInjection, FieldContextProvider, Flex,
     FlexGap, Input, InputRef, InputRule, Popover, PopoverTrigger, PopoverTriggerType, Toast,
@@ -45,6 +45,14 @@ pub fn View() -> impl IntoView {
     let ignore_scan_input_signal = RwSignal::new(false);
     let input_ref = ComponentRef::<InputRef>::new();
 
+    let querys = use_query_map();
+    let filter_prefix = RwSignal::new(None);
+
+    Effect::new(move || match querys.read().get("p") {
+        Some(s) => filter_prefix.set(s.chars().nth(0)),
+        None => filter_prefix.set(None),
+    });
+
     Effect::new(move || {
         if let Some(input) = input_ref.get() {
             input.focus();
@@ -54,11 +62,10 @@ pub fn View() -> impl IntoView {
     view! {
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
-                <div class="flex justify-center">
+                <div class="grid columns-1 content-center justify-center">
                     <Popover
                         trigger_type=PopoverTriggerType::Click
                         on_open=move || { ignore_scan_input_signal.set(true) }
-
                         on_close=move || { ignore_scan_input_signal.set(false) }
                     >
                         <PopoverTrigger slot>
@@ -93,6 +100,19 @@ pub fn View() -> impl IntoView {
                             </FieldContextProvider>
                         </ActionForm>
                     </Popover>
+                    <div class="grid content-center justify-center columns-1">
+                        <a href="/">"*"</a>
+                        {('A'..='Z')
+                            .map(|letter| {
+                                view! {
+                                    <a href=format!(
+                                        "/?p={}",
+                                        letter.to_ascii_lowercase(),
+                                    )>{letter}</a>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </div>
                 </div>
             </div>
             <ScanInput
@@ -131,7 +151,7 @@ pub fn View() -> impl IntoView {
                 }
             />
             <div class="col-span-9 pr-7">
-                <ShowUsers />
+                <ShowUsers filter_prefix=filter_prefix />
             </div>
         </div>
     }
