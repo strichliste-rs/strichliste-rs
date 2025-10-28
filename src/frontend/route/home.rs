@@ -76,7 +76,7 @@ pub fn View() -> impl IntoView {
         {clear_filter_component}
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
-                <div class="flex flex-col justify-center content-center">
+                <div class="flex flex-col">
                     <Popover
                         trigger_type=PopoverTriggerType::Click
                         on_open=move || { ignore_scan_input_signal.set(true) }
@@ -114,12 +114,12 @@ pub fn View() -> impl IntoView {
                             </FieldContextProvider>
                         </ActionForm>
                     </Popover>
-                    <div class="flex flex-col justify-center content-center">
-                        <a class="text-center" href="/">*</a>
+                    <div class="flex flex-full flex-col mt-4">
+                        <a class="text-center mb-1.5" href="/">*</a>
                         {('A'..='Z')
                             .map(|letter| {
                                 view! {
-                                    <a class="text-center" href=format!(
+                                    <a class="text-center mb-1.5" href=format!(
                                         "/?p={}",
                                         letter.to_ascii_lowercase(),
                                     )>{letter}</a>
