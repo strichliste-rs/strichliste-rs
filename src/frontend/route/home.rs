@@ -115,14 +115,18 @@ pub fn View() -> impl IntoView {
                         </ActionForm>
                     </Popover>
                     <div class="flex flex-full flex-col mt-4">
-                        <a class="text-center mb-1.5" href="/">*</a>
+                        <a class="text-center mb-1.5" href="/">
+                            *
+                        </a>
                         {('A'..='Z')
                             .map(|letter| {
                                 view! {
-                                    <a class="text-center mb-1.5" href=format!(
-                                        "/?p={}",
-                                        letter.to_ascii_lowercase(),
-                                    )>{letter}</a>
+                                    <a
+                                        class="text-center mb-1.5"
+                                        href=format!("/?p={}", letter.to_ascii_lowercase())
+                                    >
+                                        {letter}
+                                    </a>
                                 }
                             })
                             .collect::<Vec<_>>()}
