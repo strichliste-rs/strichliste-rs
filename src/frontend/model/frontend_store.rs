@@ -1,12 +1,10 @@
-use crate::model::AudioPlayback;
-use leptos::prelude::*;
+use leptos::prelude::{NodeRef, RwSignal};
 use reactive_stores::Store;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default, Store)]
 pub struct FrontendStore {
-    // #[store(key: i64 = |user| user.id.unwrap())]
-    pub cached_sounds: HashMap<AudioPlayback, String>,
+    pub cached_sounds: HashMap<String, String>,
     pub audio_ref: NodeRef<leptos::html::Audio>,
     pub error: RwSignal<Vec<String>>,
 }

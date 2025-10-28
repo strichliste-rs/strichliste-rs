@@ -14,3 +14,5 @@ tmp/*
 .direnv/
 
 result
+*.yaml
+!config_example.yaml

@@ -19,6 +19,23 @@ pub struct SoundSettings {
     pub deposit: Vec<String>,
 }
 
+impl SoundSettings {
+    pub fn get_all_sounds(&self) -> Vec<String> {
+        let mut all_sounds: Vec<String> = Vec::new();
+
+        for (_, value) in self.articles.iter() {
+            all_sounds.append(&mut value.clone());
+        }
+
+        all_sounds.append(&mut self.generic.clone());
+        all_sounds.append(&mut self.failed.clone());
+        all_sounds.append(&mut self.withdraw.clone());
+        all_sounds.append(&mut self.deposit.clone());
+
+        all_sounds
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct AccountsSettings {
     pub upper_limit: i64,
