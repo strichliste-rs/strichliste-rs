@@ -68,6 +68,11 @@
           strichliste = default;
         };
         devShells.default = pkgs.mkShell {
+          packages = [
+            (pkgs.python3.withPackages (python-pkgs: [
+              python-pkgs.faker
+            ]))
+          ];
           nativeBuildInputs = with pkgs; [
             (rust-bin.stable.latest.default.override {
               targets = [ "wasm32-unknown-unknown" ];
