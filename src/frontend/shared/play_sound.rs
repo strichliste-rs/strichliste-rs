@@ -6,7 +6,7 @@ use leptos::{
 use reactive_stores::{Store, StoreField};
 
 use crate::{
-    backend::core::behaviour::get_item_sound_url::get_item_sound_url,
+    backend::core::behaviour::get_item_sound::{get_item_sound_data, get_item_sound_name},
     frontend::{
         model::frontend_store::{FrontendStore, FrontendStoreStoreFields},
         shared::throw_error,
@@ -28,21 +28,36 @@ use crate::{
 
 pub fn play_sound(audio_playback: AudioPlayback) {
     let store = expect_context::<Store<FrontendStore>>();
-    let audio = match store.audio_ref().get_untracked().get_untracked() {
-        Some(v) => v,
+    let audio = match store.audio_ref().try_get_untracked() {
+        Some(v) => match v.get_untracked() {
+            Some(v) => v,
+            None => {
+                throw_error("Failed to get audio node");
+                return;
+            }
+        },
         None => {
             throw_error("Failed to get audio node");
             return;
         }
     };
+
     use leptos::web_sys::{js_sys, Url};
     spawn_local(async move {
         let mut cached_sounds = store.cached_sounds().writer().unwrap();
 
-        let url = match cached_sounds.get(&audio_playback) {
+        let audio_file = match get_item_sound_name(audio_playback).await {
+            Ok(value) => value,
+            Err(e) => {
+                throw_error(format!("Failed to fetch sound: {e}"));
+                return;
+            }
+        };
+
+        let url = match cached_sounds.get(&audio_file) {
             Some(value) => value,
             None => {
-                let sound = match get_item_sound_url(audio_playback).await {
+                let sound = match get_item_sound_data(audio_file.clone()).await {
                     Ok(value) => value,
                     Err(e) => {
                         throw_error(format!("Failed to fetch sound: {e}"));
@@ -59,9 +74,9 @@ pub fn play_sound(audio_playback: AudioPlayback) {
 
                 let url = Url::create_object_url_with_blob(&blob).unwrap();
 
-                _ = cached_sounds.insert(audio_playback, url);
+                _ = cached_sounds.insert(audio_file.clone(), url);
 
-                cached_sounds.get(&audio_playback).unwrap()
+                cached_sounds.get(&audio_file).unwrap()
             }
         };
 

@@ -6,7 +6,7 @@ pub mod article_new;
 pub mod article_set_barcodes;
 pub mod article_set_name;
 pub mod article_set_price;
-pub mod get_item_sound_url;
+pub mod get_item_sound;
 pub mod group_get;
 pub mod group_get_group_id_for_multiple_users;
 pub mod group_get_groups;
