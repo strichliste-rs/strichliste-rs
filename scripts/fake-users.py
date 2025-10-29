@@ -16,16 +16,16 @@ def create_fake_users(db_connection):
     values_users = []
     values_groups = []
     values_user_group_map = []
+    user_id = random.randint(2, 1_000_000_000)
 
-    for letter in range(26):  # From A (0) to Z (25)
+    for letter in "ABCDEFGHAIJKLMNOPQRSTUVWXYZ1-":  # From A (0) to Z (25)
         for i in range(NUMBER_OF_USERS_PER_LETTER):
             # Create a unique user name
-            user_name = f"{chr(65 + letter)} {fake.unique.last_name()}"
+            user_name = f"{letter} {fake.unique.last_name()}"
 
             # Generate a random amount of money (0 to 100 euros, in cents)
             user_money = random.randint(0, 10000)  # 0 to 10000 cents
 
-            user_id = letter * NUMBER_OF_USERS_PER_LETTER + i
             values_users.append(
                 (
                     user_id,
@@ -41,6 +41,8 @@ def create_fake_users(db_connection):
             group_id = user_id
             values_groups.append((group_id,))
             values_user_group_map.append((group_id, user_id))
+
+            user_id += 1
 
     # Insert users into Users table
     cursor.executemany(

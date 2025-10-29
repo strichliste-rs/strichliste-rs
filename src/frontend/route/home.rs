@@ -17,7 +17,9 @@ use crate::{
     },
 };
 
+pub const PREFIX_FILTER_NON_ALPHABETIC_VALUE: char = '!';
 const PREFIX_FILTER_CLEAR_TIMEOUT_SEC: u64 = 15;
+const PREFIX_FILTER_NAME: &str = "filter";
 
 #[component]
 pub fn View() -> impl IntoView {
@@ -48,7 +50,7 @@ pub fn View() -> impl IntoView {
     let input_ref = ComponentRef::<InputRef>::new();
 
     let querys = use_query_map();
-    let filter_prefix = Signal::derive(move || match querys.read().get("p") {
+    let filter_prefix = Signal::derive(move || match querys.read().get(PREFIX_FILTER_NAME) {
         Some(s) => s.chars().nth(0),
         None => None,
     });
@@ -115,15 +117,26 @@ pub fn View() -> impl IntoView {
                         </ActionForm>
                     </Popover>
                     <div class="flex flex-full flex-col mt-4">
-                        <a class="text-center mb-1.5" href="/">
-                            *
+                        <a
+                            class="text-center mb-1.5"
+                            href=format!(
+                                "/?{}={}",
+                                PREFIX_FILTER_NAME,
+                                PREFIX_FILTER_NON_ALPHABETIC_VALUE,
+                            )
+                        >
+                            #
                         </a>
                         {('A'..='Z')
                             .map(|letter| {
                                 view! {
                                     <a
                                         class="text-center mb-1.5"
-                                        href=format!("/?p={}", letter.to_ascii_lowercase())
+                                        href=format!(
+                                            "/?{}={}",
+                                            PREFIX_FILTER_NAME,
+                                            letter.to_ascii_lowercase(),
+                                        )
                                     >
                                         {letter}
                                     </a>

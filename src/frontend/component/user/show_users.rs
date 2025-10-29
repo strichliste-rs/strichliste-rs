@@ -1,18 +1,17 @@
+use itertools::Itertools;
 use leptos::prelude::*;
 use thaw::Spinner;
 
 use crate::{
     backend::core::behaviour::user_get_all::get_all_users,
-    frontend::{component::user::UserPreview, shared::throw_error_none_view},
+    frontend::{
+        component::user::UserPreview, route::home::PREFIX_FILTER_NON_ALPHABETIC_VALUE,
+        shared::throw_error_none_view,
+    },
 };
 
 #[component]
 pub fn ShowUsers(filter_prefix: Signal<Option<char>>) -> impl IntoView {
-    // use reactive_stores::Store;
-    // let store = expect_context::<Store<FrontendStore>>();
-
-    // let fetch_users = RwSignal::new(0 as i64);
-
     let user_data = Resource::new(move || {}, |_| get_all_users());
 
     view! {
@@ -32,10 +31,30 @@ pub fn ShowUsers(filter_prefix: Signal<Option<char>>) -> impl IntoView {
                         return throw_error_none_view(format!("Failed to fetch users: {err}"));
                     }
                 };
-
-                // store.cached_users().writer().unwrap().clear();
-
-                // store.cached_users().writer().unwrap().append(&mut users.clone());
+                let filterd_users = match filter_prefix.get() {
+                    Some(filter) => {
+                        users
+                            .into_iter()
+                            .filter_map(|user| {
+                                let first_letter = user
+                                    .nickname
+                                    .chars()
+                                    .nth(0)
+                                    .expect("nickname isn't allowed empty")
+                                    .to_ascii_lowercase();
+                                if filter == PREFIX_FILTER_NON_ALPHABETIC_VALUE {
+                                    if first_letter.is_alphabetic() {
+                                        return None;
+                                    }
+                                } else if !(first_letter == filter) {
+                                    return None;
+                                }
+                                Some(user)
+                            })
+                            .collect_vec()
+                    }
+                    None => users,
+                };
 
                 view! {
                     <div class="grid">
@@ -44,22 +63,16 @@ pub fn ShowUsers(filter_prefix: Signal<Option<char>>) -> impl IntoView {
                             class="grid gap-5"
                             style="grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));"
                         >
-                            {users
+                            {filterd_users
                                 .into_iter()
-                                .filter_map(|user| {
+                                .map(|user| {
                                     let id = user.id;
-                                    if let Some(prefix) = filter_prefix.get() {
-                                        if !user.nickname.to_lowercase().starts_with(prefix) {
-                                            return None;
-                                        }
+
+                                    view! {
+                                        <a href=format!("/user/{}", id)>
+                                            <UserPreview user />
+                                        </a>
                                     }
-                                    Some(
-                                        view! {
-                                            <a href=format!("/user/{}", id)>
-                                                <UserPreview user />
-                                            </a>
-                                        },
-                                    )
                                 })
                                 .collect_view()
                                 .into_any()}
