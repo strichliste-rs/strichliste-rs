@@ -1,0 +1,23 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select * from UserPreferences\n                where user_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "alternative_coloring",
+        "ordinal": 1,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [false, false]
+  },
+  "hash": "60a834a3845009933e842031531b2d78d2b76211e0c9402f97e121e887268296"
+}

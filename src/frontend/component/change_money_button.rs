@@ -3,25 +3,80 @@ use thaw::{Button, ButtonAppearance};
 
 use crate::{
     frontend::{model::money_args::MoneyArgs, shared::change_money},
-    model::Money,
+    model::{Money, UserPreferences},
 };
 
-#[component]
-pub fn ChangeMoneyButton(money: i64, args: RwSignal<MoneyArgs>) -> impl IntoView {
-    let class = if money > 0 {
-        "bg-emerald-600"
-    } else {
-        "bg-red-400"
+pub enum ChangeMoneyButtonStyle {
+    RED(UserPreferences),
+    GREEN(UserPreferences),
+}
+
+impl ChangeMoneyButtonStyle {
+    pub fn text(&self) -> String {
+        match *self {
+            ChangeMoneyButtonStyle::RED(settings) => {
+                if !settings.alternative_coloring {
+                    "text-[#f54963]"
+                } else {
+                    "text-[#eb99ff]"
+                }
+            }
+            ChangeMoneyButtonStyle::GREEN(settings) => {
+                if !settings.alternative_coloring {
+                    "text-[#00cc1d]"
+                } else {
+                    "text-[#9999ff]"
+                }
+            }
+        }
+        .to_string()
     }
-    .to_owned()
-        + " p-5";
+
+    pub fn background(&self) -> String {
+        match *self {
+            ChangeMoneyButtonStyle::RED(settings) => {
+                if !settings.alternative_coloring {
+                    "bg-[#544052]"
+                } else {
+                    "bg-[#7a0099]"
+                }
+            }
+            ChangeMoneyButtonStyle::GREEN(settings) => {
+                if !settings.alternative_coloring {
+                    "bg-[#155949]"
+                } else {
+                    "bg-[#0000ff]"
+                }
+            }
+        }
+        .to_string()
+    }
+}
+
+#[component]
+pub fn ChangeMoneyButton(
+    money: i64,
+    args: RwSignal<MoneyArgs>,
+    preferences: RwSignal<UserPreferences>,
+) -> impl IntoView {
     view! {
-        <Button
-            appearance=ButtonAppearance::Primary
-            class=class
-            on_click=move |_| change_money(money.into(), args)
-        >
-            {Money::format_eur_diff_value(money)}
-        </Button>
+        {move || {
+            let style = if money > 0 {
+                ChangeMoneyButtonStyle::GREEN(preferences.get())
+            } else {
+                ChangeMoneyButtonStyle::RED(preferences.get())
+            };
+            let class = format!("p-5 {} {}", style.text(), style.background());
+
+            view! {
+                <Button
+                    appearance=ButtonAppearance::Primary
+                    class=class
+                    on_click=move |_| change_money(money.into(), args)
+                >
+                    {Money::format_eur_diff_value(money)}
+                </Button>
+            }
+        }}
     }
 }

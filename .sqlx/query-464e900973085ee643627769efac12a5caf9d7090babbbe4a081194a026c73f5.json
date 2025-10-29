@@ -1,0 +1,18 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select count(*) as count from UserPreferences\n                where user_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "count",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [false]
+  },
+  "hash": "464e900973085ee643627769efac12a5caf9d7090babbbe4a081194a026c73f5"
+}
