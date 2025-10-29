@@ -61,21 +61,8 @@ pub fn View() -> impl IntoView {
         }
     });
 
-    let is_ssr = RwSignal::new(true);
-
-    Effect::new(move || {
-        is_ssr.set(false);
-    });
-
-    let clear_filter_component = move || match is_ssr.get() {
-        true => None,
-        false => filter_prefix
-            .get()
-            .map(|_| view! { <ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC /> }),
-    };
-
     view! {
-        {clear_filter_component}
+        {move || filter_prefix.get().map(|_| view!{ < ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC />})}
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
                 <div class="flex flex-col">
