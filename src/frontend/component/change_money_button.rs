@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance};
 
@@ -15,11 +17,19 @@ pub fn ChangeMoneyButton(money: i64, args: RwSignal<MoneyArgs>) -> impl IntoView
     }
     .to_owned()
         + " p-5";
+
+    let disabled = RwSignal::new(false);
+
     view! {
         <Button
             appearance=ButtonAppearance::Primary
             class=class
-            on_click=move |_| change_money(money.into(), args)
+            disabled
+            on_click=move |_| {
+                disabled.set(true);
+                change_money(money.into(), args);
+                set_timeout(move || disabled.set(false), Duration::from_millis(100));
+            }
         >
             {Money::format_eur_diff_value(money)}
         </Button>
