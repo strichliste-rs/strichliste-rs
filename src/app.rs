@@ -11,7 +11,7 @@ use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
     component::{self, error_popup::ErrorDisplay},
-    model::frontend_store::FrontendStore,
+    model::{cachinglayer::CachingLayer, frontend_store::FrontendStore},
     route::{self},
 };
 
@@ -47,6 +47,8 @@ pub fn App() -> impl IntoView {
         cached_sounds: Default::default(),
         audio_ref,
         error: Default::default(),
+        cached_users: Vec::new(),
+        cachinglayer: RwSignal::new(CachingLayer::new()),
     });
     provide_context(store);
     let colors = RwSignal::new(HashMap::from([

@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use thaw::{Button, ToasterInjection};
+use thaw::{Button, Spinner, ToasterInjection};
 
 use crate::{
     backend::core::{behaviour::article_get_articles_for_users::get_articles_per_user, Article},
@@ -18,7 +18,7 @@ pub fn BuyArticle(args: RwSignal<MoneyArgs>) -> impl IntoView {
     view! {
         <div>
             <Suspense fallback=move || {
-                view! { <p class="text-center text-white">"Loading Articles"</p> }
+                view! { <Spinner label="Loading Articles!" /> }
             }>
                 <div class="grid grid-cols-3 text-white text-center gap-2 text-[1.25em] p-2 pt-4">
                     {move || {
