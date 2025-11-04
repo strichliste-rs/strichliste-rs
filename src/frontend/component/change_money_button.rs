@@ -1,7 +1,5 @@
-use std::time::Duration;
-
 use leptos::prelude::*;
-use thaw::{Button, ButtonAppearance};
+use thaw::{Button, ButtonAppearance, ButtonRef, ComponentRef};
 
 use crate::{
     frontend::{model::money_args::MoneyArgs, shared::change_money},
@@ -18,17 +16,16 @@ pub fn ChangeMoneyButton(money: i64, args: RwSignal<MoneyArgs>) -> impl IntoView
     .to_owned()
         + " p-5";
 
-    let disabled = RwSignal::new(false);
+    let self_ref = ComponentRef::<ButtonRef>::new();
 
     view! {
         <Button
             appearance=ButtonAppearance::Primary
             class=class
-            disabled
+            comp_ref=self_ref
             on_click=move |_| {
-                disabled.set(true);
                 change_money(money.into(), args);
-                set_timeout(move || disabled.set(false), Duration::from_millis(100));
+                self_ref.get().unwrap().blur()
             }
         >
             {Money::format_eur_diff_value(money)}
