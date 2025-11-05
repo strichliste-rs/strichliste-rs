@@ -111,8 +111,19 @@
               coreutils
             ];
             buildPhase = ''
+              set -xeu
               patchShebangs .
+              output=$(./scripts/diff-file-structure.sh)
+              echo "output is:"
+              echo "$output"
+              echo "end output"
+              echo "readme is"
+              cat README.md
+              echo "running script"
               ./scripts/diff-file-structure.sh
+              if [ -n "$output" ]; then
+                exit 1
+              fi
               touch "$out"
             '';
           };
