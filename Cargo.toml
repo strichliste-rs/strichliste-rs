@@ -21,7 +21,7 @@ config = {version = "0.15.15", optional = true}
 rand = {version = "0.9.2", optional = true}
 thiserror = "2.0.16"
 # thaw = {version = "0.5.0-beta"}
-thaw = {git = "https://github.com/DestinyofYeet/thaw", rev = "ddf6c9503898a0421f3f798c470236994845d214"}
+thaw = {git = "https://github.com/DestinyofYeet/thaw", rev = "eedf236e3da77a249fb9a2ca7a304ee8bf755ea4"}
 server_fn = {version = "0.8.7", features = ["cbor", "multipart"]}
 codee = {version = "0.3.3", features = ["bincode_serde"]}
 
