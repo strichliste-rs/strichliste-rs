@@ -123,6 +123,8 @@ This step is needed in order for the build instructions to work. This step shoul
     > Can be [DTOs](https://en.wikipedia.org/wiki/Data_transfer_object)
   - frontend
     > code run on the client / at hydration
+    - cachinglayer
+      > client side caching of data while re-fetching from the server
     - style
       > tailwind css configs
     - component
