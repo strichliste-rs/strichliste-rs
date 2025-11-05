@@ -16,7 +16,7 @@ use crate::{
             transaction::ShowTransactions,
         },
         model::{
-            cachinglayer::CachingLayer,
+            caching_layer::CachingLayer,
             frontend_store::{FrontendStoreStoreFields, FrontendStoreType},
             money_args::MoneyArgs,
         },
