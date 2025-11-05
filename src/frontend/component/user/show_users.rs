@@ -4,7 +4,7 @@ use thaw::Spinner;
 use crate::frontend::{
     component::user::UserPreview,
     model::{
-        cachinglayer::CachingLayer,
+        caching_layer::CachingLayer,
         frontend_store::{FrontendStoreStoreFields, FrontendStoreType},
     },
     shared::throw_error,

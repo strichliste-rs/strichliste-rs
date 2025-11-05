@@ -5,7 +5,10 @@ use leptos::{
 
 use crate::{
     backend::core::{behaviour::user_get_all::get_all_users, User},
-    frontend::model::cachinglayer::{CachingEntry, CachingLayer, CachingLayerType},
+    frontend::model::{
+        caching_entry::CachingEntry,
+        caching_layer::{CachingLayer, CachingLayerType},
+    },
 };
 
 impl CachingLayer {

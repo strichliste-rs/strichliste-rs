@@ -1,9 +1,5 @@
 use leptos::prelude::RwSignal;
 
-use crate::backend::core::User;
-
-pub type CachingLayerType = RwSignal<CachingLayer>;
-
 pub struct CachingEntry<T> {
     pub value: RwSignal<T>,
     pub is_fetching: RwSignal<bool>,
@@ -19,17 +15,6 @@ where
             value: RwSignal::new(Default::default()),
             is_fetching: RwSignal::new(false),
             error: RwSignal::new(None),
-        }
-    }
-}
-
-pub struct CachingLayer {
-    pub cached_users: RwSignal<CachingEntry<Vec<User>>>,
-}
-impl CachingLayer {
-    pub(crate) fn new() -> Self {
-        Self {
-            cached_users: RwSignal::new(CachingEntry::default()),
         }
     }
 }
