@@ -2,8 +2,7 @@ use leptos::{ev, prelude::*, reactive::spawn_local};
 use leptos_router::hooks::use_navigate;
 use thaw::{
     Button, ButtonType, ComponentRef, Field, FieldContextInjection, FieldContextProvider, Flex,
-    FlexGap, Input, InputRef, InputRule, Popover, PopoverTrigger, PopoverTriggerType, Toast,
-    ToastBody, ToastTitle, ToasterInjection,
+    FlexGap, Input, InputRef, InputRule, Popover, PopoverTrigger, PopoverTriggerType,
 };
 
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
     },
     frontend::{
         component::{scan_input::ScanInput, user::ShowUsers},
-        shared::throw_error,
+        shared::{throw_error, throw_error_soft},
     },
 };
 
@@ -39,8 +38,6 @@ pub fn View() -> impl IntoView {
             navigate(&format!("/user/{}", user.id), Default::default());
         }
     });
-
-    let toaster = ToasterInjection::expect_context();
 
     let ignore_scan_input_signal = RwSignal::new(false);
     let input_ref = ComponentRef::<InputRef>::new();
@@ -109,22 +106,9 @@ pub fn View() -> impl IntoView {
                         match user {
                             Some(user) => found_user_signal.set(Some(user)),
                             None => {
-                                toaster
-                                    .dispatch_toast(
-                                        move || {
-                                            view! {
-                                                <Toast>
-                                                    <ToastTitle>"Failed to find user"</ToastTitle>
-                                                    <ToastBody>
-                                                        {format!(
-                                                            "There is no user with barcode \"{input_string}\"",
-                                                        )}
-                                                    </ToastBody>
-                                                </Toast>
-                                            }
-                                        },
-                                        Default::default(),
-                                    );
+                                throw_error_soft(
+                                    format!("There is no user with barcode \"{input_string}\""),
+                                );
                             }
                         };
                     });

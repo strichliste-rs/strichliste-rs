@@ -2,6 +2,7 @@ pub mod article;
 pub mod change_money_button;
 pub mod error_message;
 pub mod error_popup;
+pub mod error_soft;
 pub mod icon;
 pub mod multi_user_selection;
 pub mod navbar;

@@ -10,8 +10,12 @@ use leptos_router::{
 use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
-    component::{self, error_popup::ErrorDisplay},
-    model::{caching_layer::CachingLayer, frontend_store::FrontendStore},
+    component::{self, error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
+    model::{
+        caching_layer::CachingLayer,
+        frontend_store::FrontendStore,
+        throw_error::{ThrowError, THROW_ERROR_HARD, THROW_ERROR_SOFT},
+    },
     route::{self},
 };
 
@@ -48,9 +52,12 @@ pub fn App() -> impl IntoView {
         audio_ref,
         cachinglayer: RwSignal::new(CachingLayer::default()),
     });
+    let soft_error = Store::new(ThrowError::<THROW_ERROR_SOFT>::default());
     let hard_error = Store::new(ThrowError::<THROW_ERROR_HARD>::default());
     provide_context(store);
+    provide_context(soft_error);
     provide_context(hard_error);
+
     let colors = RwSignal::new(HashMap::from([
         (10, "#010304"),
         (20, "#0F181E"),
@@ -90,6 +97,7 @@ pub fn App() -> impl IntoView {
         <ConfigProvider theme>
             <ToasterProvider>
                 <ErrorDisplay />
+                <ErrorSoftDisplay />
                 <Router>
                     <Routes fallback=|| {
                         view! {
