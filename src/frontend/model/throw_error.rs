@@ -1,5 +1,6 @@
 //replace this with tracing levels as soon as arbitrary const types get stable
 
+pub const THROW_ERROR_SOFT: u8 = 0;
 pub const THROW_ERROR_HARD: u8 = 1;
 
 #[derive(Default, Clone)]
