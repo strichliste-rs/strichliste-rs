@@ -46,10 +46,11 @@ pub fn App() -> impl IntoView {
     let store = Store::new(FrontendStore {
         cached_sounds: Default::default(),
         audio_ref,
-        error: Default::default(),
         cachinglayer: RwSignal::new(CachingLayer::default()),
     });
+    let hard_error = Store::new(ThrowError::<THROW_ERROR_HARD>::default());
     provide_context(store);
+    provide_context(hard_error);
     let colors = RwSignal::new(HashMap::from([
         (10, "#010304"),
         (20, "#0F181E"),
@@ -83,12 +84,12 @@ pub fn App() -> impl IntoView {
         <Title text="Strichliste-rs" />
 
         {component::navbar::View()}
-        <ErrorDisplay />
         <audio node_ref=audio_ref />
 
         // content for this welcome page
         <ConfigProvider theme>
             <ToasterProvider>
+                <ErrorDisplay />
                 <Router>
                     <Routes fallback=|| {
                         view! {
