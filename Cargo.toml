@@ -39,6 +39,7 @@ ssr = [
   "leptos/ssr",
   "leptos_meta/ssr",
   "leptos_router/ssr",
+  "leptos-use/ssr",
   "dep:sqlx",
   "dep:clap",
   "dep:tracing-subscriber",

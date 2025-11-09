@@ -32,19 +32,23 @@ pub fn View() -> impl IntoView {
 
     let found_user_signal: RwSignal<Option<User>> = RwSignal::new(None);
 
-    Effect::new(move || {
-        if let Some(user) = found_user_signal.get() {
-            let navigate = use_navigate();
-            navigate(&format!("/user/{}", user.id), Default::default());
-        }
-    });
-
     let ignore_scan_input_signal = RwSignal::new(false);
+    let should_cleanup = RwSignal::new(false);
     let input_ref = ComponentRef::<InputRef>::new();
+
+    provide_context(should_cleanup);
 
     Effect::new(move || {
         if let Some(input) = input_ref.get() {
             input.focus();
+        }
+    });
+
+    Effect::new(move || {
+        if let Some(user) = found_user_signal.get() {
+            let navigate = use_navigate();
+            should_cleanup.set(true);
+            navigate(&format!("/user/{}", user.id), Default::default());
         }
     });
 
@@ -94,6 +98,7 @@ pub fn View() -> impl IntoView {
             </div>
             <ScanInput
                 ignore_input_signals=vec![ignore_scan_input_signal]
+                should_cleanup=should_cleanup.read_only()
                 callback=move |input_string| {
                     spawn_local(async move {
                         let user = match get_user_by_barcode(input_string.clone()).await {
