@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_router::hooks::use_navigate;
 use thaw::Spinner;
 
 use crate::frontend::{
@@ -24,6 +25,8 @@ pub fn ShowUsers() -> impl IntoView {
         }
     });
 
+    let cleanup_signal = expect_context::<RwSignal<bool>>();
+
     view! {
         {move || {
             if users.read().is_fetching.get() && users.read().value.get().is_empty() {
@@ -44,9 +47,16 @@ pub fn ShowUsers() -> impl IntoView {
                             .into_iter()
                             .map(|user| {
                                 let id = user.id;
+                                let navigate = use_navigate();
 
                                 view! {
-                                    <a href=format!("/user/{}", id)>
+                                    <a
+                                        href="#"
+                                        on:click=move |_| {
+                                            cleanup_signal.set(true);
+                                            navigate(&format!("/user/{}", id.0), Default::default())
+                                        }
+                                    >
                                         <UserPreview user />
                                     </a>
                                 }
