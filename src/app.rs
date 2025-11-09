@@ -14,6 +14,7 @@ use crate::frontend::{
     model::{
         caching_layer::CachingLayer,
         frontend_store::FrontendStore,
+        scaninput_manager::ScanInputManager,
         throw_error::{ThrowError, THROW_ERROR_HARD, THROW_ERROR_SOFT},
     },
     route::{self},
@@ -82,6 +83,8 @@ pub fn App() -> impl IntoView {
         .set_color_neutral_background_1("#25333f".to_string());
     let theme = RwSignal::new(theme);
 
+    let scaninput_manager = Store::new(ScanInputManager::default());
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -99,6 +102,10 @@ pub fn App() -> impl IntoView {
                 <ErrorDisplay />
                 <ErrorSoftDisplay />
                 <Router>
+                    {
+                        ScanInputManager::setup(scaninput_manager);
+                        provide_context(scaninput_manager);
+                    }
                     <Routes fallback=|| {
                         view! {
                             <h1 class="text-white text-center bg-red-400">"Page not found!"</h1>

@@ -1,5 +1,6 @@
 use leptos::{ev, prelude::*, reactive::spawn_local};
 use leptos_router::hooks::use_navigate;
+use reactive_stores::Store;
 use thaw::{
     Button, ButtonType, ComponentRef, Field, FieldContextInjection, FieldContextProvider, Flex,
     FlexGap, Input, InputRef, InputRule, Popover, PopoverTrigger, PopoverTriggerType,
@@ -11,7 +12,8 @@ use crate::{
         User,
     },
     frontend::{
-        component::{scan_input::ScanInput, user::ShowUsers},
+        component::user::ShowUsers,
+        model::scaninput_manager::ScanInputManager,
         shared::{throw_error, throw_error_soft},
     },
 };
@@ -33,10 +35,7 @@ pub fn View() -> impl IntoView {
     let found_user_signal: RwSignal<Option<User>> = RwSignal::new(None);
 
     let ignore_scan_input_signal = RwSignal::new(false);
-    let should_cleanup = RwSignal::new(false);
     let input_ref = ComponentRef::<InputRef>::new();
-
-    provide_context(should_cleanup);
 
     Effect::new(move || {
         if let Some(input) = input_ref.get() {
@@ -47,10 +46,35 @@ pub fn View() -> impl IntoView {
     Effect::new(move || {
         if let Some(user) = found_user_signal.get() {
             let navigate = use_navigate();
-            should_cleanup.set(true);
             navigate(&format!("/user/{}", user.id), Default::default());
         }
     });
+
+    let scaninput_manager = expect_context::<Store<ScanInputManager>>();
+
+    scaninput_manager.write().register(
+        "/",
+        vec![ignore_scan_input_signal.read_only()],
+        move |input_string| {
+            spawn_local(async move {
+                let user = match get_user_by_barcode(input_string.clone()).await {
+                    Ok(user) => user,
+                    Err(err) => {
+                        throw_error(format!("Failed to fetch user by barcode: {}", err));
+                        return;
+                    }
+                };
+                match user {
+                    Some(user) => found_user_signal.set(Some(user)),
+                    None => {
+                        throw_error_soft(format!(
+                            "There is no user with barcode \"{input_string}\""
+                        ));
+                    }
+                };
+            });
+        },
+    );
 
     view! {
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
@@ -96,29 +120,6 @@ pub fn View() -> impl IntoView {
                     </Popover>
                 </div>
             </div>
-            <ScanInput
-                ignore_input_signals=vec![ignore_scan_input_signal]
-                should_cleanup=should_cleanup.read_only()
-                callback=move |input_string| {
-                    spawn_local(async move {
-                        let user = match get_user_by_barcode(input_string.clone()).await {
-                            Ok(user) => user,
-                            Err(err) => {
-                                throw_error(format!("Failed to fetch user by barcode: {}", err));
-                                return;
-                            }
-                        };
-                        match user {
-                            Some(user) => found_user_signal.set(Some(user)),
-                            None => {
-                                throw_error_soft(
-                                    format!("There is no user with barcode \"{input_string}\""),
-                                );
-                            }
-                        };
-                    });
-                }
-            />
             <div class="col-span-9 pr-7">
                 <ShowUsers />
             </div>

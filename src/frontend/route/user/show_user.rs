@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use leptos::{leptos_dom::logging::console_log, prelude::*, reactive::spawn_local};
 use leptos_router::hooks::use_params_map;
+use reactive_stores::Store;
 use thaw::{Button, Input, Spinner, ToasterInjection};
 
 use crate::{
@@ -12,13 +13,13 @@ use crate::{
             change_money_button::ChangeMoneyButton,
             icon::{SendMoneyIcon, SettingsIcon},
             return_to::ReturnTo,
-            scan_input::ScanInput,
             transaction::ShowTransactions,
         },
         model::{
             caching_layer::CachingLayer,
             frontend_store::{FrontendStoreStoreFields, FrontendStoreType},
             money_args::MoneyArgs,
+            scaninput_manager::ScanInputManager,
         },
         shared::{buy_article, on_custom_money_button_click, throw_error, throw_error_none_view},
     },
@@ -74,11 +75,13 @@ pub fn ShowUser() -> impl IntoView {
                 let custom_money_change = RwSignal::new(String::from_str("0.00").unwrap());
                 let custom_money_is_focused = RwSignal::new(false);
                 let toaster = ToasterInjection::expect_context();
-
-                view! {
-                    <ScanInput
-                        ignore_input_signals=vec![custom_money_is_focused]
-                        callback=move |scan_input| {
+                let scaninput_manager = expect_context::<Store<ScanInputManager>>();
+                scaninput_manager
+                    .write()
+                    .register(
+                        format!("/user/{}", user_id.0),
+                        vec![custom_money_is_focused.read_only()],
+                        move |scan_input| {
                             spawn_local(async move {
                                 console_log(&format!("Input {scan_input}"));
                                 let article = get_article_by_barcode(scan_input.clone()).await;
@@ -104,8 +107,10 @@ pub fn ShowUser() -> impl IntoView {
                                     }
                                 }
                             });
-                        }
-                    />
+                        },
+                    );
+
+                view! {
                     <div class="grid grid-cols-2">
                         <div class="pt-5">
                             // left side (show user statistics)
