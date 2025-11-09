@@ -1,3 +1,4 @@
+pub mod behaviour;
 pub mod cachinglayer;
 pub mod component;
 pub mod model;

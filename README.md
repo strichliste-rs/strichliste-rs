@@ -127,6 +127,8 @@ This step is needed in order for the build instructions to work. This step shoul
       > client side caching of data while re-fetching from the server
     - style
       > tailwind css configs
+    - behaviour
+      > implementations of structs that aren't components
     - component
       > reusable components (most things go here)
       - icon
