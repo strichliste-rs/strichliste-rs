@@ -7,6 +7,16 @@ on: # yamllint disable-line rule:truthy
     types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
+  check_commit_format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Verify Commits
+        uses: wagoid/commitlint-github-action@v5
+
   check:
     runs-on: self-hosted
     steps:
