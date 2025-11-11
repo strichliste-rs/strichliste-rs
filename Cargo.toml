@@ -115,6 +115,9 @@ lib-default-features = false
 lib-profile-release = "wasm-release"
 tailwind-input-file = "src/frontend/style/input.css"
 
+[profile.dev]
+incremental = true
+
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
 inherits = "release"
