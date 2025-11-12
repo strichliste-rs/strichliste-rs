@@ -14,9 +14,9 @@ use crate::{
 
 impl CachingLayer {
     fn fetch_user(user_id: UserId, entry: RwSignal<CachingEntry<Option<User>>>) {
+        entry.write().is_fetching.set(true);
         Effect::new(move || {
             spawn_local(async move {
-                entry.write().is_fetching.set(true);
                 match get_user(user_id).await {
                     Ok(value) => {
                         entry.write().is_fetching.set(false);
