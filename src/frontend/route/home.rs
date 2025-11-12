@@ -43,7 +43,7 @@ pub fn View() -> impl IntoView {
 
     let querys = use_query_map();
     let prefix_filter = Signal::derive(move || match querys.read().get(PREFIX_FILTER_NAME) {
-        Some(s) => s.chars().nth(0),
+        Some(s) => s.chars().next(),
         None => None,
     });
 
@@ -87,7 +87,11 @@ pub fn View() -> impl IntoView {
     );
 
     view! {
-        {move || prefix_filter.get().map(|_| view!{ <ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC />})}
+        {move || {
+            prefix_filter
+                .get()
+                .map(|_| view! { <ReturnTo route="/" after=PREFIX_FILTER_CLEAR_TIMEOUT_SEC /> })
+        }}
         <div class="grid grid-cols-10 gap-10 py-10 h-screen">
             <div class="col-span-1 pl-5 justify-self-center">
                 <div class="flex flex-col">
@@ -154,7 +158,7 @@ pub fn View() -> impl IntoView {
                             .map(|letter| {
                                 view! {
                                     <a
-                                        class="text-center mb-1.5"
+                                        class="text-center mb-1.5 pt-2"
                                         href=format!(
                                             "/?{}={}",
                                             PREFIX_FILTER_NAME,
