@@ -42,7 +42,7 @@ pub fn ShowUsers(prefix_filter: Signal<Option<char>>) -> impl IntoView {
                             let first_letter = user
                                 .nickname
                                 .chars()
-                                .nth(0)
+                                .next()
                                 .expect("nickname isn't allowed empty")
                                 .to_ascii_lowercase();
                             if filter == PREFIX_FILTER_NON_ALPHABETIC_VALUE {
