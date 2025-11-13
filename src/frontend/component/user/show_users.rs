@@ -45,11 +45,9 @@ pub fn ShowUsers(prefix_filter: Signal<Option<char>>) -> impl IntoView {
                                 .next()
                                 .expect("nickname isn't allowed empty")
                                 .to_ascii_lowercase();
-                            if filter == PREFIX_FILTER_NON_ALPHABETIC_VALUE {
-                                if first_letter.is_alphabetic() {
-                                    return None;
-                                }
-                            } else if !(first_letter == filter) {
+                            if (filter == PREFIX_FILTER_NON_ALPHABETIC_VALUE
+                                && first_letter.is_alphabetic()) || (first_letter != filter)
+                            {
                                 return None;
                             }
                             Some(user)
