@@ -7,6 +7,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   build:
+    if: '! github.event.pull_request.draft'
     runs-on: self-hosted
     steps:
       - name: Fetch Source
