@@ -93,7 +93,6 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="Strichliste-rs" />
 
-        {component::navbar::View()}
         <audio node_ref=audio_ref />
 
         // content for this welcome page

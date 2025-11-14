@@ -1,5 +1,6 @@
 pub mod article;
 pub mod change_money_button;
+pub mod colors;
 pub mod error_message;
 pub mod error_popup;
 pub mod error_soft;
