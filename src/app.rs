@@ -10,7 +10,7 @@ use leptos_router::{
 use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
-    component::{self, error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
+    component::{error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
     model::{
         caching_layer::CachingLayer,
         frontend_store::FrontendStore,

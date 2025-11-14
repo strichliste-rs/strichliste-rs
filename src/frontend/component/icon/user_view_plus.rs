@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 #[component]
-pub fn IconUserViewArrowLeft() -> impl IntoView {
+pub fn IconUserViewPlus() -> impl IntoView {
     view! {
         <svg
             width="40"
@@ -11,14 +11,14 @@ pub fn IconUserViewArrowLeft() -> impl IntoView {
             xmlns="http://www.w3.org/2000/svg"
         >
             <path
-                d="M20.0002 31.6666L8.3335 20L20.0002 8.33331"
+                d="M8.3335 20H31.6668"
                 stroke="#F0F0F0"
                 stroke-width="2.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
             />
             <path
-                d="M31.6668 20H8.3335"
+                d="M20 8.33334V31.6667"
                 stroke="#F0F0F0"
                 stroke-width="2.5"
                 stroke-linecap="round"
