@@ -10,7 +10,7 @@ use leptos_router::{
 use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
-    component::{self, error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
+    component::{error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
     model::{
         caching_layer::CachingLayer,
         frontend_store::FrontendStore,
@@ -93,7 +93,6 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="Strichliste-rs" />
 
-        {component::navbar::View()}
         <audio node_ref=audio_ref />
 
         // content for this welcome page
