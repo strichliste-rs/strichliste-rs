@@ -8,6 +8,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   check_commit_format:
+    if: '! github.event.pull_request.draft'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -18,6 +19,7 @@ jobs:
         uses: wagoid/commitlint-github-action@v5
 
   check:
+    if: '! github.event.pull_request.draft'
     runs-on: self-hosted
     steps:
       - name: Fetch Source
