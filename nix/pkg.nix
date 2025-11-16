@@ -1,10 +1,4 @@
-{
-  lib,
-  pkgs,
-  toml,
-  inputs,
-  ...
-}:
+{ lib, pkgs, toml, inputs, ... }:
 let
   src = lib.fileset.toSource {
     root = ../.;
@@ -15,6 +9,7 @@ let
       ../public
       ../migrations
       ../.sqlx
+      ../locales
     ];
   };
 
@@ -22,10 +17,7 @@ let
   version = toml.package.version;
 
   rustTarget = pkgs.rust-bin.stable.latest.minimal.override {
-    extensions = [
-      "rust-src"
-      "clippy"
-    ];
+    extensions = [ "rust-src" "clippy" ];
     targets = [ "wasm32-unknown-unknown" ];
   };
 
@@ -47,60 +39,48 @@ let
     nativeBuildInputs = buildInputs;
   };
 
-  frontendArtifacts = craneLib.buildDepsOnly (
-    commonArgs
-    // {
-      CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-      pname = "${name}-frontend";
-      doCheck = false;
-    }
-  );
+  frontendArtifacts = craneLib.buildDepsOnly (commonArgs // {
+    CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+    pname = "${name}-frontend";
+    doCheck = false;
+  });
 
-  frontend = craneLib.buildPackage (
-    commonArgs
-    // {
-      cargoArtifacts = frontendArtifacts;
-      pname = "${name}-frontend";
+  frontend = craneLib.buildPackage (commonArgs // {
+    cargoArtifacts = frontendArtifacts;
+    pname = "${name}-frontend";
 
-      doNotPostBuildInstallCargoBinaries = true;
-      buildPhaseCargoCommand = ''
-        cargo leptos build --release -vvv --frontend-only
-      '';
+    doNotPostBuildInstallCargoBinaries = true;
+    buildPhaseCargoCommand = ''
+      cargo leptos build --release -vvv --frontend-only
+    '';
 
-      installPhaseCommand = ''
-        mkdir -p $out/site
-        cp -r target/site/* $out/site
-      '';
-    }
-  );
+    installPhaseCommand = ''
+      mkdir -p $out/site
+      cp -r target/site/* $out/site
+    '';
+  });
 
-  backendArtifacts = craneLib.buildDepsOnly (
-    commonArgs
-    // {
-      pname = "${name}-backend";
-      doCheck = false;
-    }
-  );
+  backendArtifacts = craneLib.buildDepsOnly (commonArgs // {
+    pname = "${name}-backend";
+    doCheck = false;
+  });
 
-  backend = craneLib.buildPackage (
-    commonArgs
-    // {
-      pname = "${name}-backend";
-      cargoArtifacts = backendArtifacts;
+  backend = craneLib.buildPackage (commonArgs // {
+    pname = "${name}-backend";
+    cargoArtifacts = backendArtifacts;
 
-      doNotPostBuildInstallCargoBinaries = true;
-      buildPhaseCargoCommand = ''
-        cargo leptos build --release -vvv --server-only
-      '';
+    doNotPostBuildInstallCargoBinaries = true;
+    buildPhaseCargoCommand = ''
+      cargo leptos build --release -vvv --server-only
+    '';
 
-      nativeBuildInputs = commonArgs.buildInputs;
+    nativeBuildInputs = commonArgs.buildInputs;
 
-      installPhaseCommand = ''
-        mkdir -p $out/bin
-        cp target/release/${name} $out/bin
-      '';
-    }
-  );
+    installPhaseCommand = ''
+      mkdir -p $out/bin
+      cp target/release/${name} $out/bin
+    '';
+  });
 
   package = pkgs.stdenv.mkDerivation {
     inherit name version;
@@ -120,20 +100,14 @@ let
     };
   };
   cargoClippyExtraArgsCommon = "--all-targets -- --deny warnings";
-  clippyFrontend = craneLib.cargoClippy (
-    commonArgs
-    // {
-      cargoArtifacts = frontendArtifacts;
-      cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
-    }
-  );
-  clippybackend = craneLib.cargoClippy (
-    commonArgs
-    // {
-      cargoArtifacts = backendArtifacts;
-      cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
-    }
-  );
+  clippyFrontend = craneLib.cargoClippy (commonArgs // {
+    cargoArtifacts = frontendArtifacts;
+    cargoClippyExtraArgs = "-F ssr ${cargoClippyExtraArgsCommon}";
+  });
+  clippybackend = craneLib.cargoClippy (commonArgs // {
+    cargoArtifacts = backendArtifacts;
+    cargoClippyExtraArgs = "-F hydrate ${cargoClippyExtraArgsCommon}";
+  });
 
   migrate = pkgs.stdenv.mkDerivation {
     name = "migrate";
@@ -141,8 +115,7 @@ let
     dontUnpack = true;
     installPhase = "install -Dm755 ${../scripts/migration.py} $out/bin/migrate";
   };
-in
-{
+in {
   packages.default = package;
   packages.migrate = migrate;
   checks = { inherit clippyFrontend clippybackend; };
