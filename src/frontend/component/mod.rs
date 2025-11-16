@@ -4,6 +4,8 @@ pub mod error_message;
 pub mod error_popup;
 pub mod error_soft;
 pub mod figma;
+pub mod home;
+pub mod i18n_provider;
 pub mod icon;
 pub mod multi_user_selection;
 pub mod navbar;

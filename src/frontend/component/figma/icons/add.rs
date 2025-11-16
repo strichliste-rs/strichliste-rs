@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 #[component]
-pub fn IconUserViewPlus() -> impl IntoView {
+pub fn AddIcon() -> impl IntoView {
     view! {
         <svg
             width="40"
