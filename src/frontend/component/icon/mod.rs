@@ -4,6 +4,7 @@ pub mod arrow_right;
 pub mod basket;
 pub mod clear_filter;
 pub mod delete_button;
+pub mod search;
 pub mod send_money;
 pub mod settings_icon;
 

@@ -24,13 +24,16 @@ thiserror = "2.0.16"
 thaw = {git = "https://github.com/DestinyofYeet/thaw", rev = "eedf236e3da77a249fb9a2ca7a304ee8bf755ea4"}
 server_fn = {version = "0.8.7", features = ["cbor", "multipart"]}
 codee = {version = "0.3.3", features = ["bincode_serde"]}
+leptos-fluent = "0.2.20"
+icondata = "0.6.0"
 
 [features]
 hydrate = [
   "leptos/hydrate",
   "dep:console_error_panic_hook",
   "dep:wasm-bindgen",
-  "thaw/hydrate"
+  "thaw/hydrate",
+  "leptos-fluent/hydrate"
 ]
 ssr = [
   "dep:axum",
@@ -46,7 +49,9 @@ ssr = [
   "dep:futures",
   "dep:config",
   "dep:rand",
-  "thaw/ssr"
+  "thaw/ssr",
+  "leptos-fluent/ssr",
+  "leptos-fluent/axum"
 ]
 sqlx = ["dep:sqlx"]
 clap = ["dep:clap"]
@@ -84,6 +89,7 @@ assets-dir = "public"
 site-addr = "0.0.0.0:3000"
 # The port to use for automatic reload monitoring
 reload-port = 3001
+watch-additional-files = ["locales"] # Relative to Cargo.toml
 # [Optional] Command to use when running end2end tests. It will run in the end2end dir.
 # [Windows] for non-WSL use "npx.cmd playwright test"
 # This binary name can be checked in Powershell with Get-Command npx
