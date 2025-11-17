@@ -3,10 +3,7 @@ pub const PREFIX_FILTER_NON_ALPHABETIC_VALUE: char = '!';
 use leptos::prelude::*;
 
 use crate::frontend::{
-    component::{
-        figma::spacings::Spacing,
-        home::{HomeHeader, UserList},
-    },
+    component::home::{HomeHeader, UserList},
     model::{
         caching_layer::CachingLayer,
         frontend_store::{FrontendStoreStoreFields, FrontendStoreType},
@@ -22,8 +19,6 @@ pub fn View() -> impl IntoView {
 
     view! {
         <HomeHeader />
-        <div style:padding=Spacing::XXL.get()>
-            <UserList users />
-        </div>
+        <UserList users />
     }
 }

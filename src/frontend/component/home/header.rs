@@ -17,7 +17,7 @@ pub fn HomeHeader() -> impl IntoView {
             style:background-color=Color::BackgroundLight.get()
             style:padding=Spacing::XXL.get()
 
-            style:box-shadow="0 10px 8px black"
+            style:box-shadow="0 10px 8px #00000040"
         >
             <Flex align=FlexAlign::FlexStart vertical=true style:gap=Spacing::L.get()>
                 <Flex vertical=false align=FlexAlign::Center>
@@ -51,10 +51,7 @@ pub fn HomeHeader() -> impl IntoView {
                             align=FlexAlign::Center
                             justify=FlexJustify::Center
                             gap=thaw::FlexGap::Medium
-                            style:padding-top=Spacing::S.get()
-                            style:padding-right=Spacing::M.get()
-                            style:padding-bottom=Spacing::S.get()
-                            style:padding-left=Spacing::M.get()
+                            style:padding="0 10px"
                         >
 
                             <div
@@ -70,10 +67,19 @@ pub fn HomeHeader() -> impl IntoView {
                         </Flex>
                     </Button>
                     // removes the border of selected inputs
+                    // and moves the placeholder more to the right
                     <Style>
-                        r#".thaw-input__input {
-                            outline: none
-                        }"#
+                        r#"
+                            .thaw-input__input {
+                                outline: none;
+                            }
+                        
+                            .thaw-input--prefix {
+                                .thaw-input__input {
+                                    padding-left: 1%;
+                                }
+                            }
+                        "#
                     </Style>
                     <Input
                         input_type=InputType::Text
@@ -81,6 +87,7 @@ pub fn HomeHeader() -> impl IntoView {
 
                         style:font-size=Spacing::M.get()
                         style:border-radius=Spacing::XS.get()
+                        style:max-width="430px"
                     >
                         <InputPrefix slot>
                             <Icon
@@ -103,5 +110,7 @@ pub fn HomeHeader() -> impl IntoView {
                 </Flex>
             </Flex>
         </div>
+        // in order for the box-shadow to show
+        <div style:padding-top="4%"></div>
     }
 }
