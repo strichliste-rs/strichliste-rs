@@ -12,7 +12,12 @@ impl Spacing {
 
     #[inline(always)] // tried to make it a `const fn`, but no luck. Even with the `const_format` crate, since it doesn't accpet precision specifiers.
     pub fn px_to_rem(px_value: i32) -> String {
-        let rem_value: f32 = px_value as f32 / 16.0;
+        Self::px_to_rem_f(px_value as f32)
+    }
+
+    #[inline(always)]
+    pub fn px_to_rem_f(px_value: f32) -> String {
+        let rem_value: f32 = px_value / 16.0;
         format!("{:.5}rem", rem_value)
     }
 }

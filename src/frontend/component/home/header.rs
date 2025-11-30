@@ -1,18 +1,40 @@
-use leptos::prelude::*;
+use leptos::{prelude::*, reactive::spawn_local};
 
 use leptos_fluent::move_tr;
 use leptos_meta::Style;
 use thaw::{Button, Flex, FlexAlign, FlexJustify, Icon, Input, InputPrefix, InputType};
 
-use crate::frontend::component::figma::{
-    colors::Color,
-    icons::{add::AddIcon, arrow_left::ArrowLeftIcon, rotate_left::RotateLeftIcon},
-    spacings::Spacing,
+use crate::{
+    backend::core::behaviour::user_create::create_user,
+    frontend::{
+        component::figma::{
+            colors::Color,
+            dialog::{InputDialog, InputDialogType},
+            icons::{add::AddIcon, arrow_left::ArrowLeftIcon, rotate_left::RotateLeftIcon},
+            spacings::Spacing,
+        },
+        shared::throw_error,
+    },
 };
 
 #[component]
-pub fn HomeHeader() -> impl IntoView {
+pub fn HomeHeader(user_filter: RwSignal<String>) -> impl IntoView {
+    let create_new_user_trigger = RwSignal::new(false);
     view! {
+        <InputDialog
+            title=move_tr!("dialog-newAccount-title")
+            description=move_tr!("dialog-newAccount-description")
+            ok_button_text=move_tr!("dialog-newAccount-okButton")
+            open_signal=create_new_user_trigger
+            input_dialog_type=InputDialogType::Text
+            on_ok=move |input| {
+                spawn_local(async move {
+                    if let Err(e) = create_user(input).await {
+                        throw_error(format!("Failed to create user: {}", e));
+                    }
+                });
+            }
+        />
         <div
             style:background-color=Color::BACKGROUND_LIGHT
             style:padding=Spacing::XXL
@@ -46,6 +68,9 @@ pub fn HomeHeader() -> impl IntoView {
                     <Button
                         style:background=Color::PRIMARY
                         style:border-radius=Spacing::XS
+                        on_click=move |_| {
+                            create_new_user_trigger.set(true);
+                        }
                     >
                         <Flex
                             align=FlexAlign::Center
@@ -69,7 +94,8 @@ pub fn HomeHeader() -> impl IntoView {
                     // removes the border of selected inputs
                     // and moves the placeholder more to the right
                     <Style>
-                        {format!(r#"
+                        {format!(
+                            r#"
                             .thaw-input__input {{
                                 outline: none;
                             }}
@@ -79,11 +105,14 @@ pub fn HomeHeader() -> impl IntoView {
                                     padding-left: {};
                                 }}
                             }}
-                        "#, Spacing::XS)}
+                        "#,
+                            Spacing::XS,
+                        )}
                     </Style>
                     <Input
                         input_type=InputType::Text
                         placeholder=move_tr!("search")
+                        value=user_filter
 
                         style:font-size=Spacing::M
                         style:border-radius=Spacing::XS
@@ -104,6 +133,7 @@ pub fn HomeHeader() -> impl IntoView {
                     <Flex
                         align=FlexAlign::Center
                         style:padding=format!("{} {}", Spacing::S, Spacing::M)
+                        on:click=move |_| {user_filter.set(String::new())}
                     >
                         <RotateLeftIcon />
                     </Flex>
