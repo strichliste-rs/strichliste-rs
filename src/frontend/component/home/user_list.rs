@@ -47,16 +47,16 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
 
     view! {
         <Style>
-            r#"
-                .thaw-table-cell {
-                    padding-bottom: 3%;
-                    padding-top: 3%;
-                }
-            "#
+            {format!(r#"
+                .thaw-table-cell {{
+                    padding-bottom: {0};
+                    padding-top: {0};
+                }}
+            "#, Spacing::L)}
         </Style>
         <div
-            style:background-color=Color::BackgroundDark.get()
-            style:padding="5% 10%"
+            style:background-color=Color::BACKGROUND_DARK
+            style:padding=format!("5rem {}", Spacing::XXL)
             style:padding-top="0"
         >
             {move || {
@@ -68,10 +68,10 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
                         view! {
                             <div>
                                 <h1
-                                    style:padding-top="8%"
-                                    style:font-size=Spacing::L.get()
+                                    style:padding-top=Spacing::XXL
+                                    style:font-size=Spacing::L
                                     style:font-weight="700"
-                                    style:padding-bottom="8%"
+                                    style:padding-bottom=Spacing::L
                                     style:max-height="54px"
                                 >
                                     {char}
@@ -84,7 +84,7 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
                                                 .into_iter()
                                                 .map(|user| {
                                                     view! {
-                                                        <TableRow style:font-size=Spacing::M.get()>
+                                                        <TableRow style:font-size=Spacing::M>
                                                             <TableCell style:text-align="left">
                                                                 <p>{user.nickname}</p>
                                                             </TableCell>

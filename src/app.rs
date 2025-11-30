@@ -36,7 +36,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                     <MetaTags />
                 </head>
                 // otherwise the sceen will flash white when loading a user for example
-                <body style:background-color=Color::BackgroundDark.get()>
+                <body style:background-color=Color::BACKGROUND_DARK>
                     <App />
                 </body>
             </html>
@@ -83,7 +83,7 @@ pub fn App() -> impl IntoView {
     let mut theme = Theme::custom_dark(&colors.get_untracked());
     theme
         .color
-        .set_color_neutral_background_1(Color::BackgroundDark.get());
+        .set_color_neutral_background_1(Color::BACKGROUND_DARK.to_string());
     let theme = RwSignal::new(theme);
 
     let scaninput_manager = Store::new(ScanInputManager::default());
