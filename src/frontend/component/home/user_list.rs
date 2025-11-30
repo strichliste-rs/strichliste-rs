@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use leptos::prelude::*;
 use leptos_meta::Style;
+use leptos_router::hooks::use_navigate;
 use thaw::{Table, TableBody, TableCell, TableRow};
 
 use crate::{
@@ -47,12 +48,15 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
 
     view! {
         <Style>
-            {format!(r#"
+            {format!(
+                r#"
                 .thaw-table-cell {{
                     padding-bottom: {0};
                     padding-top: {0};
                 }}
-            "#, Spacing::L)}
+            "#,
+                Spacing::L,
+            )}
         </Style>
         <div
             style:background-color=Color::BACKGROUND_DARK
@@ -83,8 +87,14 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
                                                 .get()
                                                 .into_iter()
                                                 .map(|user| {
+                                                    let navigate = use_navigate();
                                                     view! {
-                                                        <TableRow style:font-size=Spacing::M>
+                                                        <TableRow
+                                                            style:font-size=Spacing::M
+                                                            on:click=move |_| {
+                                                                navigate(&format!("/user/{}", user.id), Default::default())
+                                                            }
+                                                        >
                                                             <TableCell style:text-align="left">
                                                                 <p>{user.nickname}</p>
                                                             </TableCell>
@@ -96,7 +106,6 @@ pub fn UserList(users: ReadSignal<CachingEntry<Vec<User>>>) -> impl IntoView {
                                                                     {user.money.format_eur()}
                                                                 </p>
                                                             </TableCell>
-
                                                         </TableRow>
                                                     }
                                                 })
