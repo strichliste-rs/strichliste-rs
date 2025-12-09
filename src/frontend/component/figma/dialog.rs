@@ -1,6 +1,6 @@
 use leptos::{
     component,
-    prelude::{Effect, Get, GetUntracked, RwSignal, Set, Signal},
+    prelude::{Effect, Get, GetUntracked, RwSignal, Set, Signal, IntoAnyAttribute},
     view, IntoView,
 };
 use leptos_fluent::move_tr;
@@ -12,7 +12,6 @@ use thaw::{
 
 use crate::frontend::component::figma::{colors::Color, spacings::Spacing};
 use leptos::prelude::AddAnyAttr;
-use leptos::prelude::IntoAnyAttribute;
 
 pub enum InputDialogType {
     Text,

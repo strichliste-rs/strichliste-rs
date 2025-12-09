@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
+    components::{ParentRoute, Route, Router, Routes},
     path,
 };
 
@@ -113,15 +113,14 @@ pub fn App() -> impl IntoView {
                             }
                         }>
                             <Route path=path!("/") view=route::home::View />
-                            <Route path=path!("/user/:id") view=route::user::ShowUser />
-                            <Route
-                                path=path!("/user/:id/settings")
-                                view=route::user::settings::Show
-                            />
-                            <Route
-                                path=path!("/user/:id/send_money")
-                                view=route::user::send_money::Show
-                            />
+                            <Route path=path!("/user/:id/settings") view=route::user::settings::SettingsView />
+                            <ParentRoute path=path!("/user/:id") view=route::user::header::HeaderView >
+                                <Route path=path!("") view=route::user::buy::BuyView />
+                                <Route path=path!("deposit") view=route::user::deposit::DepositView />
+                                <Route path=path!("split") view=route::user::split::SplitView />
+                                <Route path=path!("send") view=route::user::send::SendView />
+                                <Route path=path!("history") view=route::user::history::HistoryView />
+                            </ParentRoute>
                             <Route path=path!("/articles") view=route::articles::View />
                             <Route
                                 path=path!("/articles/create")

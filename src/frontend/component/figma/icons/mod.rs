@@ -1,3 +1,10 @@
 pub mod add;
 pub mod arrow_left;
+pub mod bottle;
+pub mod coins;
+pub mod give_money;
+pub mod logout;
 pub mod rotate_left;
+pub mod split_way;
+pub mod time_back;
+pub mod user_round;

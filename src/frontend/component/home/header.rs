@@ -2,12 +2,13 @@ use leptos::{prelude::*, reactive::spawn_local};
 
 use leptos_fluent::move_tr;
 use leptos_meta::Style;
-use thaw::{Button, Flex, FlexAlign, FlexJustify, Icon, Input, InputPrefix, InputType};
+use thaw::{Flex, FlexAlign, Icon, Input, InputPrefix, InputType};
 
 use crate::{
     backend::core::behaviour::user_create::create_user,
     frontend::{
         component::figma::{
+            button::Button,
             colors::Color,
             dialog::{InputDialog, InputDialogType},
             icons::{add::AddIcon, arrow_left::ArrowLeftIcon, rotate_left::RotateLeftIcon},
@@ -42,7 +43,7 @@ pub fn HomeHeader(user_filter: RwSignal<String>) -> impl IntoView {
             style:box-shadow="0 10px 8px #00000040"
         >
             <Flex align=FlexAlign::FlexStart vertical=true style:gap=Spacing::L>
-                <Flex vertical=false align=FlexAlign::Center>
+                <Flex align=FlexAlign::Center>
 
                     <div
                         class="w-[6.25rem] h-[5rem] flex justify-center items-center"
@@ -66,34 +67,15 @@ pub fn HomeHeader(user_filter: RwSignal<String>) -> impl IntoView {
                 <Flex style:gap=Spacing::M style:max-height="81px">
                     // neuer account
                     <Button
-                        style:background=Color::PRIMARY
-                        style:border-radius=Spacing::XS
-                        on_click=move |_| {
-                            create_new_user_trigger.set(true);
+                        icon=AddIcon
+                        text=move_tr!("new-account")
+                        on_click=move || {
+                            create_new_user_trigger.set(true)
                         }
-                    >
-                        <Flex
-                            align=FlexAlign::Center
-                            justify=FlexJustify::Center
-                            gap=thaw::FlexGap::Medium
-                            style:padding="0 10px"
-                        >
-
-                            <div
-                                class="flex justify-center items-center h-[2.5rem]"
-                                style:width=Spacing::L
-                            >
-                                <AddIcon />
-                            </div>
-                            <p class="font-[400]" style:font-size=Spacing::M>
-                                {move_tr!("new-account")}
-                            </p>
-
-                        </Flex>
-                    </Button>
+                    />
                     // removes the border of selected inputs
                     // and moves the placeholder more to the right
-                    <Style>
+                    <Style blocking="true">
                         {format!(
                             r#"
                             .thaw-input__input {{

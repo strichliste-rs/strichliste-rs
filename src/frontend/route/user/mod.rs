@@ -1,5 +1,7 @@
-pub mod send_money;
+pub mod buy;
+pub mod deposit;
+pub mod header;
+pub mod history;
+pub mod send;
 pub mod settings;
-pub mod show_user;
-
-pub use show_user::*;
+pub mod split;

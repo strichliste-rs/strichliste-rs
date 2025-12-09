@@ -13,8 +13,8 @@ use crate::{
 pub fn UserList(users: Signal<Vec<User>>) -> impl IntoView {
     let first_letters = Memo::new(move |_| {
         users
-            .get()
-            .into_iter()
+            .read()
+            .iter()
             .map(|user| {
                 user.nickname
                     .chars()
@@ -29,7 +29,7 @@ pub fn UserList(users: Signal<Vec<User>>) -> impl IntoView {
 
     let users_by_letter = move |letter: &String| {
         users
-            .get()
+            .get() // TODO: Optimize this into a .read()
             .into_iter()
             .filter(|user| {
                 user.nickname
@@ -76,7 +76,7 @@ pub fn UserList(users: Signal<Vec<User>>) -> impl IntoView {
                                 <Table>
                                     <TableBody>
                                         <Style>
-                                            r"
+                                            r#"
                                             tr {
                                                 border-bottom: initial !important;
                                             }
@@ -87,7 +87,7 @@ pub fn UserList(users: Signal<Vec<User>>) -> impl IntoView {
                                         </Style>
                                         {move || {
                                             users
-                                                .get()
+                                                .get() // TODO: optimize this into a .read()
                                                 .into_iter()
                                                 .map(|user| {
                                                     let navigate = use_navigate();

@@ -7,6 +7,7 @@ pub mod figma;
 pub mod home;
 pub mod i18n_provider;
 pub mod icon;
+pub mod money;
 pub mod multi_user_selection;
 pub mod navbar;
 pub mod return_to;

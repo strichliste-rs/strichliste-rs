@@ -8,6 +8,7 @@ impl Spacing {
     pub const S: &'static str = "1.25rem";
     pub const M: &'static str = "1.875rem";
     pub const L: &'static str = "2.5rem";
+    pub const XL: &'static str = "3.75rem";
     pub const XXL: &'static str = "5rem";
 
     #[inline(always)] // tried to make it a `const fn`, but no luck. Even with the `const_format` crate, since it doesn't accpet precision specifiers.

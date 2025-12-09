@@ -2,6 +2,7 @@ pub const PREFIX_FILTER_NON_ALPHABETIC_VALUE: char = '!';
 
 use itertools::Itertools;
 use leptos::prelude::*;
+use thaw::Spinner;
 
 use crate::frontend::{
     component::home::{HomeHeader, UserList},
@@ -20,22 +21,23 @@ pub fn View() -> impl IntoView {
 
     let user_filter = RwSignal::new(String::new());
 
-    let users = Signal::derive(move || {
-        cached_users
-            .read()
-            .value
-            .get()
-            .into_iter()
-            .filter(|elem| {
-                elem.nickname
-                    .to_lowercase()
-                    .starts_with(&user_filter.get().to_lowercase())
-            })
-            .collect_vec()
-    });
-
     view! {
         <HomeHeader user_filter />
-        <UserList users />
+
+        {move || {
+            let (is_fetching, value) = {
+                let entry = cached_users.read();
+                (entry.is_fetching, entry.value)
+            };
+            if is_fetching.get() && value.read().is_empty() {
+                return view! { <Spinner label="Loading users!" /> }.into_any();
+            }
+
+            let users = Signal::derive(move || value.read().iter().filter(|user| user.nickname.to_lowercase().starts_with(&user_filter.get())).cloned().collect_vec());
+
+            view!{
+                <UserList users />
+            }.into_any()
+        }}
     }
 }
