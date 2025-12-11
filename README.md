@@ -139,6 +139,12 @@ This step is needed in order for the build instructions to work. This step shoul
         > everything related to displaying transactions
       - article
         > everything related to displaying articles
+      - figma
+        > everything thats imported / implemented from figma
+        - icons
+          > imported icons
+      - home
+        > components related to the home route (landing page)
     - route
       > page views composed of components
       > the files in this directory should be tiny
@@ -171,5 +177,7 @@ This step is needed in order for the build instructions to work. This step shoul
     > sound files for development
 - scripts
   > small helper scripts for development and checks
+- locales
+  > translation files
 
 <!-- ENDFOLDERS -->

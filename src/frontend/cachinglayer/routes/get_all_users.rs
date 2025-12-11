@@ -13,17 +13,23 @@ use crate::{
 
 impl CachingLayer {
     fn fetch_all_users(layer: CachingLayerType) {
+        layer
+            .write_only()
+            .write()
+            .cached_users
+            .write()
+            .is_fetching
+            .set(true);
         Effect::new(move || {
             spawn_local(async move {
                 let write_cached = layer.write_only();
 
                 let write_cached = write_cached.write();
-                write_cached.cached_users.write().is_fetching.set(true);
 
                 match get_all_users().await {
                     Ok(value) => {
-                        write_cached.cached_users.write().is_fetching.set(false);
                         write_cached.cached_users.write().value.set(value);
+                        write_cached.cached_users.write().is_fetching.set(false);
                     }
                     Err(e) => write_cached
                         .cached_users

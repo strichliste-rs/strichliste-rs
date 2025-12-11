@@ -1,3 +1,4 @@
+pub mod header;
 pub mod show_users;
 pub mod user_preview;
 
