@@ -3,14 +3,17 @@ use std::collections::HashMap;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
+    components::{ParentRoute, Route, Router, Routes},
     path,
 };
 
 use thaw::{ssr::SSRMountStyleProvider, ConfigProvider, Theme, ToasterProvider};
 
 use crate::frontend::{
-    component::{self, error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay},
+    component::{
+        error_popup::ErrorDisplay, error_soft::ErrorSoftDisplay, figma::colors::Color,
+        i18n_provider::I18nProvider,
+    },
     model::{
         caching_layer::CachingLayer,
         frontend_store::FrontendStore,
@@ -33,7 +36,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                     <MetaTags />
                 </head>
                 // otherwise the sceen will flash white when loading a user for example
-                <body class="bg-[#25333f]">
+                <body style:background-color=Color::BACKGROUND_DARK>
                     <App />
                 </body>
             </html>
@@ -80,7 +83,7 @@ pub fn App() -> impl IntoView {
     let mut theme = Theme::custom_dark(&colors.get_untracked());
     theme
         .color
-        .set_color_neutral_background_1("#25333f".to_string());
+        .set_color_neutral_background_1(Color::BACKGROUND_DARK.to_string());
     let theme = RwSignal::new(theme);
 
     let scaninput_manager = Store::new(ScanInputManager::default());
@@ -90,45 +93,46 @@ pub fn App() -> impl IntoView {
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/strichliste-rs.css" />
 
-        // sets the document title
         <Title text="Strichliste-rs" />
 
-        {component::navbar::View()}
         <audio node_ref=audio_ref />
 
-        // content for this welcome page
         <ConfigProvider theme>
-            <ToasterProvider>
-                <ErrorDisplay />
-                <ErrorSoftDisplay />
-                <Router>
-                    {
-                        ScanInputManager::setup(scaninput_manager);
-                        provide_context(scaninput_manager);
-                    }
-                    <Routes fallback=|| {
-                        view! {
-                            <h1 class="text-white text-center bg-red-400">"Page not found!"</h1>
+            <I18nProvider>
+                <ToasterProvider>
+                    <ErrorDisplay />
+                    <ErrorSoftDisplay />
+                    <Router>
+                        {
+                            ScanInputManager::setup(scaninput_manager);
+                            provide_context(scaninput_manager);
                         }
-                    }>
-                        <Route path=path!("/") view=route::home::View />
-                        <Route path=path!("/user/:id") view=route::user::ShowUser />
-                        <Route path=path!("/user/:id/settings") view=route::user::settings::Show />
-                        <Route
-                            path=path!("/user/:id/send_money")
-                            view=route::user::send_money::Show
-                        />
-                        <Route path=path!("/articles") view=route::articles::View />
-                        <Route
-                            path=path!("/articles/create")
-                            view=route::articles::create::Create
-                        />
-                        <Route path=path!("/articles/:article_id") view=route::articles::Edit />
+                        <Routes fallback=|| {
+                            view! {
+                                <h1 class="text-white text-center bg-red-400">"Page not found!"</h1>
+                            }
+                        }>
+                            <Route path=path!("/") view=route::home::View />
+                            <Route path=path!("/user/:id/settings") view=route::user::settings::SettingsView />
+                            <ParentRoute path=path!("/user/:id") view=route::user::header::HeaderView >
+                                <Route path=path!("") view=route::user::buy::BuyView />
+                                <Route path=path!("deposit") view=route::user::deposit::DepositView />
+                                <Route path=path!("split") view=route::user::split::SplitView />
+                                <Route path=path!("send") view=route::user::send::SendView />
+                                <Route path=path!("history") view=route::user::history::HistoryView />
+                            </ParentRoute>
+                            <Route path=path!("/articles") view=route::articles::View />
+                            <Route
+                                path=path!("/articles/create")
+                                view=route::articles::create::Create
+                            />
+                            <Route path=path!("/articles/:article_id") view=route::articles::Edit />
 
-                        <Route path=path!("/split_cost") view=route::split_cost::Show />
-                    </Routes>
-                </Router>
-            </ToasterProvider>
+                            <Route path=path!("/split_cost") view=route::split_cost::Show />
+                        </Routes>
+                    </Router>
+                </ToasterProvider>
+            </I18nProvider>
         </ConfigProvider>
     }
 }
