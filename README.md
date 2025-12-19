@@ -1,3 +1,7 @@
+# THIS PROJECT HAS MOVED OFF OF GITHUB
+
+This project now lives at https://code.ole.blue/strichliste-rs/strichliste-rs due to github's stupid runner pricing changes. If you are interested in helping developement email info@strichliste.rs, so we can set up an account for you.
+
 # General information
 
 This is a digital tally sheet for use in trusted environments.
